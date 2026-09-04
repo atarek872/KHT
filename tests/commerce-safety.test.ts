@@ -21,9 +21,9 @@ test('the shared total rejects invalid amounts and calculates subtotal minus dis
 test('all server quote paths call the same total function', () => {
   for (const path of [
     '../server/services/createOrder.ts',
-    '../server/api/checkout.post.ts',
     '../server/api/discounts/quote.post.ts',
   ]) assert.match(read(path), /calculateOrderTotal\(/, path)
+  assert.match(read('../server/services/storefrontCheckout.ts'), /createDurableOrder\(database, orderInput/)
 })
 
 test('manual orders are COD-only and begin pending collection', () => {
@@ -43,7 +43,7 @@ test('durable order creation is idempotent and inventory is database guarded', (
   const service = read('../server/services/createOrder.ts')
   const schema = read('../server/db/migrations/0001_commerce.sql')
   assert.match(service, /WHERE idempotency_key = \?/)
-  assert.match(service, /if \(existing\.order\) return existing\.order/)
+  assert.match(service, /if \(existing\.order\) return \{ order: existing\.order/)
   assert.match(service, /await database\.batch\(statements\)/)
   assert.match(schema, /idempotency_key TEXT NOT NULL UNIQUE/)
   assert.match(schema, /RAISE\(ABORT, 'INSUFFICIENT_STOCK'\)/)

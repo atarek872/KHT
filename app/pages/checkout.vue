@@ -1,19 +1,21 @@
 <script setup lang="ts">
-import type { DemoOrder } from '../../shared/types'
+import type { StorefrontOrderConfirmation } from '../../shared/storefrontOrder'
 import type { OrderQuote } from '../../shared/discount'
 import type { ShippingZone } from '../../shared/shipping'
 const { t, money, localized } = useLanguage()
-const { lines, count, total, clear } = useBag()
+const { lines, count, total, cartId, completeCheckout } = useBag()
 const form = useState('checkout-draft', () => ({
   name: '',
   email: '',
   phone: '',
-  city: 'Cairo',
+  governorate: 'Cairo',
+  city: '',
   address: '',
+  notes: '',
 }))
 const phoneInvalid = ref(false)
-const acknowledged = ref(false)
 const busy = ref(false)
+const requestId = ref(crypto.randomUUID())
 const error = ref('')
 const couponCode = ref('')
 const couponBusy = ref(false)
@@ -22,12 +24,12 @@ const couponQuote = ref<OrderQuote | null>(null)
 const { data: shippingData, error: shippingError, status: shippingStatus } =
   await useFetch<{ items: ShippingZone[] }>('/api/shipping/options')
 const shippingOptions = computed(() => shippingData.value?.items || [])
-const selectedShipping = computed(() => shippingOptions.value.find((option) => option.governorate === form.value.city))
+const selectedShipping = computed(() => shippingOptions.value.find((option) => option.governorate === form.value.governorate))
 const shipping = computed(() => selectedShipping.value?.rate || 0)
 
 watch(shippingOptions, (options) => {
-  if (options.length && !options.some((option) => option.governorate === form.value.city)) {
-    form.value.city = options[0]!.governorate
+  if (options.length && !options.some((option) => option.governorate === form.value.governorate)) {
+    form.value.governorate = options[0]!.governorate
   }
 }, { immediate: true })
 
@@ -40,7 +42,7 @@ async function applyCoupon() {
       method: 'POST',
       body: {
         code: couponCode.value,
-        shippingGovernorate: form.value.city,
+        shippingGovernorate: form.value.governorate,
         items: lines.value.map(({ id, size, quantity }) => ({ id, size, quantity })),
       },
     })
@@ -61,39 +63,41 @@ watch(couponCode, (value) => {
     couponQuote.value = null
   }
 })
-function sampleDetails() {
-  phoneInvalid.value = false
-  Object.assign(form.value, {
-    name: 'KHT Preview',
-    email: 'preview@example.com',
-    phone: '01000000000',
-    address: 'Studio 001 — sample address',
-  })
-}
 async function submit() {
-  if (busy.value || !acknowledged.value) return
+  if (busy.value || !selectedShipping.value) return
   busy.value = true
   error.value = ''
   try {
-    const order = await $fetch<DemoOrder>('/api/checkout', {
+    const order = await $fetch<StorefrontOrderConfirmation>('/api/checkout', {
       method: 'POST',
       body: {
+        requestId: requestId.value,
+        cartId: cartId.value,
+        customer: {
+          name: form.value.name,
+          email: form.value.email || undefined,
+          phone: form.value.phone,
+          address: form.value.address,
+          governorate: form.value.governorate,
+          city: form.value.city,
+        },
         items: lines.value.map(({ id, size, quantity }) => ({ id, size, quantity })),
-        demoAcknowledged: acknowledged.value,
         couponCode: couponQuote.value?.couponCode,
-        shippingGovernorate: form.value.city,
+        shippingGovernorate: form.value.governorate,
+        paymentMethod: 'cod',
+        notes: form.value.notes || undefined,
       },
     })
-    sessionStorage.setItem('kht-demo-order', JSON.stringify(order))
-    clear()
-    form.value = { name: '', email: '', phone: '', city: 'Cairo', address: '' }
+    completeCheckout()
+    requestId.value = crypto.randomUUID()
+    form.value = { name: '', email: '', phone: '', governorate: 'Cairo', city: '', address: '', notes: '' }
     await navigateTo(`/order-confirmation/${order.reference}`)
   } catch (e: unknown) {
     const detail = e as { data?: { statusMessage?: string } }
     error.value = t(
       detail.data?.statusMessage ||
-        'We could not complete the preview. Your bag is saved. Please try again.',
-      'تعذر إكمال التجربة. سلتك محفوظة؛ راجع الكميات وحاول تاني.',
+        'We could not place your order. Your bag and details are saved. Review the message and try again.',
+      'تعذر تسجيل طلبك. السلة والبيانات محفوظة؛ راجع الرسالة وحاول تاني.',
     )
   } finally {
     busy.value = false
@@ -109,21 +113,7 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
       <h1>{{ t('MAKE IT YOURS.', 'كمّل إطلالتك.') }}</h1>
     </div>
     <template v-if="count"
-      ><div class="demo-banner">
-        <strong>{{ t('Explore the checkout.', 'جرّب إتمام الطلب.') }}</strong>
-        <p>
-          {{
-            t(
-              'Demo only. No payment or delivery. Use sample details; contact information stays in memory until you finish or reload.',
-              'تجربة فقط، بدون دفع أو توصيل. استخدم بيانات المثال؛ بيانات التواصل تبقى في الذاكرة حتى الإتمام أو إعادة تحميل الموقع.',
-            )
-          }}
-        </p>
-        <button class="remove-link" @click="sampleDetails">
-          {{ t('Use sample details', 'استخدم بيانات المثال') }}
-        </button>
-      </div>
-      <div class="commerce-grid">
+      ><div class="commerce-grid">
         <form id="checkout-form" class="checkout-form" @submit.prevent="submit">
           <fieldset>
             <legend><span>01</span>{{ t('Your details', 'بياناتك') }}</legend>
@@ -137,13 +127,12 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
                   required
                   maxlength="100" /></label
               ><label
-                >{{ t('Email', 'البريد الإلكتروني')
+                >{{ t('Email (optional)', 'البريد الإلكتروني (اختياري)')
                 }}<input
                   v-model="form.email"
                   name="email"
                   type="email"
                   autocomplete="email"
-                  required
                   maxlength="160" /></label
               ><label
                 >{{ t('Phone', 'الهاتف')
@@ -166,8 +155,8 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
                   "
                 /><span v-if="phoneInvalid" id="phone-error" class="field-error" role="alert">{{
                   t(
-                    'Enter 7–15 digits, with an optional country code.',
-                    'اكتب من ٧ إلى ١٥ رقم، مع كود الدولة لو محتاج.',
+                      'Enter a valid Egyptian mobile number.',
+                      'اكتب رقم موبايل مصري صحيح.',
                   )
                 }}</span></label
               >
@@ -177,10 +166,13 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
             <legend><span>02</span>{{ t('Delivery', 'التوصيل') }}</legend>
             <div class="form-grid">
               <label class="full-field"
-                >{{ t('City', 'المدينة')
-                }}<select v-model="form.city" name="city" autocomplete="address-level2" :disabled="shippingStatus === 'pending' || !shippingOptions.length">
+                >{{ t('Governorate', 'المحافظة')
+                }}<select v-model="form.governorate" name="governorate" autocomplete="address-level1" required :disabled="shippingStatus === 'pending' || !shippingOptions.length">
                   <option v-for="option in shippingOptions" :key="option.governorate" :value="option.governorate">{{ option.governorate }}</option>
                 </select></label
+              ><label class="full-field"
+                >{{ t('City or area', 'المدينة أو المنطقة')
+                }}<input v-model="form.city" name="city" autocomplete="address-level2" required maxlength="100" /></label
               ><label class="full-field"
                 >{{ t('Street address', 'العنوان')
                 }}<input
@@ -195,9 +187,9 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
             <div class="delivery-option">
               <span class="selected-indicator" />
               <div>
-                <strong>{{ t('Standard delivery — sample', 'توصيل عادي — مثال') }}</strong
+                <strong>{{ t('Standard delivery', 'توصيل عادي') }}</strong
                 ><span>{{
-                  t('Illustrative rate, not a delivery promise.', 'تكلفة توضيحية وليست وعد توصيل.')
+                  t('The courier will contact you to coordinate delivery.', 'شركة الشحن هتتواصل معاك لتنسيق التوصيل.')
                 }}</span>
               </div>
               <strong>{{ money(shipping) }}</strong>
@@ -205,22 +197,13 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
           </fieldset>
           <fieldset>
             <legend><span>03</span>{{ t('Review & payment', 'المراجعة والدفع') }}</legend>
-            <p class="muted">
-              {{
-                t(
-                  'Live payment methods will appear here once KHT launches. This preview does not request card details.',
-                  'طرق الدفع الفعلية هتظهر عند إطلاق KHT. التجربة لا تطلب بيانات بطاقة.',
-                )
-              }}
-            </p>
-            <label class="checkbox-label"
-              ><input v-model="acknowledged" type="checkbox" required /><span>{{
-                t(
-                  'I understand this is a demo and no real order will be placed.',
-                  'فاهم إن دي تجربة ومش هيتم تسجيل طلب حقيقي.',
-                )
-              }}</span></label
-            >
+            <div class="delivery-option">
+              <input type="radio" name="payment-method" value="cod" checked aria-label="Cash on delivery" />
+              <div><strong>{{ t('Cash on delivery', 'الدفع عند الاستلام') }}</strong
+                ><span>{{ t('Pay the courier when your order arrives.', 'ادفع لمندوب الشحن وقت وصول الطلب.') }}</span></div>
+            </div>
+            <div class="form-grid"><label class="full-field">{{ t('Order notes (optional)', 'ملاحظات الطلب (اختياري)')
+              }}<textarea v-model="form.notes" name="notes" maxlength="500" rows="3" /></label></div>
             <p v-if="error" class="form-error" role="alert">{{ error }}</p>
             <div class="checkout-coupon">
               <label for="checkout-coupon">{{ t('Coupon code', 'كود الخصم') }}</label>
@@ -231,15 +214,15 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
             </div>
             <div class="checkout-final-total" aria-live="polite">
               <span>{{
-                t('Demo total · delivery included', 'الإجمالي التجريبي شامل التوصيل')
+                t('Order total · delivery included', 'إجمالي الطلب شامل التوصيل')
               }}</span>
               <strong>{{ money(couponQuote?.total ?? total + shipping) }}</strong>
             </div>
-            <button class="button button-dark" :disabled="busy || !acknowledged || !selectedShipping">
+            <button class="button button-dark" :disabled="busy || !selectedShipping">
               {{
                 busy
-                  ? t('Preparing preview…', 'جارٍ تجهيز المعاينة…')
-                  : t('Preview order', 'معاينة الطلب')
+                  ? t('Placing order…', 'جارٍ تسجيل الطلب…')
+                  : t('Place COD order', 'سجّل طلب الدفع عند الاستلام')
               }}<KhtIcon name="arrow" />
             </button>
           </fieldset>
@@ -267,7 +250,7 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
             ><span>{{ money(total) }}</span>
           </div>
           <div class="summary-row">
-            <span>{{ t('Sample delivery', 'توصيل توضيحي') }}</span
+            <span>{{ t('Delivery', 'التوصيل') }}</span
             ><span>{{ money(shipping) }}</span>
           </div>
           <div v-if="couponQuote?.discount" class="summary-row">
@@ -275,14 +258,14 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
             ><span>− {{ money(couponQuote.discount) }}</span>
           </div>
           <div class="summary-row summary-total">
-            <strong>{{ t('Demo total', 'الإجمالي التجريبي') }}</strong
+            <strong>{{ t('Order total', 'إجمالي الطلب') }}</strong
             ><strong>{{ money(couponQuote?.total ?? total + shipping) }}</strong>
           </div>
           <p class="small-copy muted">
             {{
               t(
-                'All displayed amounts are sample amounts. No additional fees in this demo.',
-                'كل المبالغ المعروضة تجريبية. لا توجد رسوم إضافية في هذه التجربة.',
+                'No account is required. Prices and stock are confirmed when you place the order.',
+                'مش محتاج تعمل حساب. السعر والمخزون بيتأكدوا وقت تسجيل الطلب.',
               )
             }}
           </p>

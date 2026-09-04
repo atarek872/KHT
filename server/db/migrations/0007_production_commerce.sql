@@ -4,8 +4,17 @@ ALTER TABLE orders ADD COLUMN returned_restocked_at TEXT;
 
 ALTER TABLE customers ADD COLUMN phone_normalized TEXT;
 UPDATE customers
-SET phone_normalized = phone
+SET phone_normalized = replace(replace(replace(replace(replace(phone,
+  ' ', ''), '-', ''), '(', ''), ')', ''), '+', '')
 WHERE phone_normalized IS NULL;
+UPDATE customers
+SET phone_normalized = CASE
+  WHEN length(phone_normalized) = 11 AND substr(phone_normalized, 1, 2) = '01'
+    THEN '20' || substr(phone_normalized, 2)
+  WHEN length(phone_normalized) = 14 AND substr(phone_normalized, 1, 4) = '0020'
+    THEN substr(phone_normalized, 3)
+  ELSE phone_normalized
+END;
 CREATE UNIQUE INDEX customers_phone_normalized_idx
 ON customers(phone_normalized)
 WHERE phone_normalized IS NOT NULL;

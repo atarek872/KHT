@@ -68,7 +68,8 @@ test('storefront catalog maps active D1 products back to the existing contract',
   const service = read('../server/services/catalog.ts')
   assert.match(service, /WHERE p\.active = 1 AND c\.active = 1/)
   for (const field of ['name', 'description', 'detail', 'fit', 'sizes']) assert.match(service, new RegExp(`${field}:`))
-  assert.match(service, /catch \{\s*return fallbackCatalog/)
+  assert.match(service, /if \(allowLocalFallback\) return fallbackCatalog/)
+  assert.doesNotMatch(service, /catch \{\s*return fallbackCatalog/)
 })
 
 test('product editor and validation use database categories rather than source-code options', () => {

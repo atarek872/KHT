@@ -29,7 +29,7 @@ test('default layout preserves storefront navigation, footer, bag, language and 
 })
 
 test('standalone catalog preserves original categories, products, prices, images and variants', async () => {
-  const catalog = await getCatalog()
+  const catalog = await getCatalog(undefined, true)
   assert.deepEqual(catalog.categories.map((category) => category.name.en), [
     'T-shirts', 'Tracksuits', 'Trousers',
   ])
@@ -74,19 +74,20 @@ test('cart remains cookie-persisted and tracking is non-blocking without D1', ()
   assert.match(endpoint, /if \(!database\) return \{ tracked: false \}/)
 })
 
-test('standalone checkout retains server-side shipping and demo boundaries', async () => {
+test('checkout submits durable guest COD orders with server-owned totals', async () => {
   assert.deepEqual(demoShippingZones.map((zone) => zone.rate), [60, 70, 90])
   assert.equal((await getStorefrontShippingRate(undefined, 'Cairo')).rate, 60)
   const page = read('../app/pages/checkout.vue')
   const endpoint = read('../server/api/checkout.post.ts')
   assert.match(page, /\/api\/shipping\/options/)
   assert.match(page, /\/api\/discounts\/quote/)
-  assert.match(page, /demoAcknowledged/)
-  const sampleDetails = page.slice(page.indexOf('function sampleDetails'), page.indexOf('async function submit'))
-  assert.doesNotMatch(sampleDetails, /city:/)
-  assert.match(endpoint, /body\?\.demoAcknowledged !== true/)
-  assert.match(endpoint, /getStorefrontShippingRate\(database/)
-  assert.match(endpoint, /calculateOrderTotal\(/)
+  assert.match(page, /requestId:/)
+  assert.match(page, /cartId:/)
+  assert.match(page, /customer:/)
+  assert.match(page, /paymentMethod: 'cod'/)
+  assert.doesNotMatch(page, /demoAcknowledged|sampleDetails|kht-demo-order/)
+  assert.match(endpoint, /requireDatabase\(event\)/)
+  assert.match(endpoint, /createStorefrontOrder\(database, input\)/)
   assert.doesNotMatch(endpoint, /payment_status|paymob|card details/i)
 })
 

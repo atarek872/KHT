@@ -90,5 +90,22 @@ export function useBag() {
     track([])
     open.value = false
   }
-  return { lines, count, total, open, announcement, add, update, clear }
+  function completeCheckout() {
+    raw.value = []
+    cartId.value = crypto.randomUUID()
+    open.value = false
+    announcement.value = t('Order placed. Your bag is now empty.', 'تم تسجيل الطلب وتفريغ السلة.')
+  }
+  return {
+    lines,
+    count,
+    total,
+    cartId,
+    open,
+    announcement,
+    add,
+    update,
+    clear,
+    completeCheckout,
+  }
 }

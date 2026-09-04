@@ -65,7 +65,7 @@ test('production migration backfills public references and adds workflow records
           phone_normalized: string
         }
       ).phone_normalized,
-      '0100 000 0000',
+      '201000000000',
     )
     assert.equal(
       (

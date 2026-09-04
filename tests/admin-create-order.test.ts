@@ -71,7 +71,7 @@ test('create-order API is authenticated and persists through one D1 batch', () =
   assert.match(endpoint, /await requireAdmin\(event\)/)
   assert.match(service, /await database\.batch\(statements\)/)
   assert.match(service, /WHERE idempotency_key = \?/)
-  assert.match(service, /if \(existing\.order\) return existing\.order/)
+  assert.match(service, /if \(existing\.order\) return \{ order: existing\.order/)
   assert.doesNotMatch(service, /paymentMethod:\s*'paymob'/)
 })
 
@@ -88,7 +88,7 @@ test('admin routes are session-protected and logout clears the server session', 
 test('public catalog maps D1 products and inventory without changing its storefront shape', () => {
   const endpoint = read('../server/api/catalog.get.ts')
   const service = read('../server/services/catalog.ts')
-  assert.match(endpoint, /getCatalog\(getDatabase\(event\)\)/)
+  assert.match(endpoint, /getCatalog\(getDatabase\(event\), import\.meta\.dev\)/)
   assert.match(service, /inventory_variants/)
   assert.match(service, /WHERE p\.active = 1 AND c\.active = 1/)
   assert.match(service, /map\(\(variant\) => \(\{ name: variant\.size, stock: variant\.stock \}\)\)/)

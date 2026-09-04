@@ -57,12 +57,12 @@ test('admin list and editor expose enforceable coupon fields', () => {
 
 test('storefront and admin order quotes use the same server discount function', () => {
   const checkoutQuote = read('../server/api/discounts/quote.post.ts')
-  const checkout = read('../server/api/checkout.post.ts')
+  const checkout = read('../server/services/storefrontCheckout.ts')
   const adminOrder = read('../server/services/createOrder.ts')
   const storefront = read('../app/pages/checkout.vue')
   const admin = read('../app/pages/admin/orders/new.vue')
   assert.match(checkoutQuote, /quoteDiscount\(database, priced\.subtotal/)
-  assert.match(checkout, /quoteDiscount\(requireDatabase\(event\), priced\.subtotal/)
+  assert.match(checkout, /createDurableOrder\(database, orderInput/)
   assert.match(adminOrder, /quoteDiscount\(database, priced\.subtotal/)
   assert.match(storefront, /\/api\/discounts\/quote/)
   assert.match(admin, /\/api\/admin\/orders\/quote/)

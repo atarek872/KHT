@@ -1494,6 +1494,7 @@ thead {
 }
 .form-grid input,
 .form-grid select,
+.form-grid textarea,
 .tracking-form input {
   min-height: 50px;
   padding: 12px 14px;
@@ -1502,6 +1503,9 @@ thead {
   width: 100%;
   min-width: 0;
   font-size: 1rem;
+}
+.form-grid textarea {
+  resize: vertical;
 }
 .delivery-option {
   display: flex;

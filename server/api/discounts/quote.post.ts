@@ -9,7 +9,7 @@ export default defineEventHandler(async (event) => {
   try {
     const database = requireDatabase(event)
     const zone = await getStorefrontShippingRate(database, String(body?.shippingGovernorate || ''))
-    const priced = priceOrder(body?.items, await getCatalog(getDatabase(event)), zone.rate)
+    const priced = priceOrder(body?.items, await getCatalog(getDatabase(event), import.meta.dev), zone.rate)
     const coupon = await quoteDiscount(database, priced.subtotal, body?.code)
     return { subtotal: priced.subtotal, shipping: priced.shipping, discount: coupon.discount,
       total: calculateOrderTotal(priced.subtotal, coupon.discount, priced.shipping),

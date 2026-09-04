@@ -218,7 +218,7 @@ git commit -m "feat: add production commerce schema"
 - Produces: `StorefrontOrderConfirmation` with public reference, statuses, server-priced lines, and totals.
 - Produces: `createStorefrontOrder(database, input): Promise<StorefrontOrderConfirmation>`.
 
-- [ ] **Step 1: Write failing checkout integration tests**
+- [x] **Step 1: Write failing checkout integration tests**
 
 ```ts
 test('guest checkout creates one customer and one order from server prices', async () => {
@@ -242,13 +242,13 @@ test('repeat phone updates the CRM record without losing order history', async (
 })
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `node --experimental-strip-types --test tests/storefront-checkout.test.ts`
 
 Expected: FAIL because `createStorefrontOrder` is not defined.
 
-- [ ] **Step 3: Extract a shared durable order writer**
+- [x] **Step 3: Extract a shared durable order writer**
 
 Refactor `createOrder` so Admin and storefront checkout call the same internal function after their
 different input validation. Keep server-side variant pricing, shipping lookup, coupon quote,
@@ -274,7 +274,7 @@ export async function createStorefrontOrder(
 }
 ```
 
-- [ ] **Step 4: Replace the demo checkout endpoint**
+- [x] **Step 4: Replace the demo checkout endpoint**
 
 ```ts
 export default defineEventHandler(async (event) => {
@@ -292,7 +292,7 @@ Remove `demoAcknowledged`, the demo-only banner, sample-detail action, session-s
 copy claiming that no order is created. Keep the final button enabled when the native form is valid,
 prevent duplicate submissions while busy, and retain the bag when the request fails.
 
-- [ ] **Step 5: Submit real customer and cart data from the checkout page**
+- [x] **Step 5: Submit real customer and cart data from the checkout page**
 
 ```ts
 const order = await $fetch<StorefrontOrderConfirmation>('/api/checkout', {
@@ -315,13 +315,13 @@ Remove the production fallback to source-code demo products. `getCatalog` may us
 when no D1 binding exists in explicit local preview mode; a configured database error must fail
 closed instead of displaying products that cannot be ordered.
 
-- [ ] **Step 6: Run checkout tests and regressions**
+- [x] **Step 6: Run checkout tests and regressions**
 
 Run: `node --experimental-strip-types --test tests/storefront-checkout.test.ts tests/order.test.ts tests/commerce-safety.test.ts`
 
 Expected: PASS with the old demo-only assertions replaced by durable-checkout assertions.
 
-- [ ] **Step 7: Commit durable checkout**
+- [x] **Step 7: Commit durable checkout**
 
 ```bash
 git add shared/storefrontOrder.ts shared/createOrder.ts server/services/storefrontCheckout.ts server/services/createOrder.ts server/services/catalog.ts server/api/checkout.post.ts app/pages/checkout.vue app/composables/useStore.ts tests/storefront-checkout.test.ts tests/order.test.ts tests/commerce-safety.test.ts
