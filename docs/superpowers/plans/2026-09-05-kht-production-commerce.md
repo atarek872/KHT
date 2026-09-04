@@ -346,7 +346,7 @@ git commit -m "feat: create durable guest COD orders"
 - Produces: `getOrderConfirmation(database, reference)` returning non-sensitive confirmation fields.
 - Produces: `trackOrder(database, reference, phone)` returning confirmation plus current statuses only after both values match.
 
-- [ ] **Step 1: Write failing public-order privacy tests**
+- [x] **Step 1: Write failing public-order privacy tests**
 
 ```ts
 test('tracking requires both reference and matching phone', async () => {
@@ -357,13 +357,13 @@ test('tracking requires both reference and matching phone', async () => {
 })
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `node --experimental-strip-types --test tests/storefront-order-tracking.test.ts`
 
 Expected: FAIL because the public order service does not exist.
 
-- [ ] **Step 3: Implement minimal public projections**
+- [x] **Step 3: Implement minimal public projections**
 
 Use explicit SQL columns and never return internal order ID, customer ID, notes, admin events, or
 another customer's contact data. Normalize the submitted phone before matching.
@@ -378,19 +378,19 @@ export async function trackOrder(database: D1Database, reference: string, phone:
 }
 ```
 
-- [ ] **Step 4: Replace session-storage confirmation and tracking UI**
+- [x] **Step 4: Replace session-storage confirmation and tracking UI**
 
 The confirmation route fetches its durable public projection. The tracking form collects order
 reference and phone, posts them to `/api/orders/track`, and renders the returned status without
 placing the phone in the URL.
 
-- [ ] **Step 5: Run focused tests**
+- [x] **Step 5: Run focused tests**
 
 Run: `node --experimental-strip-types --test tests/storefront-order-tracking.test.ts`
 
 Expected: PASS for matching, non-matching, malformed, and unavailable references.
 
-- [ ] **Step 6: Commit public order access**
+- [x] **Step 6: Commit public order access**
 
 ```bash
 git add shared/storefrontOrder.ts server/services/storefrontOrders.ts server/api/orders app/pages/order-confirmation app/pages/track-order.vue tests/storefront-order-tracking.test.ts

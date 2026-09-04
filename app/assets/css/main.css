@@ -1677,6 +1677,18 @@ thead {
   width: 100%;
   margin-top: 28px;
 }
+.confirmation-items {
+  margin-top: 18px;
+}
+.confirmation-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 28px;
+}
+.confirmation-actions .button {
+  width: 100%;
+}
 .confirmation-content > .eyebrow {
   margin-bottom: 16px;
 }
@@ -1724,6 +1736,31 @@ thead {
 }
 .tracking-form button {
   margin-top: 12px;
+}
+.tracking-result {
+  border-block: 1px solid var(--mist);
+  padding-block: 30px;
+  margin-top: 42px;
+}
+.tracking-result h2 {
+  overflow-wrap: anywhere;
+}
+.tracking-result dl {
+  margin: 28px 0 0;
+}
+.tracking-result dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 14px 0;
+  border-top: 1px solid var(--mist);
+}
+.tracking-result dt {
+  color: var(--description);
+}
+.tracking-result dd {
+  margin: 0;
+  text-align: end;
 }
 .about-intro {
   padding: 75px var(--gutter) 80px;
@@ -2692,6 +2729,9 @@ thead {
   }
   .confirmation-reference {
     font-size: 0.875rem;
+  }
+  .confirmation-actions {
+    grid-template-columns: 1fr;
   }
   .confirmation-content > .eyebrow {
     font-size: 0.75rem;
