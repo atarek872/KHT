@@ -44,7 +44,7 @@
 - Produces schema fields `orders.public_reference`, `orders.inventory_restored_at`, and `orders.returned_restocked_at`.
 - Produces `customers.phone_normalized` and `request_rate_limits` for identity matching and abuse controls.
 
-- [ ] **Step 1: Write the failing migration and type tests**
+- [x] **Step 1: Write the failing migration and type tests**
 
 ```ts
 test('production migration adds order audit and recovery state', () => {
@@ -59,13 +59,13 @@ test('production migration adds order audit and recovery state', () => {
 })
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `node --experimental-strip-types --test tests/production-commerce-migration.test.ts`
 
 Expected: FAIL because migration `0007_production_commerce.sql` and the D1 test helper do not exist.
 
-- [ ] **Step 3: Add the focused SQLite D1 adapter**
+- [x] **Step 3: Add the focused SQLite D1 adapter**
 
 ```ts
 export function createTestD1() {
@@ -107,7 +107,7 @@ export function createTestD1() {
 }
 ```
 
-- [ ] **Step 4: Add migration `0007_production_commerce.sql`**
+- [x] **Step 4: Add migration `0007_production_commerce.sql`**
 
 The migration must add and backfill a unique public reference, add one-time inventory markers,
 create indexed `order_events` and `abandoned_cart_events` tables, add explicit recovery state and
@@ -177,20 +177,20 @@ BEGIN
 END;
 ```
 
-- [ ] **Step 5: Run migration checks**
+- [x] **Step 5: Run migration checks**
 
 Run: `npm run test:migration`
 
 Expected: PASS with migrations `0001` through `0007` applied in order and the original inventory
 triggers still active.
 
-- [ ] **Step 6: Run the focused Node tests**
+- [x] **Step 6: Run the focused Node tests**
 
 Run: `node --experimental-strip-types --test tests/production-commerce-migration.test.ts`
 
 Expected: PASS.
 
-- [ ] **Step 7: Commit the migration slice**
+- [x] **Step 7: Commit the migration slice**
 
 ```bash
 git add tests/helpers/sqliteD1.ts server/db/migrations/0007_production_commerce.sql tests/production-commerce-migration.test.ts scripts/test-commerce-migration.mjs shared/adminOrder.ts shared/abandonedCart.ts

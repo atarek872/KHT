@@ -36,13 +36,13 @@ function relative(value: string) {
       </tr></thead><tbody><tr v-for="cart in data.items" :key="cart.id">
         <td><NuxtLink :to="`/admin/abandoned-carts/${cart.id}`">{{ cart.customerName || 'Anonymous cart' }}</NuxtLink><span>{{ cart.phone || cart.email || 'No contact captured' }}</span></td>
         <td>{{ money(cart.subtotal) }}</td><td>{{ cart.itemsCount }}</td><td>{{ relative(cart.lastActivity) }}</td>
-        <td><AdminBadge :tone="cart.recoveryState === 'recovered' ? 'strong' : 'neutral'">{{ cart.recoveryState === 'unavailable' ? 'Unavailable' : cart.recoveryState }}</AdminBadge></td>
+        <td><AdminBadge :tone="cart.recoveryState === 'recovered' ? 'strong' : 'neutral'">{{ cart.recoveryState }}</AdminBadge></td>
         <td>{{ date(cart.createdAt) }}</td>
       </tr></tbody></AdminTable></div>
       <div class="admin-abandoned-mobile" aria-label="Abandoned carts"><NuxtLink v-for="cart in data.items" :key="cart.id" :to="`/admin/abandoned-carts/${cart.id}`" class="admin-abandoned-card">
         <header><strong>{{ cart.customerName || 'Anonymous cart' }}</strong><span>{{ money(cart.subtotal) }}</span></header>
         <p>{{ cart.phone || cart.email || 'No contact captured' }}</p><dl><div><dt>Items</dt><dd>{{ cart.itemsCount }}</dd></div>
-          <div><dt>Last activity</dt><dd>{{ relative(cart.lastActivity) }}</dd></div><div><dt>Recovery</dt><dd>{{ cart.recoveryState === 'unavailable' ? 'Unavailable' : cart.recoveryState }}</dd></div></dl>
+          <div><dt>Last activity</dt><dd>{{ relative(cart.lastActivity) }}</dd></div><div><dt>Recovery</dt><dd>{{ cart.recoveryState }}</dd></div></dl>
         <time :datetime="cart.createdAt">Created {{ date(cart.createdAt) }}</time>
       </NuxtLink></div>
     </template>

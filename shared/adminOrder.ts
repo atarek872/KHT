@@ -1,6 +1,13 @@
 export type OrderPaymentMethod = 'cod'
 export type OrderPaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded'
-export type OrderFulfillmentStatus = 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled'
+export type OrderFulfillmentStatus =
+  | 'pending'
+  | 'confirmed'
+  | 'processing'
+  | 'shipped'
+  | 'delivered'
+  | 'cancelled'
+  | 'returned'
 export type OrderSource =
   | 'website'
   | 'instagram'
@@ -40,6 +47,16 @@ export interface AdminOrderLine {
   quantity: number
   unitPrice: number
   total: number
+}
+
+export interface OrderEvent {
+  id: string
+  eventType: string
+  fromValue?: string
+  toValue?: string
+  note?: string
+  actorEmail: string
+  createdAt: string
 }
 
 export interface AdminOrderDetail extends AdminOrderSummary {

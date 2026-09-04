@@ -74,10 +74,7 @@ export async function saveCartSnapshot(database: D1Database, input: CartSnapshot
   return { tracked: true }
 }
 
-const recoveryExpression = `CASE
-  WHEN state = 'converted' THEN 'recovered'
-  WHEN phone IS NOT NULL OR email IS NOT NULL THEN 'not-started'
-  ELSE 'unavailable' END`
+const recoveryExpression = 'recovery_state'
 
 export async function listAbandonedCarts(database: D1Database) {
   const result = await database.prepare(`SELECT id, customer_name AS customerName, phone, email,

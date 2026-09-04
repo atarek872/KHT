@@ -1,13 +1,13 @@
 PRAGMA foreign_keys = ON;
 
 INSERT OR IGNORE INTO customers
-  (id, name, phone, email, address, governorate, city, created_at)
+  (id, name, phone, phone_normalized, email, address, governorate, city, created_at)
 VALUES
-  ('local-customer-001', 'Mariam Hassan', '01010000001', 'mariam@example.test', '12 Abbas El Akkad Street', 'Cairo', 'Nasr City', datetime('now', '-28 days')),
-  ('local-customer-002', 'Omar Adel', '01010000002', 'omar@example.test', '8 Gameat El Dowal Street', 'Giza', 'Mohandessin', datetime('now', '-18 days')),
-  ('local-customer-003', 'Nour Ahmed', '01010000003', 'nour@example.test', '25 Fouad Street', 'Alexandria', 'Raml Station', datetime('now', '-10 days')),
-  ('local-customer-004', 'Youssef Samir', '01010000004', NULL, '44 Makram Ebeid Street', 'Cairo', 'Nasr City', datetime('now', '-5 days')),
-  ('local-customer-005', 'Laila Mostafa', '01010000005', 'laila@example.test', '16 El Hegaz Street', 'Giza', 'Dokki', datetime('now', '-2 days'));
+  ('local-customer-001', 'Mariam Hassan', '01010000001', '201010000001', 'mariam@example.test', '12 Abbas El Akkad Street', 'Cairo', 'Nasr City', datetime('now', '-28 days')),
+  ('local-customer-002', 'Omar Adel', '01010000002', '201010000002', 'omar@example.test', '8 Gameat El Dowal Street', 'Giza', 'Mohandessin', datetime('now', '-18 days')),
+  ('local-customer-003', 'Nour Ahmed', '01010000003', '201010000003', 'nour@example.test', '25 Fouad Street', 'Alexandria', 'Raml Station', datetime('now', '-10 days')),
+  ('local-customer-004', 'Youssef Samir', '01010000004', '201010000004', NULL, '44 Makram Ebeid Street', 'Cairo', 'Nasr City', datetime('now', '-5 days')),
+  ('local-customer-005', 'Laila Mostafa', '01010000005', '201010000005', 'laila@example.test', '16 El Hegaz Street', 'Giza', 'Dokki', datetime('now', '-2 days'));
 
 INSERT OR IGNORE INTO discounts
   (id, code, type, value, minimum_order, maximum_discount, usage_limit, current_usage,
@@ -23,26 +23,26 @@ VALUES
    NULL, NULL, 0, datetime('now', '-2 days'));
 
 INSERT OR IGNORE INTO orders
-  (id, number, idempotency_key, customer_id, subtotal, shipping, shipping_governorate,
+  (id, number, public_reference, idempotency_key, customer_id, subtotal, shipping, shipping_governorate,
    discount, total, payment_method, fulfillment_status, source, notes, discount_id,
    discount_code, created_at)
 VALUES
-  ('local-order-1001', 'KHT-LOCAL-1001', 'local-seed-1001', 'local-customer-001', 1780, 60, 'Cairo',
+  ('local-order-1001', 'KHT-LOCAL-1001', 'KHT-DEMO-1001', 'local-seed-1001', 'local-customer-001', 1780, 60, 'Cairo',
    178, 1662, 'cod', 'delivered', 'website', 'Delivered demo order.',
    'local-discount-welcome', 'WELCOME10', datetime('now', '-21 days')),
-  ('local-order-1002', 'KHT-LOCAL-1002', 'local-seed-1002', 'local-customer-002', 2390, 70, 'Giza',
+  ('local-order-1002', 'KHT-LOCAL-1002', 'KHT-DEMO-1002', 'local-seed-1002', 'local-customer-002', 2390, 70, 'Giza',
    150, 2310, 'cod', 'shipped', 'instagram', 'Shipped demo order.',
    'local-discount-flat', 'FLAT150', datetime('now', '-12 days')),
-  ('local-order-1003', 'KHT-LOCAL-1003', 'local-seed-1003', 'local-customer-001', 1290, 90, 'Alexandria',
+  ('local-order-1003', 'KHT-LOCAL-1003', 'KHT-DEMO-1003', 'local-seed-1003', 'local-customer-001', 1290, 90, 'Alexandria',
    0, 1380, 'cod', 'processing', 'whatsapp', 'Processing demo order.',
    NULL, NULL, datetime('now', '-6 days')),
-  ('local-order-1004', 'KHT-LOCAL-1004', 'local-seed-1004', 'local-customer-003', 2180, 60, 'Cairo',
+  ('local-order-1004', 'KHT-LOCAL-1004', 'KHT-DEMO-1004', 'local-seed-1004', 'local-customer-003', 2180, 60, 'Cairo',
    0, 2240, 'cod', 'confirmed', 'admin', 'Confirmed manual order.',
    NULL, NULL, datetime('now', '-3 days')),
-  ('local-order-1005', 'KHT-LOCAL-1005', 'local-seed-1005', 'local-customer-004', 2390, 90, 'Alexandria',
+  ('local-order-1005', 'KHT-LOCAL-1005', 'KHT-DEMO-1005', 'local-seed-1005', 'local-customer-004', 2390, 90, 'Alexandria',
    0, 2480, 'cod', 'pending', 'facebook', 'New order awaiting confirmation.',
    NULL, NULL, datetime('now', '-18 hours')),
-  ('local-order-1006', 'KHT-LOCAL-1006', 'local-seed-1006', 'local-customer-005', 890, 70, 'Giza',
+  ('local-order-1006', 'KHT-LOCAL-1006', 'KHT-DEMO-1006', 'local-seed-1006', 'local-customer-005', 890, 70, 'Giza',
    0, 960, 'cod', 'cancelled', 'phone', 'Cancelled test order.',
    NULL, NULL, datetime('now', '-2 hours'));
 
@@ -61,15 +61,15 @@ UPDATE orders SET payment_status = 'paid' WHERE id IN ('local-order-1001', 'loca
 UPDATE orders SET payment_status = 'failed' WHERE id = 'local-order-1006';
 
 INSERT OR IGNORE INTO abandoned_carts
-  (id, customer_name, phone, email, subtotal, items_count, state, created_at, last_activity)
+  (id, customer_name, phone, email, subtotal, items_count, state, recovery_state, created_at, last_activity)
 VALUES
-  ('local-cart-contacted', 'Salma Khaled', '01010000006', 'salma@example.test', 1780, 2, 'active',
+  ('local-cart-contacted', 'Salma Khaled', '01010000006', 'salma@example.test', 1780, 2, 'active', 'contacted',
    datetime('now', '-3 hours'), datetime('now', '-95 minutes')),
-  ('local-cart-anonymous', NULL, NULL, NULL, 2390, 1, 'active',
+  ('local-cart-anonymous', NULL, NULL, NULL, 2390, 1, 'active', 'active',
    datetime('now', '-2 hours'), datetime('now', '-45 minutes')),
-  ('local-cart-recovered', 'Karim Tarek', '01010000007', 'karim@example.test', 1290, 1, 'converted',
+  ('local-cart-recovered', 'Karim Tarek', '01010000007', 'karim@example.test', 1290, 1, 'converted', 'recovered',
    datetime('now', '-5 days'), datetime('now', '-4 days')),
-  ('local-cart-recent', 'Dina Ali', '01010000008', NULL, 890, 1, 'active',
+  ('local-cart-recent', 'Dina Ali', '01010000008', NULL, 890, 1, 'active', 'active',
    datetime('now', '-20 minutes'), datetime('now', '-10 minutes'));
 
 INSERT OR IGNORE INTO abandoned_cart_items

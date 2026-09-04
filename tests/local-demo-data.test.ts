@@ -10,6 +10,7 @@ const migrationUrls = [
   '../server/db/migrations/0004_discounts.sql',
   '../server/db/migrations/0005_abandoned_carts.sql',
   '../server/db/migrations/0006_commerce_safety.sql',
+  '../server/db/migrations/0007_production_commerce.sql',
 ].map((path) => new URL(path, import.meta.url))
 
 const seedUrl = new URL('../server/db/seeds/local-demo.sql', import.meta.url)

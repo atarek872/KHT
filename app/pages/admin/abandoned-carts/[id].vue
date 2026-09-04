@@ -33,8 +33,8 @@ useSeoMeta({ title: 'Abandoned Cart — KHT Admin', robots: 'noindex, nofollow' 
       </div><aside>
         <AdminSection title="Contact"><dl class="admin-order-facts"><div><dt>Name</dt><dd>{{ cart.customerName || 'Not captured' }}</dd></div>
           <div><dt>Phone</dt><dd>{{ cart.phone || 'Not captured' }}</dd></div><div><dt>Email</dt><dd>{{ cart.email || 'Not captured' }}</dd></div></dl></AdminSection>
-        <AdminSection title="Recovery"><div class="admin-recovery-state"><AdminBadge :tone="cart.recoveryState === 'recovered' ? 'strong' : 'neutral'">{{ cart.recoveryState === 'unavailable' ? 'Unavailable' : cart.recoveryState }}</AdminBadge>
-          <p v-if="cart.recoveryState === 'unavailable'">No contact was captured. WhatsApp and email recovery are not configured.</p>
+        <AdminSection title="Recovery"><div class="admin-recovery-state"><AdminBadge :tone="cart.recoveryState === 'recovered' ? 'strong' : 'neutral'">{{ cart.recoveryState }}</AdminBadge>
+          <p v-if="!cart.phone && !cart.email">No contact was captured. WhatsApp and email recovery are not configured.</p>
           <p v-else>Recovery status is recorded by the cart data source.</p></div></AdminSection>
         <AdminSection title="Activity"><dl class="admin-order-facts"><div><dt>Created</dt><dd>{{ date(cart.createdAt) }}</dd></div><div><dt>Last activity</dt><dd>{{ date(cart.lastActivity) }}</dd></div></dl></AdminSection>
       </aside></div>

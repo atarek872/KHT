@@ -1,4 +1,4 @@
-export type CartRecoveryState = 'unavailable' | 'not-started' | 'recovered'
+export type CartRecoveryState = 'active' | 'contacted' | 'dismissed' | 'converted' | 'recovered'
 
 export interface AbandonedCartSummary {
   id: string
