@@ -59,8 +59,8 @@ const pages: Record<
       {
         heading: { en: 'This preview', ar: 'النسخة التصورية' },
         body: {
-          en: 'Your language choice and bag selections are stored in browser cookies. The checkout demo sends product selections for price validation, but does not submit your contact or address fields. Your order preview is stored only in this browser tab’s session storage.',
-          ar: 'اختيار اللغة ومحتويات السلة محفوظة في ملفات تعريف الارتباط. تجربة إتمام الطلب ترسل اختيارات المنتجات للتحقق من السعر، ولا ترسل حقول التواصل أو العنوان. معاينة الطلب محفوظة في تخزين الجلسة لعلامة التبويب فقط.',
+          en: 'Your language choice and bag selections are stored in browser cookies. Product selections are synchronized anonymously for stock validation and abandoned-cart reporting; contact and address fields are not submitted. Your order preview is stored only in this browser tab’s session storage.',
+          ar: 'اختيار اللغة ومحتويات السلة محفوظة في ملفات تعريف الارتباط. تتم مزامنة اختيارات المنتجات دون بيانات تعريفية للتحقق من المخزون وتقارير السلات المتروكة، ولا تُرسل حقول التواصل أو العنوان. معاينة الطلب محفوظة في تخزين الجلسة لعلامة التبويب فقط.',
         },
       },
       {

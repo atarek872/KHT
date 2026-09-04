@@ -1,9 +1,36 @@
 import type { Catalog, CartLine } from './types.ts'
 
-export function priceOrder(raw: unknown, catalog: Catalog) {
+export function groupOrderLines(
+  lines: { key: string; quantity: number }[],
+  maximumSelections = 12,
+) {
+  if (lines.length < 1 || lines.length > maximumSelections)
+    throw new Error(`An order must contain between 1 and ${maximumSelections} selections.`)
+  const grouped = new Map<string, number>()
+  for (const line of lines) {
+    if (!line.key || !Number.isInteger(line.quantity) || line.quantity < 1 || line.quantity > 10)
+      throw new Error('Check the quantities in your order.')
+    grouped.set(line.key, (grouped.get(line.key) || 0) + line.quantity)
+  }
+  return grouped
+}
+
+export function assertAvailableStock(quantity: number, stock: number) {
+  if (quantity > stock || quantity > 10)
+    throw new Error('A selected variant does not have enough stock.')
+}
+
+export function calculateOrderTotal(subtotal: number, discount: number, shipping: number) {
+  if (![subtotal, discount, shipping].every((value) => Number.isInteger(value) && value >= 0))
+    throw new Error('Order amounts must be non-negative whole EGP values.')
+  if (discount > subtotal) throw new Error('Discount cannot exceed the subtotal.')
+  return subtotal - discount + shipping
+}
+
+export function priceOrder(raw: unknown, catalog: Catalog, shipping = 60) {
   if (!Array.isArray(raw) || raw.length < 1 || raw.length > 12)
     throw new Error('Your bag must contain between 1 and 12 selections.')
-  const grouped = new Map<string, CartLine>()
+  const validLines: CartLine[] = []
   for (const input of raw) {
     if (
       !input ||
@@ -14,27 +41,26 @@ export function priceOrder(raw: unknown, catalog: Catalog) {
       input.quantity > 10
     )
       throw new Error('Check the quantities in your bag.')
-    const key = `${input.id}:${input.size}`
-    const previous = grouped.get(key)
-    grouped.set(key, {
-      id: input.id,
-      size: input.size,
-      quantity: input.quantity + (previous?.quantity || 0),
-    })
+    validLines.push({ id: input.id, size: input.size, quantity: input.quantity })
   }
-  const items = [...grouped.values()].map((line) => {
-    const product = catalog.products.find((p) => p.id === line.id)
-    const size = product?.sizes.find((s) => s.name === line.size)
-    if (!product || !size || line.quantity > size.stock || line.quantity > 10)
+  const grouped = groupOrderLines(
+    validLines.map((line) => ({ key: `${line.id}:${line.size}`, quantity: line.quantity })),
+  )
+  const items = [...grouped].map(([key, quantity]) => {
+    const [id, sizeName] = key.split(':')
+    const product = catalog.products.find((p) => p.id === id)
+    const size = product?.sizes.find((s) => s.name === sizeName)
+    if (!product || !size)
       throw new Error('A selected size or quantity is no longer available. Review your bag.')
+    assertAvailableStock(quantity, size.stock)
     return {
       name: product.name,
-      size: line.size,
-      quantity: line.quantity,
+      size: sizeName!,
+      quantity,
       price: product.price,
       image: product.image,
     }
   })
   const subtotal = items.reduce((sum, i) => sum + i.quantity * i.price, 0)
-  return { items, subtotal, shipping: 60, total: subtotal + 60 }
+  return { items, subtotal, shipping, total: calculateOrderTotal(subtotal, 0, shipping) }
 }

@@ -3,6 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "admin:hash-password": "node scripts/create-admin-password-hash.mjs",
+    "test:migration": "node --experimental-sqlite scripts/test-commerce-migration.mjs",
     "images:optimize": "node scripts/optimize-images.mjs",
     "dev": "nuxt dev --host 127.0.0.1",
     "build": "nuxt build",

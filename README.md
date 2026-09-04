@@ -22,6 +22,9 @@ npm run preview
 
 For the Sites Cloudflare target, use `npm run build:cloudflare`. This creates a Nuxt Cloudflare Worker and stages it in `dist/server` with assets in `dist/client`. `scripts/stage-sites.mjs` adapts the Nuxt output to the Sites archive layout. The development server remains a normal Nuxt application.
 
+Admin order creation requires a Cloudflare D1 binding and configured admin credentials. See
+[`docs/KHT-admin-setup.md`](docs/KHT-admin-setup.md).
+
 ## What's working
 
 - Responsive campaign homepage, Drop 001, category collections and keyword search.

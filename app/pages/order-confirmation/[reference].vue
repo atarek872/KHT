@@ -50,6 +50,10 @@ useSeoMeta({ title: 'Order preview — KHT', robots: 'noindex, nofollow' })
         <span>{{ t('Sample delivery', 'توصيل توضيحي') }}</span
         ><span>{{ money(order.shipping) }}</span>
       </div>
+      <div v-if="order.discount" class="summary-row">
+        <span>{{ t('Discount', 'الخصم') }}<template v-if="order.couponCode"> · {{ order.couponCode }}</template></span
+        ><span>− {{ money(order.discount) }}</span>
+      </div>
       <div class="summary-row summary-total">
         <strong>{{ t('Demo total', 'الإجمالي التجريبي') }}</strong
         ><strong>{{ money(order.total) }}</strong>

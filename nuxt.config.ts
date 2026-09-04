@@ -1,7 +1,7 @@
 export default defineNuxtConfig({
   compatibilityDate: '2026-09-04',
   devtools: { enabled: false },
-  css: ['~/assets/css/main.css'],
+  css: ['~/assets/css/main.css', '~/assets/css/admin.css'],
   app: {
     head: {
       title: 'KHT — Black. White. Line.',

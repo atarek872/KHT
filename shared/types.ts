@@ -33,6 +33,8 @@ export interface DemoOrder {
   createdAt: string
   subtotal: number
   shipping: number
+  discount: number
+  couponCode?: string
   total: number
   items: { name: Localized; size: string; quantity: number; price: number; image: string }[]
   demo: true

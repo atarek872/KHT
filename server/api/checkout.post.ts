@@ -1,5 +1,9 @@
-import { catalog } from '../data/catalog'
-import { priceOrder } from '../../shared/order'
+import { calculateOrderTotal, priceOrder } from '../../shared/order'
+import { getCatalog } from '../services/catalog'
+import { getDatabase } from '../utils/d1'
+import { quoteDiscount } from '../services/discounts'
+import { requireDatabase } from '../utils/d1'
+import { getStorefrontShippingRate } from '../services/shipping'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
@@ -11,8 +15,18 @@ export default defineEventHandler(async (event) => {
   // No customer details or payment information are collected by this endpoint.
   // It validates a demo quote; it does not create or fulfill a commercial order.
   try {
+    const catalog = await getCatalog(getDatabase(event))
+    const database = getDatabase(event)
+    const zone = await getStorefrontShippingRate(database, String(body?.shippingGovernorate || ''))
+    const priced = priceOrder(body.items, catalog, zone.rate)
+    const coupon = body?.couponCode
+      ? await quoteDiscount(requireDatabase(event), priced.subtotal, body.couponCode)
+      : { discount: 0, coupon: null }
     return {
-      ...priceOrder(body.items, catalog),
+      ...priced,
+      discount: coupon.discount,
+      total: calculateOrderTotal(priced.subtotal, coupon.discount, priced.shipping),
+      couponCode: coupon.coupon?.code,
       reference: `DEMO-${crypto.randomUUID().slice(0, 8).toUpperCase()}`,
       createdAt: new Date().toISOString(),
       demo: true as const,

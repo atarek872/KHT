@@ -1554,6 +1554,35 @@ thead {
 .checkout-form fieldset > .button {
   width: 100%;
 }
+.checkout-coupon {
+  display: grid;
+  gap: 10px;
+  margin-top: 24px;
+}
+.checkout-coupon > label {
+  font-size: 0.875rem;
+}
+.checkout-coupon > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+.checkout-coupon input {
+  min-width: 0;
+  min-height: 52px;
+  padding: 12px 14px;
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid var(--description);
+}
+.checkout-coupon .button {
+  min-width: 110px;
+  gap: 0;
+}
+.checkout-coupon > p {
+  margin: 0;
+  font-size: 0.8125rem;
+}
 .checkout-summary h2 span {
   color: var(--description);
   font-size: 0.875rem;
