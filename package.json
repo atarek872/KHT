@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "images:optimize": "node scripts/optimize-images.mjs",
     "dev": "nuxt dev --host 127.0.0.1",
     "build": "nuxt build",
     "build:cloudflare": "nuxt build --preset cloudflare_module && node scripts/stage-sites.mjs",
@@ -21,6 +22,7 @@
   },
   "devDependencies": {
     "prettier": "^3.9.6",
+    "sharp": "^0.35.4",
     "typescript": "^5.9.0",
     "vue-tsc": "^3.1.0"
   }

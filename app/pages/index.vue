@@ -11,8 +11,9 @@ useSeoMeta({
   <main id="main">
     <section class="hero" aria-labelledby="hero-title">
       <div class="hero-image">
-        <img
+        <StoreImage
           src="/images/campaign.png"
+          sizes="(max-width: 767px) 100vw, 72vw"
           :alt="
             t(
               'Two models in black KHT concept streetwear with signature white lines',
@@ -78,8 +79,7 @@ useSeoMeta({
     </section>
     <section class="manifesto-section">
       <div class="manifesto-top">
-        <span>{{ t('THE KHT PHILOSOPHY', 'فلسفة KHT') }}</span
-        ><span>01 / ∞</span>
+        <span>{{ t('THE KHT PHILOSOPHY', 'فلسفة KHT') }}</span>
       </div>
       <div class="manifesto-layout">
         <h2>
@@ -125,13 +125,7 @@ useSeoMeta({
       </div>
     </section>
     <section class="closing-campaign">
-      <img
-        src="/images/campaign.png"
-        :alt="t('The complete KHT concept look', 'إطلالة KHT التصورية الكاملة')"
-        width="1672"
-        height="941"
-        loading="lazy"
-      />
+      <span class="closing-line" aria-hidden="true" />
       <div class="closing-copy">
         <span>DROP 001</span>
         <h2>{{ t('FOLLOW', 'اتبع') }}<br />{{ t('THE LINE.', 'الخط.') }}</h2>

@@ -108,7 +108,9 @@ button:focus-visible,
 input:focus-visible,
 select:focus-visible,
 summary:focus-visible {
-  outline: 2px solid currentColor;
+  outline: 2px solid var(--white);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 5px var(--black);
 }
 ::selection {
   background: var(--white);
@@ -632,10 +634,10 @@ summary:focus-visible {
   gap: 32px;
   padding: 28px 0;
   border-bottom: 1px solid var(--graphite);
-  transition: padding 0.2s;
+  position: relative;
 }
 .category-row:hover {
-  padding-inline: 12px;
+  border-bottom-color: var(--mist);
 }
 .category-index {
   font-size: 0.75rem;
@@ -671,6 +673,14 @@ summary:focus-visible {
   object-fit: cover;
   object-position: center 42%;
   opacity: 0.7;
+}
+.closing-line {
+  position: absolute;
+  inset-inline: 52% 0;
+  top: 50%;
+  height: 3px;
+  background: var(--white);
+  transform-origin: right;
 }
 .closing-copy {
   position: absolute;
@@ -784,6 +794,7 @@ summary:focus-visible {
   color: var(--ink);
   color-scheme: light;
   overflow: auto;
+  overscroll-behavior: contain;
 }
 .overlay-panel::backdrop {
   background: rgb(0 0 0 / 0.65);
@@ -802,6 +813,10 @@ summary:focus-visible {
   padding-bottom: max(30px, env(safe-area-inset-bottom));
 }
 .panel-heading {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--off-white);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1107,17 +1122,20 @@ summary:focus-visible {
   position: relative;
   margin-bottom: 50px;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  background: var(--black);
 }
 .drop-banner img {
-  width: 100%;
+  width: 50%;
   height: 100%;
-  object-fit: cover;
-  object-position: center 35%;
+  object-fit: contain;
+  background: var(--image);
 }
 .drop-banner > span {
-  position: absolute;
-  bottom: 30px;
-  left: 35px;
+  position: static;
+  width: 50%;
+  padding: 32px;
   font-family: var(--display);
   font-size: 64px;
   font-weight: 600;
@@ -1713,7 +1731,8 @@ thead {
 .about-campaign {
   width: 100%;
   max-height: 720px;
-  object-fit: cover;
+  object-fit: contain;
+  background: var(--image);
 }
 .about-ending {
   padding: 70px var(--gutter);
@@ -2745,6 +2764,128 @@ thead {
   }
   .bag-item-image {
     width: 70px;
+  }
+}
+.panel-wide,
+[dir='rtl'] .panel-wide {
+  inset: 0;
+  margin: auto;
+  width: min(1200px, 100vw);
+}
+.panel-wide .panel-content {
+  min-height: 0;
+}
+.zoom-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+  font-size: 0.875rem;
+}
+.zoom-viewport {
+  overflow: auto;
+  max-height: calc(100dvh - 210px);
+  background: var(--image);
+  overscroll-behavior: contain;
+}
+.zoom-viewport:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+.zoom-viewport .zoomed-product {
+  width: 1086px;
+  max-width: none;
+  height: auto;
+}
+.zoom-fit .zoomed-product {
+  width: auto;
+  max-width: 100%;
+  max-height: calc(100dvh - 210px);
+  margin-inline: auto;
+}
+.checkout-final-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 0;
+  border-top: 1px solid var(--mist);
+  margin-top: 24px;
+}
+.checkout-final-total span {
+  max-width: 65%;
+  font-size: 0.875rem;
+}
+.checkout-final-total strong {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.field-error {
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  font-weight: 600;
+}
+html {
+  scroll-padding-top: 110px;
+}
+[id],
+button,
+input,
+select,
+a {
+  scroll-margin-block: 110px 100px;
+}
+.category-row::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  inset-inline: 0;
+  height: 1px;
+  background: var(--white);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 220ms ease-out;
+}
+[dir='rtl'] .category-row::after {
+  transform-origin: right;
+}
+.category-row:hover::after,
+.category-row:focus-visible::after {
+  transform: scaleX(1);
+}
+[dir='rtl'] .overlay-panel[open] {
+  animation-name: panel-in-rtl;
+}
+@keyframes panel-in-rtl {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@media (max-width: 767px) {
+  .closing-campaign {
+    height: 440px;
+  }
+  .closing-line {
+    inset-inline-start: 76%;
+  }
+  .drop-banner > span {
+    font-size: clamp(24px, 7vw, 42px);
+    padding: 16px;
+  }
+  .panel-wide .panel-content {
+    padding-inline: 16px;
+  }
+  .zoom-toolbar {
+    align-items: flex-start;
+  }
+  .zoom-toolbar .remove-link {
+    flex-shrink: 0;
   }
 }
 @media (prefers-reduced-motion: reduce) {

@@ -9,7 +9,7 @@ const { t, money, localized } = useLanguage()
       :to="`/products/${product.slug}`"
       class="product-image-link"
       :aria-label="localized(product.name)"
-      ><img
+      ><StoreImage
         :src="product.image"
         :alt="localized(product.name) + ' — ' + t('black with a white line', 'أسود بخط أبيض')"
         loading="lazy"

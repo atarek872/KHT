@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { matchesProduct } from '../utils/productSearch'
 const props = defineProps<{ category?: string; drop?: boolean; search?: boolean }>()
 const { t, localized } = useLanguage()
 const catalog = useCatalog()
@@ -44,10 +45,7 @@ const products = computed(() => {
     (p) =>
       (!props.category || p.category === props.category) &&
       (!size.value || p.sizes.some((s) => s.name === size.value && s.stock > 0)) &&
-      (!query ||
-        `${p.name.en} ${p.name.ar} ${p.category} ${p.description.en} ${p.description.ar}`
-          .toLowerCase()
-          .includes(query)),
+      matchesProduct(p, query, catalog.value.categories),
   )
   return sort.value === 'price-low'
     ? list.sort((a, b) => a.price - b.price)
@@ -76,12 +74,13 @@ useSeoMeta({ title: () => `${title.value} — KHT` })
       </div>
     </header>
     <div v-if="drop" class="drop-banner">
-      <img
-        src="/images/campaign.png"
-        :alt="t('Drop 001 campaign', 'حملة الإصدار 001')"
-        width="1672"
-        height="941"
-      /><span>THE FIRST CHAPTER.</span>
+      <StoreImage
+        src="/images/tracksuit.png"
+        :alt="t('The Line Tracksuit, front view', 'سوت ذا لاين، صورة أمامية')"
+        sizes="(max-width: 767px) 45vw, 38vw"
+        width="1086"
+        height="1448"
+      /><span>{{ t('THE FIRST CHAPTER.', 'الفصل الأول.') }}</span>
     </div>
     <form v-if="search" class="collection-search" @submit.prevent="updateQuery('q', searchText)">
       <label for="collection-query" class="sr-only">{{

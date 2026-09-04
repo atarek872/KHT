@@ -2,13 +2,21 @@
 import type { DemoOrder } from '../../shared/types'
 const { t, money, localized } = useLanguage()
 const { lines, count, total, clear } = useBag()
-const form = reactive({ name: '', email: '', phone: '', city: 'Cairo', address: '' })
+const form = useState('checkout-draft', () => ({
+  name: '',
+  email: '',
+  phone: '',
+  city: 'Cairo',
+  address: '',
+}))
+const phoneInvalid = ref(false)
 const acknowledged = ref(false)
 const busy = ref(false)
 const error = ref('')
 const shipping = 60
 function sampleDetails() {
-  Object.assign(form, {
+  phoneInvalid.value = false
+  Object.assign(form.value, {
     name: 'KHT Preview',
     email: 'preview@example.com',
     phone: '01000000000',
@@ -30,6 +38,7 @@ async function submit() {
     })
     sessionStorage.setItem('kht-demo-order', JSON.stringify(order))
     clear()
+    form.value = { name: '', email: '', phone: '', city: 'Cairo', address: '' }
     await navigateTo(`/order-confirmation/${order.reference}`)
   } catch (e: unknown) {
     const detail = e as { data?: { statusMessage?: string } }
@@ -57,8 +66,8 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
         <p>
           {{
             t(
-              'This is a demo. No payment, order or delivery will be created. Use sample details; your contact information stays in this page and is not submitted.',
-              'دي تجربة فقط؛ لا يتم دفع أو تسجيل طلب فعلي أو توصيل. استخدم بيانات المثال؛ بيانات التواصل لا تُرسل وتبقى في الصفحة فقط.',
+              'Demo only. No payment or delivery. Use sample details; contact information stays in memory until you finish or reload.',
+              'تجربة فقط، بدون دفع أو توصيل. استخدم بيانات المثال؛ بيانات التواصل تبقى في الذاكرة حتى الإتمام أو إعادة تحميل الموقع.',
             )
           }}
         </p>
@@ -73,11 +82,17 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
             <div class="form-grid">
               <label class="full-field"
                 >{{ t('Full name', 'الاسم بالكامل')
-                }}<input v-model="form.name" autocomplete="name" required maxlength="100" /></label
+                }}<input
+                  v-model="form.name"
+                  name="name"
+                  autocomplete="name"
+                  required
+                  maxlength="100" /></label
               ><label
                 >{{ t('Email', 'البريد الإلكتروني')
                 }}<input
                   v-model="form.email"
+                  name="email"
                   type="email"
                   autocomplete="email"
                   required
@@ -86,12 +101,28 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
                 >{{ t('Phone', 'الهاتف')
                 }}<input
                   v-model="form.phone"
+                  name="phone"
                   type="tel"
+                  inputmode="tel"
                   autocomplete="tel"
                   required
-                  pattern="[+0-9 ()-]{7,20}"
+                  pattern="(?=(?:[^0-9٠-٩۰-۹]*[0-9٠-٩۰-۹]){7,15}[^0-9٠-٩۰-۹]*$)[+0-9٠-٩۰-۹ \(\)\-]{7,20}"
                   maxlength="20"
-              /></label>
+                  :aria-invalid="phoneInvalid || undefined"
+                  :aria-describedby="phoneInvalid ? 'phone-error' : undefined"
+                  @invalid="phoneInvalid = true"
+                  @input="phoneInvalid = false"
+                  @blur="
+                    phoneInvalid =
+                      !!form.phone && !($event.target as HTMLInputElement).validity.valid
+                  "
+                /><span v-if="phoneInvalid" id="phone-error" class="field-error" role="alert">{{
+                  t(
+                    'Enter 7–15 digits, with an optional country code.',
+                    'اكتب من ٧ إلى ١٥ رقم، مع كود الدولة لو محتاج.',
+                  )
+                }}</span></label
+              >
             </div>
           </fieldset>
           <fieldset>
@@ -99,7 +130,7 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
             <div class="form-grid">
               <label class="full-field"
                 >{{ t('City', 'المدينة')
-                }}<select v-model="form.city" autocomplete="address-level2">
+                }}<select v-model="form.city" name="city" autocomplete="address-level2">
                   <option value="Cairo">{{ t('Cairo', 'القاهرة') }}</option>
                   <option value="Giza">{{ t('Giza', 'الجيزة') }}</option>
                   <option value="Alexandria">{{ t('Alexandria', 'الإسكندرية') }}</option>
@@ -108,6 +139,7 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
                 >{{ t('Street address', 'العنوان')
                 }}<input
                   v-model="form.address"
+                  name="address"
                   autocomplete="street-address"
                   required
                   maxlength="250"
@@ -143,6 +175,12 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
               }}</span></label
             >
             <p v-if="error" class="form-error" role="alert">{{ error }}</p>
+            <div class="checkout-final-total" aria-live="polite">
+              <span>{{
+                t('Demo total · delivery included', 'الإجمالي التجريبي شامل التوصيل')
+              }}</span>
+              <strong>{{ money(total + shipping) }}</strong>
+            </div>
             <button class="button button-dark" :disabled="busy || !acknowledged">
               {{
                 busy
@@ -157,8 +195,9 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
             {{ t('Your selection', 'اختياراتك') }} <span>({{ count }})</span>
           </h2>
           <div v-for="line in lines" :key="line.id + line.size" class="checkout-line">
-            <img
+            <StoreImage
               :src="line.product.image"
+              sizes="72px"
               :alt="localized(line.product.name)"
               width="72"
               height="96"

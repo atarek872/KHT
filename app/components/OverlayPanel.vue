@@ -1,5 +1,10 @@
 <script setup lang="ts">
-const props = defineProps<{ open: boolean; title: string; side?: 'start' | 'end' }>()
+const props = defineProps<{
+  open: boolean
+  title: string
+  side?: 'start' | 'end'
+  wide?: boolean
+}>()
 const emit = defineEmits<{ close: [] }>()
 const dialog = ref<HTMLDialogElement>()
 const { t } = useLanguage()
@@ -27,7 +32,7 @@ onBeforeUnmount(() => {
   <dialog
     ref="dialog"
     class="overlay-panel"
-    :class="{ 'panel-start': side === 'start' }"
+    :class="{ 'panel-start': side === 'start', 'panel-wide': wide }"
     :aria-label="title"
     @cancel.prevent="emit('close')"
     @click="

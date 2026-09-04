@@ -31,6 +31,8 @@ For the Sites Cloudflare target, use `npm run build:cloudflare`. This creates a 
 - Guest checkout form, sample details, server-validated demo prices and quantities.
 - Tab-local order previews, order lookup, empty states, errors and 404s.
 - Native dialog focus containment, keyboard focus, screen-reader status messages and reduced-motion support.
+- Checkout drafts retained in application memory when editing the bag, with phone validation and the final total beside confirmation. Drafts clear after completion or a full reload; contact data is never submitted.
+- Bilingual category-aware search, responsive WebP images, and an actual-size image viewer with scrolling and fit mode.
 - Brand story, sizing and transparent prelaunch information pages.
 
 ## Demo boundary
@@ -52,6 +54,7 @@ No framework-specific commerce provider has been assumed. No payment keys are re
 - `shared/` — shared types and order validation.
 - `tests/` — price, quantity, size and duplicate-line validation tests.
 - `public/images/` — four original concept images produced with the built-in image generator.
+- `public/images/optimized/` — responsive WebP derivatives. Regenerate with `npm run images:optimize` after updating the originals.
 - `docs/KHT-image-prompts.md` — image prompts and provenance.
 - `docs/KHT-design-system.md` and `docs/KHT-information-architecture.md` — original design specifications.
 

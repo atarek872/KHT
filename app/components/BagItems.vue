@@ -6,8 +6,9 @@ const { lines, update } = useBag()
   <div class="bag-items">
     <article v-for="line in lines" :key="line.id + line.size" class="bag-item">
       <NuxtLink :to="`/products/${line.product.slug}`" class="bag-item-image"
-        ><img
+        ><StoreImage
           :src="line.product.image"
+          sizes="110px"
           :alt="localized(line.product.name)"
           width="120"
           height="160"

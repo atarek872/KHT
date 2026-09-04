@@ -38,7 +38,7 @@ useSeoMeta({ title: 'Order preview — KHT', robots: 'noindex, nofollow' })
       </div>
       <div class="confirmation-items">
         <div v-for="(item, index) in order.items" :key="index" class="checkout-line">
-          <img :src="item.image" :alt="localized(item.name)" width="72" height="96" />
+          <StoreImage :src="item.image" :alt="localized(item.name)" sizes="72px" width="72" height="96" />
           <div>
             <strong>{{ localized(item.name) }}</strong
             ><span>{{ item.size }} / {{ t('Qty', 'الكمية') }} {{ item.quantity }}</span>

@@ -10,6 +10,7 @@ const category = computed(() =>
 const selectedSize = ref('')
 const message = ref('')
 const zoom = ref(false)
+const actualSize = ref(true)
 const sizeGuide = ref(false)
 const buying = ref(false)
 function selectSize(size: string) {
@@ -74,8 +75,9 @@ useSeoMeta({
           :aria-label="t('Enlarge product image', 'كبّر صورة المنتج')"
           @click="zoom = true"
         >
-          <img
+          <StoreImage
             :src="product.image"
+            sizes="(max-width: 767px) 100vw, 55vw"
             :alt="localized(product.name)"
             width="1086"
             height="1448"
@@ -189,14 +191,29 @@ useSeoMeta({
       @close="sizeGuide = false"
       ><SizeGuideContent
     /></OverlayPanel>
-    <OverlayPanel :open="zoom" :title="localized(product.name)" @close="zoom = false"
-      ><img
-        :src="product.image"
-        :alt="localized(product.name)"
-        class="zoomed-product"
-        width="1086"
-        height="1448"
-      />
+    <OverlayPanel :open="zoom" :title="localized(product.name)" wide @close="zoom = false"
+      ><div class="zoom-toolbar">
+        <p>{{ t('Scroll to explore the details.', 'مرّر الصورة لاستكشاف التفاصيل.') }}</p>
+        <button class="remove-link" :aria-pressed="!actualSize" @click="actualSize = !actualSize">
+          {{ actualSize ? t('Fit image', 'اعرض الصورة كاملة') : t('Actual size', 'الحجم الأصلي') }}
+        </button>
+      </div>
+      <div
+        class="zoom-viewport"
+        :class="{ 'zoom-fit': !actualSize }"
+        tabindex="0"
+        role="region"
+        :aria-label="t('Product image, scroll to explore', 'صورة المنتج، مرّر لاستكشافها')"
+      >
+        <StoreImage
+          :src="product.image"
+          sizes="1086px"
+          :alt="localized(product.name)"
+          class="zoomed-product"
+          width="1086"
+          height="1448"
+        />
+      </div>
       <p class="muted">
         {{ t('Concept garment. Front view.', 'قطعة تصورية. صورة أمامية.') }}
       </p></OverlayPanel
