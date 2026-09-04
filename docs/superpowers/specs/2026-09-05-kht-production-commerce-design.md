@@ -1,8 +1,11 @@
 # KHT Production Commerce Design
 
-**Date:** 2026-09-05  
-**Status:** Approved direction; awaiting final specification review  
-**Deployment target:** Cloudflare Workers, D1, and R2  
+**Date:** 2026-09-05
+
+**Status:** Approved direction; awaiting final specification review
+
+**Deployment target:** Cloudflare Workers, D1, and R2
+
 **Initial payment method:** Cash on delivery (COD)
 
 ## Objective
@@ -243,4 +246,3 @@ The rollout sequence is:
 4. Add final products, stock, shipping, policy contact values, and a new production admin secret.
 5. Create clean production D1 and R2 resources and apply migrations without demo seeds.
 6. Attach `tkteck.it.com` only after explicit approval for a public launch.
-
