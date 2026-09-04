@@ -1,5 +1,6 @@
 import type { D1Database } from './d1'
 import { requireDatabase } from './d1'
+import { isSecureRequest } from './requestSecurity'
 
 const sessionCookie = 'kht-admin-session'
 
@@ -13,7 +14,8 @@ async function verifyPassword(password: string, encoded: string) {
   const [iterationsText, saltText, expectedText] = encoded.split(':')
   const iterations = Number(iterationsText)
   if (!iterations || !saltText || !expectedText) return false
-  const decode = (value: string) => Uint8Array.from(atob(value), (character) => character.charCodeAt(0))
+  const decode = (value: string) =>
+    Uint8Array.from(atob(value), (character) => character.charCodeAt(0))
   const salt = decode(saltText)
   const expected = decode(expectedText)
   const key = await crypto.subtle.importKey(
@@ -28,7 +30,8 @@ async function verifyPassword(password: string, encoded: string) {
   )
   if (actual.length !== expected.length) return false
   let difference = 0
-  for (let index = 0; index < actual.length; index++) difference |= actual[index]! ^ expected[index]!
+  for (let index = 0; index < actual.length; index++)
+    difference |= actual[index]! ^ expected[index]!
   return difference === 0
 }
 
@@ -58,7 +61,7 @@ export async function createAdminSession(
     .run()
   setCookie(event, sessionCookie, token, {
     httpOnly: true,
-    secure: !import.meta.dev,
+    secure: isSecureRequest(getRequestURL(event)),
     sameSite: 'strict',
     path: '/',
     expires,
@@ -70,7 +73,8 @@ export async function requireAdmin(
   event: Parameters<typeof getCookie>[0] & { context: Record<string, unknown> },
 ) {
   const token = getCookie(event, sessionCookie)
-  if (!token) throw createError({ statusCode: 401, statusMessage: 'Admin authentication required.' })
+  if (!token)
+    throw createError({ statusCode: 401, statusMessage: 'Admin authentication required.' })
   const database = requireDatabase(event)
   const session = await database
     .prepare('SELECT email FROM admin_sessions WHERE token_hash = ? AND expires_at > ?')
@@ -86,7 +90,10 @@ export async function destroyAdminSession(
   const token = getCookie(event, sessionCookie)
   if (token) {
     const database = requireDatabase(event)
-    await database.prepare('DELETE FROM admin_sessions WHERE token_hash = ?').bind(await digest(token)).run()
+    await database
+      .prepare('DELETE FROM admin_sessions WHERE token_hash = ?')
+      .bind(await digest(token))
+      .run()
   }
   deleteCookie(event, sessionCookie, { path: '/' })
 }

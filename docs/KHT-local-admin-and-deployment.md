@@ -21,6 +21,31 @@ http://127.0.0.1:3000
 
 This runs the storefront, but full Admin persistence requires D1/R2 bindings.
 
+## Full Local Admin
+
+The repository includes a Wrangler configuration that emulates D1 and R2 locally. It does not
+require a Cloudflare account.
+
+Create an ignored `.dev.vars` file containing a test-only Admin email and a generated password
+hash:
+
+```env
+ADMIN_EMAIL=admin@kht.local
+ADMIN_PASSWORD_HASH=PASTE_GENERATED_HASH
+```
+
+Then prepare the local database and start the complete application:
+
+```powershell
+npm run local:setup
+npm run local:dev
+```
+
+Open `http://127.0.0.1:8787/admin/login`. The setup command applies all six migrations and adds
+repeatable demo customers, orders, discounts and abandoned carts. Running it again preserves local
+changes and does not duplicate the demo records. Local D1 and R2 state is kept under `.wrangler/`
+and is ignored by Git.
+
 ## Full-Access Admin
 
 The application currently has one Admin role, which already has full access. Generate your own strong password hash:

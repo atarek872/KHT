@@ -4,6 +4,9 @@
   "type": "module",
   "scripts": {
     "admin:hash-password": "node scripts/create-admin-password-hash.mjs",
+    "local:setup": "wrangler d1 migrations apply DB --local --config wrangler.local.jsonc && npm run local:seed",
+    "local:seed": "wrangler d1 execute DB --local --config wrangler.local.jsonc --file server/db/seeds/local-demo.sql",
+    "local:dev": "npm run build:cloudflare && wrangler dev --config wrangler.local.jsonc --local --port 8787",
     "test:migration": "node --experimental-sqlite scripts/test-commerce-migration.mjs",
     "images:optimize": "node scripts/optimize-images.mjs",
     "dev": "nuxt dev --host 127.0.0.1",
@@ -26,6 +29,7 @@
     "prettier": "^3.9.6",
     "sharp": "^0.35.4",
     "typescript": "^5.9.0",
-    "vue-tsc": "^3.1.0"
+    "vue-tsc": "^3.1.0",
+    "wrangler": "^4.129.0"
   }
 }
