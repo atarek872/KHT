@@ -601,7 +601,7 @@ git commit -m "fix: make product activation explicit and reversible"
 - Produces: `updateRecoveryState(database, cartId, state, actorEmail, note?)`.
 - Produces: Admin recovery events and `contacted`, `dismissed`, `converted`, and `recovered` states.
 
-- [ ] **Step 1: Write failing contact and state tests**
+- [x] **Step 1: Write failing contact and state tests**
 
 ```ts
 test('checkout contact makes an abandoned cart actionable', async () => {
@@ -621,13 +621,13 @@ test('manual recovery changes are audited', async () => {
 })
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `node --experimental-strip-types --test tests/abandoned-cart-recovery.test.ts`
 
 Expected: FAIL because contact snapshots and recovery mutations are absent.
 
-- [ ] **Step 3: Extend snapshots without collecting marketing consent**
+- [x] **Step 3: Extend snapshots without collecting marketing consent**
 
 Accept contact only when at least one valid phone or email exists, cap lengths, normalize phone and
 email, and set `contact_captured_at`. Cart-only updates must not erase previously captured contact.
@@ -643,23 +643,23 @@ watchDebounced(
 If the project has no `watchDebounced` utility, implement the same 600 ms behavior with a scoped
 timer in `checkout.vue` and clear it in `onBeforeUnmount`; do not add a dependency for one helper.
 
-- [ ] **Step 4: Mark checkout conversion in the durable order batch**
+- [x] **Step 4: Mark checkout conversion in the durable order batch**
 
 Update the matching cart to `state = 'converted'`, `recovery_state = 'converted'`, set
 `recovered_order_id`, and write a cart event in the same successful checkout operation.
 
-- [ ] **Step 5: Add authenticated recovery mutations and Admin actions**
+- [x] **Step 5: Add authenticated recovery mutations and Admin actions**
 
 Contactable carts get WhatsApp and `mailto:` links plus Mark contacted, Mark recovered, and Dismiss
 actions. Anonymous carts display their products and value but do not render contact actions.
 
-- [ ] **Step 6: Run cart and dashboard tests**
+- [x] **Step 6: Run cart and dashboard tests**
 
 Run: `node --experimental-strip-types --test tests/abandoned-cart-recovery.test.ts tests/abandoned-carts.test.ts tests/dashboard.test.ts`
 
 Expected: PASS with the existing 30-minute threshold preserved.
 
-- [ ] **Step 7: Commit recovery workflow**
+- [x] **Step 7: Commit recovery workflow**
 
 ```bash
 git add shared/abandonedCart.ts server/services/abandonedCarts.ts server/services/dashboard.ts server/api/cart/snapshot.put.ts server/api/admin/abandoned-carts app/composables/useStore.ts app/pages/checkout.vue app/pages/admin/abandoned-carts tests/abandoned-cart-recovery.test.ts tests/abandoned-carts.test.ts

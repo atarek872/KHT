@@ -3423,3 +3423,27 @@
   outline-offset: 3px;
   box-shadow: none;
 }
+
+.kht-admin .admin-recovery-contact,
+.kht-admin .admin-recovery-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.kht-admin .admin-recovery-contact {
+  display: grid;
+  width: 100%;
+}
+
+.kht-admin .admin-recovery-contact > a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  color: var(--kht-gray-800);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}

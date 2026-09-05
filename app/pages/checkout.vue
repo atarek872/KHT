@@ -3,7 +3,7 @@ import type { StorefrontOrderConfirmation } from '../../shared/storefrontOrder'
 import type { OrderQuote } from '../../shared/discount'
 import type { ShippingZone } from '../../shared/shipping'
 const { t, money, localized } = useLanguage()
-const { lines, count, total, cartId, completeCheckout } = useBag()
+const { lines, count, total, cartId, completeCheckout, snapshotContact } = useBag()
 const form = useState('checkout-draft', () => ({
   name: '',
   email: '',
@@ -21,6 +21,7 @@ const couponCode = ref('')
 const couponBusy = ref(false)
 const couponError = ref('')
 const couponQuote = ref<OrderQuote | null>(null)
+let contactSnapshotTimer: ReturnType<typeof setTimeout> | undefined
 const { data: shippingData, error: shippingError, status: shippingStatus } =
   await useFetch<{ items: ShippingZone[] }>('/api/shipping/options')
 const shippingOptions = computed(() => shippingData.value?.items || [])
@@ -63,6 +64,23 @@ watch(couponCode, (value) => {
     couponQuote.value = null
   }
 })
+watch(
+  () => [form.value.name, form.value.phone, form.value.email],
+  () => {
+    clearTimeout(contactSnapshotTimer)
+    contactSnapshotTimer = setTimeout(() => {
+      const digitCount = form.value.phone.match(/[0-9٠-٩۰-۹]/g)?.length || 0
+      const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.value.email.trim())
+      if (!count.value || (digitCount < 11 && !validEmail)) return
+      snapshotContact({
+        name: form.value.name || undefined,
+        phone: form.value.phone || undefined,
+        email: form.value.email || undefined,
+      })
+    }, 600)
+  },
+)
+onBeforeUnmount(() => clearTimeout(contactSnapshotTimer))
 async function submit() {
   if (busy.value || !selectedShipping.value) return
   busy.value = true

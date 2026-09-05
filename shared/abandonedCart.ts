@@ -9,7 +9,17 @@ export interface AbandonedCartSummary {
   itemsCount: number
   lastActivity: string
   createdAt: string
+  contactCapturedAt?: string
   recoveryState: CartRecoveryState
+}
+
+export interface CartRecoveryEvent {
+  id: string
+  fromState?: CartRecoveryState
+  toState: CartRecoveryState
+  actorEmail: string
+  note?: string
+  createdAt: string
 }
 
 export interface AbandonedCartItem {
@@ -25,9 +35,17 @@ export interface AbandonedCartItem {
 
 export interface AbandonedCartDetail extends AbandonedCartSummary {
   items: AbandonedCartItem[]
+  events: CartRecoveryEvent[]
+}
+
+export interface CartContactInput {
+  name?: string
+  phone?: string
+  email?: string
 }
 
 export interface CartSnapshotInput {
   cartId: string
   items: { id: string; size: string; quantity: number }[]
+  contact?: CartContactInput
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { AbandonedCartDetail } from '../../../../shared/abandonedCart'
+import type { AbandonedCartDetail, CartRecoveryState } from '../../../../shared/abandonedCart'
 
 definePageMeta({ layout: 'admin' })
 const route = useRoute()
@@ -7,6 +7,28 @@ const id = computed(() => String(route.params.id || ''))
 const { data: cart, error, status, refresh } = await useFetch<AbandonedCartDetail>(
   () => `/api/admin/abandoned-carts/${encodeURIComponent(id.value)}`,
 )
+const saving = ref(false)
+const actionError = ref('')
+const actionMessage = ref('')
+const whatsappLink = computed(() => cart.value?.phone
+  ? `https://wa.me/${cart.value.phone.replace(/\D/g, '')}` : '')
+const emailLink = computed(() => cart.value?.email ? `mailto:${cart.value.email}` : '')
+async function changeRecoveryState(recoveryState: CartRecoveryState) {
+  if (saving.value) return
+  saving.value = true
+  actionError.value = ''
+  actionMessage.value = ''
+  try {
+    await $fetch(`/api/admin/abandoned-carts/${encodeURIComponent(id.value)}`, {
+      method: 'PATCH', body: { recoveryState },
+    })
+    await refresh()
+    actionMessage.value = `Cart marked ${recoveryState}.`
+  } catch (cause: unknown) {
+    actionError.value = (cause as { data?: { statusMessage?: string } }).data?.statusMessage
+      || 'The recovery state could not be updated.'
+  } finally { saving.value = false }
+}
 const money = (value: number) => new Intl.NumberFormat('en-EG', {
   style: 'currency', currency: 'EGP', maximumFractionDigits: 0,
 }).format(value)
@@ -34,9 +56,21 @@ useSeoMeta({ title: 'Abandoned Cart — KHT Admin', robots: 'noindex, nofollow' 
         <AdminSection title="Contact"><dl class="admin-order-facts"><div><dt>Name</dt><dd>{{ cart.customerName || 'Not captured' }}</dd></div>
           <div><dt>Phone</dt><dd>{{ cart.phone || 'Not captured' }}</dd></div><div><dt>Email</dt><dd>{{ cart.email || 'Not captured' }}</dd></div></dl></AdminSection>
         <AdminSection title="Recovery"><div class="admin-recovery-state"><AdminBadge :tone="cart.recoveryState === 'recovered' ? 'strong' : 'neutral'">{{ cart.recoveryState }}</AdminBadge>
-          <p v-if="!cart.phone && !cart.email">No contact was captured. WhatsApp and email recovery are not configured.</p>
-          <p v-else>Recovery status is recorded by the cart data source.</p></div></AdminSection>
-        <AdminSection title="Activity"><dl class="admin-order-facts"><div><dt>Created</dt><dd>{{ date(cart.createdAt) }}</dd></div><div><dt>Last activity</dt><dd>{{ date(cart.lastActivity) }}</dd></div></dl></AdminSection>
+          <p v-if="actionError" class="admin-create-order__error" role="alert">{{ actionError }}</p>
+          <p v-if="actionMessage" class="admin-state-notice" role="status">{{ actionMessage }}</p>
+          <p v-if="!cart.phone && !cart.email">No contact was captured. This cart is visible for value analysis, but no contact action is available.</p>
+          <div v-if="cart.phone || cart.email" class="admin-recovery-contact">
+            <a v-if="cart.phone" :href="whatsappLink" target="_blank" rel="noopener">Open WhatsApp</a>
+            <a v-if="cart.email" :href="emailLink">Send email</a>
+            <div class="admin-recovery-actions">
+              <AdminButton v-if="cart.recoveryState === 'active'" :disabled="saving" @click="changeRecoveryState('contacted')">Mark contacted</AdminButton>
+              <AdminButton v-if="['active', 'contacted'].includes(cart.recoveryState)" variant="secondary" :disabled="saving" @click="changeRecoveryState('recovered')">Mark recovered</AdminButton>
+              <AdminButton v-if="['active', 'contacted'].includes(cart.recoveryState)" variant="quiet" :disabled="saving" @click="changeRecoveryState('dismissed')">Dismiss</AdminButton>
+            </div>
+          </div></div></AdminSection>
+        <AdminSection title="Activity"><dl class="admin-order-facts"><div><dt>Created</dt><dd>{{ date(cart.createdAt) }}</dd></div><div><dt>Last activity</dt><dd>{{ date(cart.lastActivity) }}</dd></div></dl>
+          <ol v-if="cart.events.length" class="admin-order-timeline"><li v-for="event in cart.events" :key="event.id"><span aria-hidden="true" /><div><strong>{{ event.fromState || 'new' }} → {{ event.toState }}</strong><p v-if="event.note">{{ event.note }}</p><small>{{ event.actorEmail }} · {{ date(event.createdAt) }}</small></div></li></ol>
+        </AdminSection>
       </aside></div>
     </template>
   </div>

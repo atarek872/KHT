@@ -157,9 +157,18 @@ export async function createDurableOrder(
       ),
   ]
   if (options.cartId) {
+    const cartEventId = crypto.randomUUID()
+    statements.push(database.prepare(`INSERT INTO abandoned_cart_events
+      (id, cart_id, from_state, to_state, actor_email, note, created_at)
+      SELECT ?, id, recovery_state, 'converted', ?, 'Checkout completed', ?
+      FROM abandoned_carts WHERE id = ? AND state = 'active'`).bind(
+        cartEventId, options.actorEmail || 'system@kht.local', createdAt, options.cartId,
+      ))
     statements.push(database.prepare(`UPDATE abandoned_carts SET state = 'converted',
       recovery_state = 'converted', recovered_order_id = ?, recovered_at = ?,
-      last_activity = ? WHERE id = ?`).bind(orderId, createdAt, createdAt, options.cartId))
+      last_activity = ? WHERE id = ? AND EXISTS
+      (SELECT 1 FROM abandoned_cart_events WHERE id = ?)`)
+      .bind(orderId, createdAt, createdAt, options.cartId, cartEventId))
   }
   await database.batch(statements)
   const order: AdminOrderDetail = {

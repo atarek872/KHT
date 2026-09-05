@@ -71,7 +71,9 @@ export function buildDashboardSnapshot(
 
 function rangeStart(range: DashboardRange, now: Date) {
   if (range === 'today') {
-    return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())).toISOString()
+    return new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+    ).toISOString()
   }
   return new Date(now.getTime() - (range === '7d' ? 7 : 30) * 86400000).toISOString()
 }
@@ -86,14 +88,38 @@ export async function buildPersistedDashboardSnapshot(
     getAbandonedCartMetrics(database, rangeStart(range, now)),
     listAbandonedCarts(database),
   ])
-  snapshot.metrics = snapshot.metrics.map((metric) =>
-    metric.key === 'abandonedCarts'
-      ? { ...metric, value: metrics.abandonedCount, availability: 'available', note: 'Inactive for at least 30 minutes.' }
-      : metric,
-  )
+  snapshot.metrics = snapshot.metrics.map((metric) => {
+    if (metric.key === 'abandonedCarts') {
+      return {
+        ...metric,
+        value: metrics.abandonedCount,
+        availability: 'available' as const,
+        note: 'Inactive for at least 30 minutes.',
+      }
+    }
+    if (metric.key === 'recoveredCarts') {
+      return {
+        ...metric,
+        value: metrics.recoveredCount,
+        availability: 'available' as const,
+        note: '',
+      }
+    }
+    if (metric.key === 'recoveredRevenue') {
+      return {
+        ...metric,
+        value: metrics.recoveredRevenue,
+        availability: 'available' as const,
+        note: '',
+      }
+    }
+    return metric
+  })
   snapshot.abandonedCarts = {
     availability: carts.length ? 'available' : 'empty',
-    message: carts.length ? 'Recently abandoned carts.' : 'No abandoned carts in the selected view.',
+    message: carts.length
+      ? 'Recently abandoned carts.'
+      : 'No abandoned carts in the selected view.',
     items: carts.slice(0, 5),
   }
   return snapshot

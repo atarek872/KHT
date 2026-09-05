@@ -1,4 +1,5 @@
 import type { CartLine, Catalog, Locale, Localized, Product } from '../../shared/types'
+import type { CartContactInput, CartSnapshotInput } from '../../shared/abandonedCart'
 
 export function useLanguage() {
   const locale = useCookie<Locale>('kht-language', {
@@ -51,13 +52,21 @@ export function useBag() {
   const total = computed(() =>
     lines.value.reduce((sum, line) => sum + line.quantity * line.product.price, 0),
   )
-  function track(items: CartLine[]) {
+  function track(items: CartLine[], contact?: CartContactInput) {
     if (!import.meta.client) return
+    const body: CartSnapshotInput = { cartId: cartId.value, items }
+    if (contact) body.contact = contact
     void $fetch('/api/cart/snapshot', {
       method: 'PUT',
-      body: { cartId: cartId.value, items },
+      body,
       keepalive: true,
     }).catch(() => undefined)
+  }
+  function snapshotContact(contact: CartContactInput) {
+    track(
+      lines.value.map(({ id, size, quantity }) => ({ id, size, quantity })),
+      contact,
+    )
   }
   function add(product: Product, size: string) {
     const stock = product.sizes.find((s) => s.name === size)?.stock || 0
@@ -107,5 +116,6 @@ export function useBag() {
     update,
     clear,
     completeCheckout,
+    snapshotContact,
   }
 }
