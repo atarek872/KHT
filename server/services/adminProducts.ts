@@ -106,10 +106,23 @@ export async function saveProduct(
 
 export async function archiveProduct(database: D1Database, id: string) {
   const now = new Date().toISOString()
-  await database.batch([
-    database.prepare('UPDATE products SET active = 0, updated_at = ? WHERE id = ?').bind(now, id),
-    database.prepare('UPDATE inventory_variants SET active = 0, updated_at = ? WHERE product_id = ?').bind(now, id),
-  ])
+  await database
+    .prepare('UPDATE products SET active = 0, updated_at = ? WHERE id = ?')
+    .bind(now, id)
+    .run()
+}
+
+export async function activateProduct(database: D1Database, id: string) {
+  const product = await getProduct(database, id)
+  if (!product) throw new Error('PRODUCT_NOT_FOUND')
+  if (!product.variants.some((variant) => variant.active)) {
+    throw new Error('PRODUCT_REACTIVATION_REQUIRES_ACTIVE_VARIANT')
+  }
+  await database
+    .prepare('UPDATE products SET active = 1, updated_at = ? WHERE id = ?')
+    .bind(new Date().toISOString(), id)
+    .run()
+  return (await getProduct(database, id))!
 }
 
 export async function duplicateProduct(database: D1Database, id: string) {

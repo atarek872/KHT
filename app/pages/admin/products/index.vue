@@ -5,7 +5,8 @@ definePageMeta({ layout: 'admin' })
 useSeoMeta({ title: 'Products — KHT Admin', robots: 'noindex, nofollow' })
 const { data, error, status, refresh } = await useFetch<AdminProductSummary[]>('/api/admin/products')
 const actionProduct = ref<AdminProductSummary | null>(null)
-const archiving = ref(false)
+const actionKind = ref<'deactivate' | 'reactivate' | null>(null)
+const actionBusy = ref(false)
 const actionError = ref('')
 const actionMessage = ref('')
 const money = (value: number) => new Intl.NumberFormat('en-EG', { style: 'currency', currency: 'EGP', maximumFractionDigits: 0 }).format(value)
@@ -20,19 +21,54 @@ async function duplicate(product: AdminProductSummary) {
   } catch { actionError.value = 'The product could not be duplicated.' }
 }
 
-async function archive() {
-  if (!actionProduct.value || archiving.value) return
-  archiving.value = true
+function openAction(product: AdminProductSummary, kind: 'deactivate' | 'reactivate') {
+  actionProduct.value = product
+  actionKind.value = kind
+}
+
+function closeAction() {
+  if (actionBusy.value) return
+  actionProduct.value = null
+  actionKind.value = null
+}
+
+async function applyProductAction() {
+  if (!actionProduct.value || !actionKind.value || actionBusy.value) return
+  const kind = actionKind.value
+  actionBusy.value = true
   actionError.value = ''
   actionMessage.value = ''
   try {
-    await $fetch(`/api/admin/products/${actionProduct.value.id}/archive`, { method: 'POST' })
+    const endpoint = kind === 'deactivate' ? 'archive' : 'activate'
+    await $fetch(`/api/admin/products/${encodeURIComponent(actionProduct.value.id)}/${endpoint}`, {
+      method: 'POST',
+    })
     actionProduct.value = null
+    actionKind.value = null
     await refresh()
-    actionMessage.value = 'Product deactivated.'
-  } catch { actionError.value = 'The product could not be archived.' }
-  finally { archiving.value = false }
+    actionMessage.value = kind === 'deactivate' ? 'Product deactivated.' : 'Product reactivated.'
+  } catch (cause: unknown) {
+    const failure = cause as { data?: { statusMessage?: string } }
+    actionError.value =
+      failure.data?.statusMessage || `The product could not be ${kind}d.`
+    actionProduct.value = null
+    actionKind.value = null
+  } finally {
+    actionBusy.value = false
+  }
 }
+
+const actionTitle = computed(() =>
+  actionKind.value === 'reactivate' ? 'Reactivate product' : 'Deactivate product',
+)
+const actionDescription = computed(() =>
+  actionKind.value === 'reactivate'
+    ? `${actionProduct.value?.name.en || 'This product'} will return to the storefront with its existing variants and stock.`
+    : `${actionProduct.value?.name.en || 'This product'} will be removed from the storefront. Variants and stock will be preserved.`,
+)
+const actionLabel = computed(() =>
+  actionKind.value === 'reactivate' ? 'Reactivate' : 'Deactivate',
+)
 </script>
 
 <template>
@@ -52,16 +88,16 @@ async function archive() {
           <td><AdminBadge :tone="product.active ? 'strong' : 'neutral'">{{ product.active ? 'Active' : 'Inactive' }}</AdminBadge></td><td>{{ date(product.updatedAt) }}</td>
           <td><details class="admin-row-menu"><summary aria-label="Product actions"><KhtIcon name="menu" /></summary><div>
             <NuxtLink :to="`/admin/products/${product.id}`">Edit</NuxtLink><NuxtLink :to="`/products/${product.slug}`" target="_blank">View storefront</NuxtLink>
-            <button type="button" @click="duplicate(product)">Duplicate</button><button v-if="product.active" type="button" @click="actionProduct = product">Deactivate</button>
+            <button type="button" @click="duplicate(product)">Duplicate</button><button v-if="product.active" type="button" @click="openAction(product, 'deactivate')">Deactivate</button><button v-if="!product.active" type="button" @click="openAction(product, 'reactivate')">Reactivate</button>
           </div></details></td></tr></tbody></AdminTable></div>
       <div class="admin-products-mobile"><article v-for="product in data" :key="product.id" class="admin-product-card"><StoreImage :src="product.image" sizes="72px" :alt="product.name.en" />
         <div><strong>{{ product.name.en }}</strong><span>{{ product.category }} · {{ product.code }}</span></div><dl><div><dt>Price</dt><dd>{{ money(product.price) }}</dd></div><div><dt>Stock</dt><dd>{{ product.stock }}</dd></div></dl>
         <div class="admin-product-card__actions"><NuxtLink :to="`/admin/products/${product.id}`" class="admin-button admin-button--secondary">Edit product</NuxtLink>
           <details class="admin-row-menu"><summary aria-label="Product actions"><KhtIcon name="menu" /></summary><div>
             <NuxtLink :to="`/products/${product.slug}`" target="_blank">View storefront</NuxtLink><button type="button" @click="duplicate(product)">Duplicate</button>
-            <button v-if="product.active" type="button" @click="actionProduct = product">Deactivate</button>
+            <button v-if="product.active" type="button" @click="openAction(product, 'deactivate')">Deactivate</button><button v-if="!product.active" type="button" @click="openAction(product, 'reactivate')">Reactivate</button>
           </div></details></div></article></div>
     </template>
-    <AdminConfirmDialog :open="!!actionProduct" title="Deactivate product" :description="`${actionProduct?.name.en || 'This product'} will be removed from the storefront.`" confirm-label="Deactivate" danger :busy="archiving" @close="actionProduct = null" @confirm="archive" />
+    <AdminConfirmDialog :open="!!actionProduct" :title="actionTitle" :description="actionDescription" :confirm-label="actionLabel" :danger="actionKind === 'deactivate'" :busy="actionBusy" @close="closeAction" @confirm="applyProductAction" />
   </div>
 </template>

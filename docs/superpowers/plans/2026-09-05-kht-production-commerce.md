@@ -516,7 +516,7 @@ git commit -m "feat: operate COD order lifecycle"
 - Produces: `activateProduct(database, id): Promise<AdminProduct>`.
 - Preserves: existing `archiveProduct(database, id)` behavior and storefront active filters.
 
-- [ ] **Step 1: Write the failing dialog and activation tests**
+- [x] **Step 1: Write the failing dialog and activation tests**
 
 ```ts
 test('closed product confirmation dialog stays hidden', () => {
@@ -530,13 +530,13 @@ test('inactive products expose a protected reactivate action', () => {
 })
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `node --experimental-strip-types --test tests/product-activation.test.ts`
 
 Expected: FAIL because closed-dialog CSS and activation endpoint are absent.
 
-- [ ] **Step 3: Fix the modal cascade at the source**
+- [x] **Step 3: Fix the modal cascade at the source**
 
 ```css
 .kht-admin .admin-modal:not([open]) {
@@ -551,7 +551,7 @@ Expected: FAIL because closed-dialog CSS and activation endpoint are absent.
 
 Remove unconditional `display: flex` from the base dialog rule.
 
-- [ ] **Step 4: Implement safe reactivation**
+- [x] **Step 4: Implement safe reactivation**
 
 Change future deactivation to update only `products.active`; the storefront already requires both an
 active product and active variant, so variant choices must be preserved. Reactivation requires at
@@ -559,19 +559,19 @@ least one already-active variant, updates the product timestamp, leaves stock un
 the refreshed product. Products archived by the old implementation with every variant inactive must
 be edited to select an active variant before Reactivate succeeds.
 
-- [ ] **Step 5: Update Admin product actions**
+- [x] **Step 5: Update Admin product actions**
 
 Show Deactivate only for active products and Reactivate only for inactive products. Open the
 confirmation dialog only after the corresponding click and use action-specific copy and success
 messages.
 
-- [ ] **Step 6: Run product tests**
+- [x] **Step 6: Run product tests**
 
 Run: `node --experimental-strip-types --test tests/product-activation.test.ts tests/admin-products.test.ts tests/admin-accessibility.test.ts`
 
 Expected: PASS.
 
-- [ ] **Step 7: Commit product activation**
+- [x] **Step 7: Commit product activation**
 
 ```bash
 git add server/api/admin/products/[id]/activate.post.ts server/services/adminProducts.ts app/pages/admin/products/index.vue app/assets/css/admin.css tests/product-activation.test.ts tests/admin-products.test.ts

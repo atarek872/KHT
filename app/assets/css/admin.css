@@ -456,6 +456,13 @@
   border: 1px solid var(--kht-gray-800);
   border-radius: var(--kht-admin-radius);
   box-shadow: none;
+}
+
+.kht-admin .admin-modal:not([open]) {
+  display: none;
+}
+
+.kht-admin .admin-modal[open] {
   display: flex;
   flex-direction: column;
 }
