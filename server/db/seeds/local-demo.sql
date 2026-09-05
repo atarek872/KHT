@@ -44,7 +44,12 @@ VALUES
    NULL, NULL, datetime('now', '-18 hours')),
   ('local-order-1006', 'KHT-LOCAL-1006', 'KHT-DEMO-1006', 'local-seed-1006', 'local-customer-005', 890, 70, 'Giza',
    0, 960, 'cod', 'cancelled', 'phone', 'Cancelled test order.',
-   NULL, NULL, datetime('now', '-2 hours'));
+   NULL, NULL, datetime('now', '-2 hours')),
+  ('local-order-1007', 'KHT-LOCAL-1007', 'KHT-DEMO-1007', 'local-seed-1007', 'local-customer-002', 1290, 70, 'Giza',
+   0, 1360, 'cod', 'shipped', 'website', 'Returned order awaiting stock inspection.',
+   NULL, NULL, datetime('now', '-1 day'));
+
+UPDATE orders SET fulfillment_status = 'returned' WHERE id = 'local-order-1007';
 
 INSERT OR IGNORE INTO order_items
   (id, order_id, variant_id, product_name, variant, sku, quantity, unit_price, total)
@@ -55,7 +60,8 @@ VALUES
   ('local-line-1004-1', 'local-order-1004', 'kht-001-s', 'The Line Tee', 'Black / S', 'KHT-001-S', 1, 890, 890),
   ('local-line-1004-2', 'local-order-1004', 'kht-003-s', 'The Line Trouser', 'Black / S', 'KHT-003-S', 1, 1290, 1290),
   ('local-line-1005-1', 'local-order-1005', 'kht-002-m', 'The Line Tracksuit', 'Black / M', 'KHT-002-M', 1, 2390, 2390),
-  ('local-line-1006-1', 'local-order-1006', 'kht-001-xl', 'The Line Tee', 'Black / XL', 'KHT-001-XL', 1, 890, 890);
+  ('local-line-1006-1', 'local-order-1006', 'kht-001-xl', 'The Line Tee', 'Black / XL', 'KHT-001-XL', 1, 890, 890),
+  ('local-line-1007-1', 'local-order-1007', 'kht-003-xl', 'The Line Trouser', 'Black / XL', 'KHT-003-XL', 1, 1290, 1290);
 
 UPDATE inventory_variants
 SET stock = stock + (
@@ -76,17 +82,29 @@ WHERE id = 'local-order-1006' AND inventory_restored_at IS NULL;
 UPDATE orders SET payment_status = 'paid' WHERE id IN ('local-order-1001', 'local-order-1002');
 UPDATE orders SET payment_status = 'failed' WHERE id = 'local-order-1006';
 
+INSERT OR IGNORE INTO order_events
+  (id, order_id, event_type, from_value, to_value, note, actor_email, created_at)
+VALUES
+  ('local-event-order-1001', 'local-order-1001', 'fulfillment_status', 'shipped', 'delivered', 'Courier confirmed delivery.', 'admin@kht.local', datetime('now', '-20 days')),
+  ('local-event-order-1002', 'local-order-1002', 'fulfillment_status', 'processing', 'shipped', 'Handed to courier.', 'admin@kht.local', datetime('now', '-11 days')),
+  ('local-event-order-1003', 'local-order-1003', 'fulfillment_status', 'confirmed', 'processing', 'Preparing order.', 'admin@kht.local', datetime('now', '-5 days')),
+  ('local-event-order-1004', 'local-order-1004', 'fulfillment_status', 'pending', 'confirmed', 'Customer confirmed by phone.', 'admin@kht.local', datetime('now', '-2 days')),
+  ('local-event-order-1005', 'local-order-1005', 'order_created', NULL, 'pending', 'Seeded order awaiting action.', 'system', datetime('now', '-18 hours')),
+  ('local-event-order-1006', 'local-order-1006', 'fulfillment_status', 'pending', 'cancelled', 'Customer cancelled before shipping.', 'admin@kht.local', datetime('now', '-2 hours')),
+  ('local-event-order-1007', 'local-order-1007', 'fulfillment_status', 'shipped', 'returned', 'Courier returned the parcel.', 'admin@kht.local', datetime('now', '-20 hours'));
+
 INSERT OR IGNORE INTO abandoned_carts
-  (id, customer_name, phone, email, subtotal, items_count, state, recovery_state, created_at, last_activity)
+  (id, customer_name, phone, email, subtotal, items_count, state, recovery_state,
+   contact_captured_at, recovered_at, created_at, last_activity)
 VALUES
   ('local-cart-contacted', 'Salma Khaled', '01010000006', 'salma@example.test', 1780, 2, 'active', 'contacted',
-   datetime('now', '-3 hours'), datetime('now', '-95 minutes')),
+   datetime('now', '-2 hours'), NULL, datetime('now', '-3 hours'), datetime('now', '-95 minutes')),
   ('local-cart-anonymous', NULL, NULL, NULL, 2390, 1, 'active', 'active',
-   datetime('now', '-2 hours'), datetime('now', '-45 minutes')),
+   NULL, NULL, datetime('now', '-2 hours'), datetime('now', '-45 minutes')),
   ('local-cart-recovered', 'Karim Tarek', '01010000007', 'karim@example.test', 1290, 1, 'converted', 'recovered',
-   datetime('now', '-5 days'), datetime('now', '-4 days')),
+   datetime('now', '-5 days'), datetime('now', '-4 days'), datetime('now', '-5 days'), datetime('now', '-4 days')),
   ('local-cart-recent', 'Dina Ali', '01010000008', NULL, 890, 1, 'active', 'active',
-   datetime('now', '-20 minutes'), datetime('now', '-10 minutes'));
+   datetime('now', '-15 minutes'), NULL, datetime('now', '-20 minutes'), datetime('now', '-10 minutes'));
 
 INSERT OR IGNORE INTO abandoned_cart_items
   (id, cart_id, product_id, variant_id, product_name, variant, image, quantity, unit_price, total)
@@ -95,5 +113,12 @@ VALUES
   ('local-cart-line-002', 'local-cart-anonymous', 'kht-002', 'kht-002-s', 'The Line Tracksuit', 'Black / S', '/images/tracksuit.png', 1, 2390, 2390),
   ('local-cart-line-003', 'local-cart-recovered', 'kht-003', 'kht-003-l', 'The Line Trouser', 'Black / L', '/images/pants.png', 1, 1290, 1290),
   ('local-cart-line-004', 'local-cart-recent', 'kht-001', 'kht-001-s', 'The Line Tee', 'Black / S', '/images/tee.png', 1, 890, 890);
+
+INSERT OR IGNORE INTO abandoned_cart_events
+  (id, cart_id, from_state, to_state, actor_email, note, created_at)
+VALUES
+  ('local-cart-event-contacted', 'local-cart-contacted', 'active', 'contacted', 'admin@kht.local', 'WhatsApp follow-up sent.', datetime('now', '-90 minutes')),
+  ('local-cart-event-recovered-1', 'local-cart-recovered', 'active', 'contacted', 'admin@kht.local', 'Customer replied.', datetime('now', '-4 days', '-1 hour')),
+  ('local-cart-event-recovered-2', 'local-cart-recovered', 'contacted', 'recovered', 'admin@kht.local', 'Customer placed a new order.', datetime('now', '-4 days'));
 
 PRAGMA optimize;

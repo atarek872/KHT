@@ -7,10 +7,18 @@ import type { Discount } from '../shared/discount.ts'
 const read = (path: string) => readFileSync(new URL(path, import.meta.url), 'utf8')
 const now = new Date('2026-09-04T12:00:00.000Z')
 const coupon: Discount = {
-  id: 'discount', code: 'WELCOME10', type: 'percentage', value: 10,
-  minimumOrder: 500, maximumDiscount: 150, usageLimit: 100, currentUsage: 24,
-  validFrom: '2026-09-01T00:00:00.000Z', validUntil: '2026-09-30T23:59:59.000Z',
-  active: true, updatedAt: now.toISOString(),
+  id: 'discount',
+  code: 'WELCOME10',
+  type: 'percentage',
+  value: 10,
+  minimumOrder: 500,
+  maximumDiscount: 150,
+  usageLimit: 100,
+  currentUsage: 24,
+  validFrom: '2026-09-01T00:00:00.000Z',
+  validUntil: '2026-09-30T23:59:59.000Z',
+  active: true,
+  updatedAt: now.toISOString(),
 }
 
 test('percentage discounts respect minimum order and maximum discount', () => {
@@ -20,15 +28,29 @@ test('percentage discounts respect minimum order and maximum discount', () => {
 })
 
 test('fixed discounts cannot reduce subtotal below zero', () => {
-  assert.deepEqual(calculateDiscount(300, { ...coupon, type: 'fixed', value: 500, minimumOrder: null, maximumDiscount: null }, now), {
-    code: 'WELCOME10', discount: 300,
-  })
+  assert.deepEqual(
+    calculateDiscount(
+      300,
+      { ...coupon, type: 'fixed', value: 500, minimumOrder: null, maximumDiscount: null },
+      now,
+    ),
+    {
+      code: 'WELCOME10',
+      discount: 300,
+    },
+  )
 })
 
 test('inactive, future, expired and exhausted coupons are rejected', () => {
   assert.throws(() => calculateDiscount(1000, { ...coupon, active: false }, now), /inactive/)
-  assert.throws(() => calculateDiscount(1000, { ...coupon, validFrom: '2026-09-05T00:00:00.000Z' }, now), /not active yet/)
-  assert.throws(() => calculateDiscount(1000, { ...coupon, validUntil: '2026-09-03T00:00:00.000Z' }, now), /expired/)
+  assert.throws(
+    () => calculateDiscount(1000, { ...coupon, validFrom: '2026-09-05T00:00:00.000Z' }, now),
+    /not active yet/,
+  )
+  assert.throws(
+    () => calculateDiscount(1000, { ...coupon, validUntil: '2026-09-03T00:00:00.000Z' }, now),
+    /expired/,
+  )
   assert.throws(() => calculateDiscount(1000, { ...coupon, currentUsage: 100 }, now), /usage limit/)
 })
 
@@ -36,22 +58,38 @@ test('discount validation keeps the model deliberately simple', () => {
   assert.doesNotThrow(() => validateDiscount(coupon))
   assert.throws(() => validateDiscount({ ...coupon, code: 'bad code' }), /uppercase/)
   assert.throws(() => validateDiscount({ ...coupon, value: 101 }), /cannot exceed 100/)
-  assert.throws(() => validateDiscount({ ...coupon, type: 'fixed', maximumDiscount: 100 }), /only to percentage/)
+  assert.throws(
+    () => validateDiscount({ ...coupon, type: 'fixed', maximumDiscount: 100 }),
+    /only to percentage/,
+  )
   assert.throws(() => validateDiscount({ ...coupon, validFrom: 'not-a-date' }), /not a valid date/)
 })
 
 test('admin discount APIs are protected and expose only list, create and edit', () => {
   for (const path of [
-    '../server/api/admin/discounts/index.get.ts', '../server/api/admin/discounts/index.post.ts',
-    '../server/api/admin/discounts/[id].get.ts', '../server/api/admin/discounts/[id].patch.ts',
-  ]) assert.match(read(path), /requireAdmin\(event\)/, path)
+    '../server/api/admin/discounts/index.get.ts',
+    '../server/api/admin/discounts/index.post.ts',
+    '../server/api/admin/discounts/[id].get.ts',
+    '../server/api/admin/discounts/[id].patch.ts',
+  ])
+    assert.match(read(path), /requireAdmin\(event\)/, path)
 })
 
 test('admin list and editor expose enforceable coupon fields', () => {
   const list = read('../app/pages/admin/discounts/index.vue')
   const form = read('../app/components/admin/discounts/DiscountForm.vue')
   assert.match(list, /currentUsage.*usageLimit/s)
-  for (const field of ['Code', 'Discount type', 'Minimum order', 'Maximum discount', 'Usage limit', 'Valid from', 'Valid until', 'Coupon active']) assert.match(form, new RegExp(field))
+  for (const field of [
+    'Code',
+    'Discount type',
+    'Minimum order',
+    'Maximum discount',
+    'Usage limit',
+    'Valid from',
+    'Valid until',
+    'Coupon active',
+  ])
+    assert.match(form, new RegExp(field))
   assert.doesNotMatch(form, /product targeting|stacking|buy one/i)
 })
 
@@ -61,7 +99,7 @@ test('storefront and admin order quotes use the same server discount function', 
   const adminOrder = read('../server/services/createOrder.ts')
   const storefront = read('../app/pages/checkout.vue')
   const admin = read('../app/pages/admin/orders/new.vue')
-  assert.match(checkoutQuote, /quoteDiscount\(database, priced\.subtotal/)
+  assert.match(checkoutQuote, /quoteDiscount\(\s*database,\s*priced\.subtotal/)
   assert.match(checkout, /createDurableOrder\(database, orderInput/)
   assert.match(adminOrder, /quoteDiscount\(database, priced\.subtotal/)
   assert.match(storefront, /\/api\/discounts\/quote/)

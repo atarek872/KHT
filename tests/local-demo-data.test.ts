@@ -41,16 +41,20 @@ test('local demo seed provides complete, repeatable admin test data', () => {
       orderItems: count(database, 'order_items'),
       discounts: count(database, 'discounts'),
       abandonedCarts: count(database, 'abandoned_carts'),
+      orderEvents: count(database, 'order_events'),
+      cartEvents: count(database, 'abandoned_cart_events'),
     },
     {
       categories: 3,
       products: 3,
       variants: 15,
       customers: 5,
-      orders: 6,
-      orderItems: 7,
+      orders: 7,
+      orderItems: 8,
       discounts: 4,
       abandonedCarts: 4,
+      orderEvents: 7,
+      cartEvents: 3,
     },
   )
 
@@ -59,7 +63,7 @@ test('local demo seed provides complete, repeatable admin test data', () => {
       .prepare('SELECT fulfillment_status AS status FROM orders ORDER BY number')
       .all()
       .map((row) => row.status),
-    ['delivered', 'shipped', 'processing', 'confirmed', 'pending', 'cancelled'],
+    ['delivered', 'shipped', 'processing', 'confirmed', 'pending', 'cancelled', 'returned'],
   )
   assert.equal(
     database
@@ -86,5 +90,9 @@ test('local demo seed provides complete, repeatable admin test data', () => {
     database
       .prepare("SELECT inventory_restored_at FROM orders WHERE id = 'local-order-1006'")
       .get()!.inventory_restored_at,
+  )
+  assert.equal(
+    database.prepare("SELECT stock FROM inventory_variants WHERE id = 'kht-003-xl'").get()!.stock,
+    4,
   )
 })

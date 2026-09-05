@@ -1,121 +1,133 @@
-# KHT Local Development, Admin Access, and Deployment
+# KHT Local Admin and Cloudflare Deployment
 
-## Local Development
+KHT is a Nuxt 4 Cloudflare Worker. The complete application uses Cloudflare D1 for commerce data
+and R2 for product media. The local Wrangler runtime emulates both services, so local testing does
+not require a Cloudflare account, Docker, PostgreSQL, MinIO, or the VPS.
 
-Because `registry.npmjs.org` is blocked in the current Windows hosts file, install through Yarn's registry:
+## First local setup
+
+Use Node.js 22 or newer, then install dependencies:
 
 ```powershell
-npm ci --registry=https://registry.yarnpkg.com --replace-registry-host=always
-npm run typecheck
-npm test
-npm run test:migration
-npm run build
-npm run dev
+npm ci
 ```
 
-Open:
+Generate a password hash. The command prints a hash, not the password:
 
-```text
-http://127.0.0.1:3000
+```powershell
+npm run admin:hash-password -- "YOUR-LOCAL-ONLY-PASSWORD"
 ```
 
-This runs the storefront, but full Admin persistence requires D1/R2 bindings.
-
-## Full Local Admin
-
-The repository includes a Wrangler configuration that emulates D1 and R2 locally. It does not
-require a Cloudflare account.
-
-Create an ignored `.dev.vars` file containing a test-only Admin email and a generated password
-hash:
+Create an ignored `.dev.vars` file in the repository root:
 
 ```env
 ADMIN_EMAIL=admin@kht.local
 ADMIN_PASSWORD_HASH=PASTE_GENERATED_HASH
 ```
 
-Then prepare the local database and start the complete application:
+Prepare the database and start the full application:
 
 ```powershell
 npm run local:setup
 npm run local:dev
 ```
 
-Open `http://127.0.0.1:8787/admin/login`. The setup command applies all six migrations and adds
-repeatable demo customers, orders, discounts and abandoned carts. Running it again preserves local
-changes and does not duplicate the demo records. Local D1 and R2 state is kept under `.wrangler/`
+Open:
+
+- Storefront: `http://127.0.0.1:8787`
+- Admin: `http://127.0.0.1:8787/admin/login`
+
+`local:setup` applies all seven migrations in order, then inserts repeatable local test fixtures.
+Running it again does not duplicate seeded records. Local D1 and R2 data lives below `.wrangler/`
 and is ignored by Git.
 
-## Full-Access Admin
+## Manual acceptance checklist
 
-The application currently has one Admin role, which already has full access. Generate your own strong password hash:
+The local seed includes seven COD orders covering pending, confirmed, processing, shipped,
+delivered, cancelled, and returned states; it also includes contactable, anonymous, recent, and
+recovered carts.
+
+1. Sign in at `/admin/login` and confirm the dashboard loads.
+2. Open Orders, select the pending order, and move it through the available next status. Only valid
+   state transitions should appear.
+3. Open the returned order. Use the explicit restock action only after inspection; the action must
+   disappear after one successful restock.
+4. Open Products. Deactivate a product, confirm the dialog only appears after the click, and then
+   reactivate it. Its variants and stock must remain unchanged.
+5. On the storefront, add a product and place a COD order with a new Egyptian mobile number. The
+   confirmation must show a durable reference and server-calculated totals.
+6. Track that order at `/track-order` using the reference and the same phone number. A different
+   phone number must not reveal it.
+7. Return to Admin. The order must appear in Orders and the checkout person must appear in
+   Customers without any customer registration or password.
+8. Start another checkout, enter a valid phone or email, wait at least one second, and leave without
+   ordering. After the 30-minute abandonment threshold, the cart is eligible for WhatsApp/email and
+   manual contacted, recovered, or dismissed actions. An anonymous cart shows value and items but
+   no contact action.
+9. Upload and remove a test product image, then verify the storefront still renders the selected
+   image through the media endpoint.
+10. Log out and verify direct Admin API/page access asks for authentication again.
+
+## Automated verification
+
+Run these commands before staging or production:
 
 ```powershell
-npm run admin:hash-password -- "YOUR-STRONG-PASSWORD"
-```
-
-Never commit the output. Configure:
-
-```env
-ADMIN_EMAIL=admin@yourdomain.com
-ADMIN_PASSWORD_HASH=PASTE_GENERATED_HASH
-```
-
-Apply the six migrations:
-
-```bash
-for file in server/db/migrations/*.sql; do
-  npx wrangler d1 execute kht-commerce --remote --file="$file" --yes
-done
-```
-
-Then configure Cloudflare bindings:
-
-```text
-DB             -> Cloudflare D1 database
-PRODUCT_MEDIA  -> Cloudflare R2 bucket
-```
-
-Admin URL:
-
-```text
-https://yourdomain.com/admin/login
-```
-
-## Ubuntu and Docker
-
-The full application cannot currently run correctly as a normal Node Docker container. Admin services directly require Cloudflare runtime bindings:
-
-- D1 for database storage
-- R2 for images
-- `context.cloudflare.env`
-
-A Node container can run the storefront fallback, but Admin APIs will return `503`.
-
-For the current architecture, deploy to Cloudflare:
-
-```bash
-npm ci
-npm run typecheck
 npm test
+npm run test:migration
+npm run test:production-readiness
+npm run typecheck
 npm run build:cloudflare
-npx wrangler deploy .output/server/index.mjs --assets .output/public
 ```
 
-For genuine Ubuntu Docker Compose deployment, the project first needs storage adapters replacing:
+The readiness test covers durable COD creation, CRM identity matching, delivery and payment status,
+audit history, cancellation inventory restoration, abandoned-cart recovery, product activation,
+and Admin authentication requirements.
 
-```text
-D1 -> PostgreSQL
-R2 -> S3-compatible storage such as MinIO
-```
+## Local data and fixture rules
 
-The resulting production stack would be:
+- `server/db/seeds/local-demo.sql` is for local testing only.
+- Production and staging must never run the demo seed or copy the local `.wrangler/` directory.
+- Production receives forward-only migration files from `server/db/migrations/` and real catalog
+  data entered after deployment.
+- A cancelled order restores reserved stock once. A returned order restores stock only after the
+  separate inspection/restock action.
 
-```text
-Nginx
-Nuxt Node container
-PostgreSQL
-MinIO
-```
+## Admin secret rotation
 
-Using `wrangler dev` inside Docker is not recommended for production because it is a development runtime. Also note that Paymob and order-status transitions are not implemented yet, so the application should not accept live commercial payments.
+Generate a new password and hash for every environment. Never reuse the local password for staging
+or production, and never commit a password, hash, API token, or `.dev.vars` file. Update the
+Cloudflare secrets `ADMIN_EMAIL` and `ADMIN_PASSWORD_HASH`, deploy, verify the new login, then end
+old browser sessions if required.
+
+## Staging and production gates
+
+Staging and production require separate D1 databases, R2 buckets, Admin secrets, and hostnames.
+Staging remains `noindex` and should be protected with Cloudflare Access. Do not attach
+`tkteck.it.com` during staging.
+
+Before public production launch, all of the following are required:
+
+- final customer-service email and phone or WhatsApp number;
+- final shipping zones and rates;
+- final products, images, variants, and stock;
+- acceptance of storefront, checkout, Admin operations, and policy copy;
+- a clean production D1/R2 setup with migrations only;
+- an explicit approval to change DNS and publish the domain.
+
+Indexing stays disabled unless `NUXT_PUBLIC_STORE_INDEXING_ENABLED=true` is deliberately configured
+for the accepted production release.
+
+## Rollback
+
+Record the deployed Cloudflare Worker version and the previous known-good Worker version at every
+release. If a critical smoke test fails, restore the previous version from Cloudflare deployment
+history, verify storefront and Admin health, and keep DNS pointed only at a healthy deployment.
+Database migrations are forward-only; do not delete production tables or restore local demo data as
+a rollback shortcut.
+
+## Why the VPS is not used
+
+The current code depends directly on Worker bindings at `event.context.cloudflare.env`. A standard
+Node Docker container would need new PostgreSQL and S3-compatible adapters. The approved deployment
+uses Cloudflare Workers, D1, and R2, so the VPS is not part of this release path.

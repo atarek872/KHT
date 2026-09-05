@@ -832,7 +832,7 @@ git commit -m "feat: harden commerce mutations"
 - Consumes: all services and routes from Tasks 1–8.
 - Produces: repeatable `npm run test:production-readiness` command and an idempotent local scenario.
 
-- [ ] **Step 1: Add a failing acceptance test**
+- [x] **Step 1: Add a failing acceptance test**
 
 The test must create a guest COD order, verify customer CRM data, transition it through delivery,
 verify paid status and history, cancel a separate order and verify one-time stock restoration,
@@ -854,18 +854,18 @@ test('complete COD operations remain durable and auditable', async () => {
 })
 ```
 
-- [ ] **Step 2: Run the test to verify it fails before fixture updates**
+- [x] **Step 2: Run the test to verify it fails before fixture updates**
 
 Run: `node --experimental-strip-types --test tests/production-readiness.test.ts`
 
 Expected: FAIL until the seed and acceptance helpers represent the new schema.
 
-- [ ] **Step 3: Update local demo seed and commands**
+- [x] **Step 3: Update local demo seed and commands**
 
 Preserve idempotency. Add examples for the new order statuses and recovery states without changing
 production migration behavior. Add `test:production-readiness` to `package.json`.
 
-- [ ] **Step 4: Run the complete verification suite**
+- [x] **Step 4: Run the complete verification suite**
 
 Run in order:
 
@@ -879,7 +879,7 @@ npm run build:cloudflare
 
 Expected: every command exits `0`; the Worker build exports a callable default `fetch` handler.
 
-- [ ] **Step 5: Start the local Cloudflare runtime and smoke test**
+- [x] **Step 5: Start the local Cloudflare runtime and smoke test**
 
 Run: `npm run local:setup` then `npm run local:dev`.
 
@@ -887,13 +887,13 @@ Verify login, product activation, one storefront order, order tracking, Admin st
 customer history, cart recovery actions, media upload, logout, and unauthenticated rejection. Keep
 the final local server running for user review.
 
-- [ ] **Step 6: Update operating documentation**
+- [x] **Step 6: Update operating documentation**
 
 Document local setup, D1 migration order, no-demo production rule, Admin secret rotation, staging
 acceptance, production launch gates, and rollback by Worker version. Do not document live secret
 values.
 
-- [ ] **Step 7: Commit readiness verification**
+- [x] **Step 7: Commit readiness verification**
 
 ```bash
 git add tests/production-readiness.test.ts server/db/seeds/local-demo.sql docs/KHT-local-admin-and-deployment.md README.md package.json package-lock.json
