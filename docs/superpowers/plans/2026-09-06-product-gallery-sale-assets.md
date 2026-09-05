@@ -126,7 +126,7 @@ git commit -m "feat: add product gallery and sale price schema"
 - Produces: `getDiscountPercentage(price, compareAtPrice): number | null`.
 - Produces: `isMediaReferenced(database, url): Promise<boolean>`.
 
-- [ ] **Step 1: Extend real behavior tests and verify RED**
+- [x] **Step 1: Extend real behavior tests and verify RED**
 
 Add tests that call `validateProduct`, `saveProduct`, `getProduct`, `getCatalog`, and
 `getDiscountPercentage` with a real SQLite-backed D1 adapter:
@@ -154,7 +154,7 @@ Run: `node --experimental-strip-types --test tests/product-gallery-pricing.test.
 
 Expected: FAIL on missing fields/helper and old single-image persistence.
 
-- [ ] **Step 2: Extend contracts and pricing helper**
+- [x] **Step 2: Extend contracts and pricing helper**
 
 ```ts
 export interface Product {
@@ -174,7 +174,7 @@ export function getDiscountPercentage(price: number, compareAtPrice?: number | n
 
 Update static fallback products with `compareAtPrice: null` and `images: [image]`.
 
-- [ ] **Step 3: Persist and read galleries atomically**
+- [x] **Step 3: Persist and read galleries atomically**
 
 Query product image rows in `getProduct` and `getCatalog`, grouping them by product ID in stable
 order. In `saveProduct`, validate the gallery and compare price, set `products.image = images[0]`,
@@ -190,20 +190,20 @@ const compareAtPrice = input.compareAtPrice === null || input.compareAtPrice ===
 const images = input.images.map((url) => url.trim())
 ```
 
-- [ ] **Step 4: Make R2 deletion reference-aware**
+- [x] **Step 4: Make R2 deletion reference-aware**
 
 Implement `isMediaReferenced` with one scalar query covering `products.image`, `product_images.url`,
 and `categories.image`. The explicit media-delete endpoint returns 409 when true. Product edit
 calculates removed old gallery URLs, saves first, then deletes only unreferenced `/api/media/<key>`
 objects.
 
-- [ ] **Step 5: Run focused tests and verify GREEN**
+- [x] **Step 5: Run focused tests and verify GREEN**
 
 Run: `node --experimental-strip-types --test tests/product-gallery-pricing.test.ts tests/admin-products.test.ts tests/order.test.ts tests/shipping.test.ts`
 
 Expected: PASS, including order totals using only the current price.
 
-- [ ] **Step 6: Commit service slice**
+- [x] **Step 6: Commit service slice**
 
 ```bash
 git add shared/types.ts shared/adminProduct.ts shared/productPricing.ts server/data/catalog.ts server/services/adminProducts.ts server/services/catalog.ts server/services/mediaReferences.ts server/api/admin/media.delete.ts server/api/admin/products/[id].patch.ts tests/product-gallery-pricing.test.ts tests/admin-products.test.ts tests/order.test.ts tests/shipping.test.ts

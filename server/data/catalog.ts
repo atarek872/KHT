@@ -15,8 +15,10 @@ export const catalog: Catalog = {
       code: 'KHT—001',
       category: 'tees',
       price: 890,
+      compareAtPrice: null,
       name: { en: 'The Line Tee', ar: 'تيشرت ذا لاين' },
       image: '/images/tee.png',
+      images: ['/images/tee.png'],
       description: {
         en: 'An oversized silhouette. One uninterrupted white line. The starting point of the collection.',
         ar: 'قَصّة واسعة وخط أبيض متصل. نقطة البداية للمجموعة.',
@@ -43,8 +45,10 @@ export const catalog: Catalog = {
       code: 'KHT—002',
       category: 'sets',
       price: 2390,
+      compareAtPrice: null,
       name: { en: 'The Line Tracksuit', ar: 'سوت ذا لاين' },
       image: '/images/tracksuit.png',
+      images: ['/images/tracksuit.png'],
       description: {
         en: 'Two pieces. One direction. A relaxed jacket and matching trousers, connected by the line.',
         ar: 'قطعتان في اتجاه واحد. جاكيت مريح وبنطلون متناسق يجمعهما الخط.',
@@ -71,8 +75,10 @@ export const catalog: Catalog = {
       code: 'KHT—003',
       category: 'pants',
       price: 1290,
+      compareAtPrice: null,
       name: { en: 'The Line Trouser', ar: 'بنطلون ذا لاين' },
       image: '/images/pants.png',
+      images: ['/images/pants.png'],
       description: {
         en: 'A wide-leg cut with a clean vertical line. Made to anchor the complete look.',
         ar: 'قَصّة واسعة وخط رأسي واضح. القطعة التي تكمل الإطلالة.',

@@ -10,7 +10,9 @@ const product: AdminProductInput = {
   code: 'KHT-001',
   category: 'tees',
   price: 890,
+  compareAtPrice: null,
   image: '/images/tee.png',
+  images: ['/images/tee.png'],
   active: true,
   name: { en: 'Line Tee', ar: 'تيشرت لاين' },
   description: { en: 'Description', ar: 'وصف' },
@@ -24,8 +26,8 @@ test('product validation preserves existing catalog requirements', () => {
   assert.throws(() => validateProduct({ ...product, slug: 'Bad Slug' }), /lowercase URL slug/)
   assert.throws(() => validateProduct({ ...product, category: 'unknown' }), /existing category/)
   assert.throws(
-    () => validateProduct({ ...product, image: 'https://example.com/a.jpg' }),
-    /valid product image/,
+    () => validateProduct({ ...product, image: 'https://example.com/a.jpg', images: ['https://example.com/a.jpg'] }),
+    /valid product images/,
   )
   assert.throws(() => validateProduct({ ...product, variants: [] }), /at least one variant/)
 })
@@ -95,12 +97,14 @@ test('product editor groups supported fields and uploads one primary image', () 
 test('media deletion protects referenced images and edit cleanup happens after save', () => {
   const remove = read('../server/api/admin/media.delete.ts')
   const update = read('../server/api/admin/products/[id].patch.ts')
-  assert.match(
-    remove,
-    /SELECT id FROM products WHERE image = \?[\s\S]*UNION ALL SELECT id FROM categories WHERE image = \?/,
-  )
-  assert.match(remove, /This image is still used by a product/)
-  assert.ok(update.indexOf('await saveProduct') < update.indexOf('delete(oldKey)'))
+  const references = read('../server/services/mediaReferences.ts')
+  assert.match(references, /SELECT image AS url FROM products/)
+  assert.match(references, /UNION ALL SELECT url FROM product_images/)
+  assert.match(references, /UNION ALL SELECT image AS url FROM categories/)
+  assert.match(remove, /isMediaReferenced\(database, url\)/)
+  assert.match(remove, /This image is still used by a product or category/)
+  assert.match(update, /previous\?\.images/)
+  assert.ok(update.indexOf('await saveProduct') < update.indexOf('await isMediaReferenced'))
 })
 
 test('storefront catalog maps active D1 products back to the existing contract', () => {

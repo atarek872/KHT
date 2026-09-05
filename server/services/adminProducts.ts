@@ -9,12 +9,26 @@ type ProductSummaryRow = Omit<AdminProductSummary, 'name' | 'active'> & {
 
 type ProductVariantRow = Omit<AdminProductVariant, 'active'> & { active: number }
 
+type ProductImageRow = { url: string }
+
+function productImages(input: AdminProductInput) {
+  return (input.images ?? (input.image ? [input.image] : [])).map((url) => url.trim())
+}
+
 export function validateProduct(input: AdminProductInput, categories = new Set(['tees', 'sets', 'pants'])) {
   if (!input.slug?.match(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)) throw new Error('Use a lowercase URL slug with hyphens.')
   if (!input.code?.trim()) throw new Error('Product code is required.')
   if (!categories.has(input.category)) throw new Error('Choose an existing category.')
   if (!Number.isInteger(input.price) || input.price < 0) throw new Error('Enter a valid whole EGP price.')
-  if (!input.image?.startsWith('/')) throw new Error('Upload or choose a valid product image.')
+  if (input.compareAtPrice != null && !Number.isInteger(input.compareAtPrice))
+    throw new Error('The previous price must be a whole EGP amount.')
+  if (input.compareAtPrice != null && input.compareAtPrice <= input.price)
+    throw new Error('The previous price must be higher than the current price.')
+  const images = productImages(input)
+  if (!images.length) throw new Error('Add at least one product image.')
+  if (images.length > 8) throw new Error('You can add up to 8 product images.')
+  if (new Set(images).size !== images.length) throw new Error('Product images must be unique.')
+  if (images.some((image) => !image?.startsWith('/'))) throw new Error('Upload or choose valid product images.')
   for (const value of [input.name.en, input.name.ar, input.description.en, input.description.ar,
     input.detail.en, input.detail.ar, input.fit.en, input.fit.ar]) {
     if (!value?.trim()) throw new Error('Complete all English and Arabic product content.')
@@ -37,7 +51,8 @@ export function validateProduct(input: AdminProductInput, categories = new Set([
 
 export async function listProducts(database: D1Database): Promise<AdminProductSummary[]> {
   const result = await database.prepare(`SELECT p.id, p.slug, p.code, p.name_en AS nameEn,
-    p.name_ar AS nameAr, p.category, p.price, p.image, p.active, p.updated_at AS updatedAt,
+    p.name_ar AS nameAr, p.category, p.price, p.compare_at_price AS compareAtPrice,
+    p.image, p.active, p.updated_at AS updatedAt,
     COALESCE(SUM(CASE WHEN v.active = 1 THEN v.stock ELSE 0 END), 0) AS stock
     FROM products p LEFT JOIN inventory_variants v ON v.product_id = p.id
     GROUP BY p.id ORDER BY p.updated_at DESC`).all<ProductSummaryRow>()
@@ -45,18 +60,26 @@ export async function listProducts(database: D1Database): Promise<AdminProductSu
 }
 
 export async function getProduct(database: D1Database, id: string): Promise<AdminProduct | null> {
-  const product = await database.prepare(`SELECT id, slug, code, category, price, image,
+  const product = await database.prepare(`SELECT id, slug, code, category, price,
+    compare_at_price AS compareAtPrice, image,
     name_en AS nameEn, name_ar AS nameAr, description_en AS descriptionEn,
     description_ar AS descriptionAr, detail_en AS detailEn, detail_ar AS detailAr,
     fit_en AS fitEn, fit_ar AS fitAr, active, updated_at AS updatedAt FROM products WHERE id = ?`)
     .bind(id).first<Record<string, string | number>>()
   if (!product) return null
-  const variants = await database.prepare(`SELECT id, sku, size, color, stock, active
-    FROM inventory_variants WHERE product_id = ? ORDER BY rowid`).bind(id)
-    .all<ProductVariantRow>()
+  const [variants, images] = await Promise.all([
+    database.prepare(`SELECT id, sku, size, color, stock, active
+      FROM inventory_variants WHERE product_id = ? ORDER BY rowid`).bind(id)
+      .all<ProductVariantRow>(),
+    database.prepare(`SELECT url FROM product_images WHERE product_id = ? ORDER BY sort_order`)
+      .bind(id).all<ProductImageRow>(),
+  ])
+  const orderedImages = (images.results || []).map(({ url }) => url)
+  if (!orderedImages.length) orderedImages.push(String(product.image))
   return {
     id: String(product.id), slug: String(product.slug), code: String(product.code), category: String(product.category),
-    price: Number(product.price), image: String(product.image), active: !!product.active, updatedAt: String(product.updatedAt),
+    price: Number(product.price), compareAtPrice: product.compareAtPrice === null ? null : Number(product.compareAtPrice),
+    image: orderedImages[0]!, images: orderedImages, active: !!product.active, updatedAt: String(product.updatedAt),
     name: { en: String(product.nameEn), ar: String(product.nameAr) },
     description: { en: String(product.descriptionEn), ar: String(product.descriptionAr) },
     detail: { en: String(product.detailEn), ar: String(product.detailAr) },
@@ -76,15 +99,18 @@ export async function saveProduct(
   const allowedIds = new Set(existing?.variants.map((variant) => variant.id) || [])
   if (input.variants.some((variant) => variant.id && !allowedIds.has(variant.id))) throw new Error('A variant does not belong to this product.')
   const now = new Date().toISOString()
+  const images = productImages(input)
   const productStatement = database.prepare(`INSERT INTO products
-    (id, slug, code, category, price, image, name_en, name_ar, description_en, description_ar, detail_en, detail_ar, fit_en, fit_ar, active, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    (id, slug, code, category, price, compare_at_price, image, name_en, name_ar, description_en, description_ar, detail_en, detail_ar, fit_en, fit_ar, active, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(id) DO UPDATE SET slug=excluded.slug, code=excluded.code, category=excluded.category,
-    price=excluded.price, image=excluded.image, name_en=excluded.name_en, name_ar=excluded.name_ar,
+    price=excluded.price, compare_at_price=excluded.compare_at_price, image=excluded.image,
+    name_en=excluded.name_en, name_ar=excluded.name_ar,
     description_en=excluded.description_en, description_ar=excluded.description_ar,
     detail_en=excluded.detail_en, detail_ar=excluded.detail_ar, fit_en=excluded.fit_en,
     fit_ar=excluded.fit_ar, active=excluded.active, updated_at=excluded.updated_at`)
-    .bind(id, input.slug, input.code.trim(), input.category, input.price, input.image, input.name.en.trim(), input.name.ar.trim(),
+    .bind(id, input.slug, input.code.trim(), input.category, input.price, input.compareAtPrice ?? null,
+      images[0], input.name.en.trim(), input.name.ar.trim(),
       input.description.en.trim(), input.description.ar.trim(), input.detail.en.trim(), input.detail.ar.trim(),
       input.fit.en.trim(), input.fit.ar.trim(), input.active ? 1 : 0, now)
   const statements = [productStatement]
@@ -100,6 +126,11 @@ export async function saveProduct(
         variant.sku.trim().toUpperCase(), variant.size.trim(), variant.color.trim(), input.price,
         variant.stock, variant.active ? 1 : 0, now))
   }
+  statements.push(database.prepare('DELETE FROM product_images WHERE product_id = ?').bind(id))
+  images.forEach((url, sortOrder) => {
+    statements.push(database.prepare(`INSERT INTO product_images (id, product_id, url, sort_order)
+      VALUES (?, ?, ?, ?)`).bind(crypto.randomUUID(), id, url, sortOrder))
+  })
   await database.batch(statements)
   return (await getProduct(database, id))!
 }

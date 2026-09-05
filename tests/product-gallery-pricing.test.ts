@@ -2,6 +2,9 @@ import assert from 'node:assert/strict'
 import { existsSync, readFileSync } from 'node:fs'
 import test from 'node:test'
 import { createTestD1 } from './helpers/sqliteD1.ts'
+import { getProduct, saveProduct, validateProduct } from '../server/services/adminProducts.ts'
+import { getCatalog } from '../server/services/catalog.ts'
+import { priceOrder } from '../shared/order.ts'
 
 const migrationNames = [
   '0001_commerce.sql',
@@ -77,6 +80,96 @@ test('gallery schema rejects invalid compare prices and duplicate image position
           VALUES ('duplicate-position', 'kht-001', '/images/alternate.webp', 0)`),
       /UNIQUE constraint failed/,
     )
+  } finally {
+    close()
+  }
+})
+
+test('product save persists ordered images and compare price while orders use current price', async () => {
+  const { database, sqlite, close } = createTestD1()
+  try {
+    applyMigrations(sqlite)
+    const existing = await getProduct(database, 'kht-001')
+    assert.ok(existing)
+
+    const saved = await saveProduct(database, {
+        ...existing,
+        price: 800,
+        compareAtPrice: 1000,
+        images: ['/images/tee-back.webp', '/images/tee-front.webp'],
+      }, existing.id)
+
+    assert.deepEqual(saved.images, ['/images/tee-back.webp', '/images/tee-front.webp'])
+    assert.equal(saved.image, '/images/tee-back.webp')
+    assert.equal(saved.compareAtPrice, 1000)
+
+    const catalog = await getCatalog(database)
+    const product = catalog.products.find(({ id }) => id === 'kht-001')
+    assert.ok(product)
+    assert.deepEqual(product.images, ['/images/tee-back.webp', '/images/tee-front.webp'])
+    assert.equal(product.image, '/images/tee-back.webp')
+    assert.equal(product.compareAtPrice, 1000)
+    assert.equal(priceOrder([{ id: product.id, size: 'M', quantity: 1 }], catalog).subtotal, 800)
+  } finally {
+    close()
+  }
+})
+
+test('product validation enforces gallery and optional previous-price boundaries', async () => {
+  const { database, sqlite, close } = createTestD1()
+  try {
+    applyMigrations(sqlite)
+    const product = await getProduct(database, 'kht-001')
+    assert.ok(product)
+    const valid = { ...product, images: ['/images/tee.webp'], compareAtPrice: null }
+
+    assert.doesNotThrow(() => validateProduct(valid))
+    assert.throws(() => validateProduct({ ...valid, images: [] }), /at least one product image/i)
+    assert.throws(
+      () =>
+        validateProduct({
+          ...valid,
+          images: Array.from({ length: 9 }, (_, index) => `/images/tee-${index}.webp`),
+        }),
+      /up to 8 product images/i,
+    )
+    assert.throws(
+      () => validateProduct({ ...valid, images: ['/images/tee.webp', '/images/tee.webp'] }),
+      /unique/i,
+    )
+    assert.throws(
+      () => validateProduct({ ...valid, compareAtPrice: valid.price }),
+      /higher than the current price/i,
+    )
+    assert.throws(
+      () => validateProduct({ ...valid, compareAtPrice: valid.price + 0.5 }),
+      /whole EGP/i,
+    )
+  } finally {
+    close()
+  }
+})
+
+test('sale percentage is derived only from a valid previous price', async () => {
+  const pricing = await import('../shared/productPricing.ts').catch(() => null)
+  assert.ok(pricing, 'product pricing helper should exist')
+  assert.equal(pricing.getDiscountPercentage(800, 1000), 20)
+  assert.equal(pricing.getDiscountPercentage(1000, null), null)
+  assert.equal(pricing.getDiscountPercentage(1000, 1000), null)
+})
+
+test('media references include primary, gallery, and category images', async () => {
+  const references = await import('../server/services/mediaReferences.ts').catch(() => null)
+  assert.ok(references, 'media reference service should exist')
+  const { database, sqlite, close } = createTestD1()
+  try {
+    applyMigrations(sqlite)
+    sqlite.exec(`INSERT INTO product_images (id, product_id, url, sort_order)
+      VALUES ('secondary-image', 'kht-001', '/api/media/secondary.webp', 1)`)
+    assert.equal(await references.isMediaReferenced(database, '/images/tee.png'), true)
+    assert.equal(await references.isMediaReferenced(database, '/api/media/secondary.webp'), true)
+    assert.equal(await references.isMediaReferenced(database, '/images/tracksuit.png'), true)
+    assert.equal(await references.isMediaReferenced(database, '/api/media/unused.webp'), false)
   } finally {
     close()
   }

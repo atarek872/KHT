@@ -11,7 +11,9 @@ export interface Product {
   name: Localized
   category: string
   price: number
+  compareAtPrice: number | null
   image: string
+  images: string[]
   description: Localized
   detail: Localized
   fit: Localized

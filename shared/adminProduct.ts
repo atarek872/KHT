@@ -14,7 +14,9 @@ export interface AdminProductInput {
   code: string
   category: string
   price: number
+  compareAtPrice: number | null
   image: string
+  images: string[]
   name: Localized
   description: Localized
   detail: Localized
@@ -35,6 +37,7 @@ export interface AdminProductSummary {
   name: Localized
   category: string
   price: number
+  compareAtPrice: number | null
   image: string
   stock: number
   active: boolean
