@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Product } from '../../shared/types'
 defineProps<{ product: Product; index?: number }>()
-const { t, money, localized } = useLanguage()
+const { t, localized } = useLanguage()
 </script>
 <template>
   <article class="product-card">
@@ -26,7 +26,7 @@ const { t, money, localized } = useLanguage()
           ><h3>{{ localized(product.name) }}</h3></NuxtLink
         ><span>{{ t('Black / White', 'أسود / أبيض') }}</span>
       </div>
-      <span class="product-price">{{ money(product.price) }}</span>
+      <ProductPrice :price="product.price" :compare-at-price="product.compareAtPrice" compact />
     </div>
   </article>
 </template>

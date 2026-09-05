@@ -104,6 +104,24 @@ test('checkout submits durable guest COD orders with server-owned totals', async
   assert.doesNotMatch(endpoint, /payment_status|paymob|card details/i)
 })
 
+test('storefront presents sale pricing and an accessible ordered product gallery', () => {
+  const price = read('../app/components/ProductPrice.vue')
+  const card = read('../app/components/ProductCard.vue')
+  const detail = read('../app/pages/products/[slug].vue')
+  assert.match(price, /getDiscountPercentage/)
+  assert.match(price, /<del/)
+  assert.match(price, /money\(price\)/)
+  assert.match(price, /% OFF|خصم/)
+  assert.match(card, /<ProductPrice/)
+  assert.match(detail, /selectedImageIndex = ref\(0\)/)
+  assert.match(detail, /const selectedImage = computed/)
+  assert.match(detail, /product\.value\.images/)
+  assert.match(detail, /class="product-thumbnail"/)
+  assert.match(detail, /:aria-pressed="selectedImageIndex === index"/)
+  assert.match(detail, /:src="selectedImage"/g)
+  assert.match(detail, /selectedImageIndex\.value = 0/)
+})
+
 test('admin styles remain isolated from storefront visual selectors', () => {
   const adminCss = read('../app/assets/css/admin.css')
   const mainCss = read('../app/assets/css/main.css')

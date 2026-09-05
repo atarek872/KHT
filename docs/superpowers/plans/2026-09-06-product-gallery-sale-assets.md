@@ -290,7 +290,7 @@ git commit -m "feat: manage product galleries in Admin"
 - Consumes: `getDiscountPercentage` from Task 2.
 - Produces: semantic current/sale price UI and ordered product-detail image selection.
 
-- [ ] **Step 1: Add failing storefront contract tests**
+- [x] **Step 1: Add failing storefront contract tests**
 
 Require one reusable price component that renders `<del>` only for a valid previous price, current
 price in all cases, and a textual percentage. Require product detail thumbnail buttons, selected-image
@@ -300,33 +300,33 @@ Run: `node --experimental-strip-types --test tests/storefront-regression.test.ts
 
 Expected: FAIL because the current components render one image and one price.
 
-- [ ] **Step 2: Implement reusable semantic price presentation**
+- [x] **Step 2: Implement reusable semantic price presentation**
 
 `ProductPrice.vue` takes `price`, `compareAtPrice`, and optional `compact`. It uses the shared helper,
 `<del>` for the old value, a current-price span, and a text badge such as `20% OFF` / `خصم 20٪`.
 Replace price markup in product cards, product detail, and mobile buy bar. Do not alter bag or checkout
 totals.
 
-- [ ] **Step 3: Implement detail gallery selection**
+- [x] **Step 3: Implement detail gallery selection**
 
 Keep `selectedImageIndex = ref(0)`, reset it on route changes, derive `selectedImage`, and render
 ordered thumbnail `<button>` controls only when more than one image exists. The main image and zoom
 both use `selectedImage`; the primary remains eager and thumbnails are lazy. Preserve focus-visible
 states and provide `aria-pressed` for the selected thumbnail.
 
-- [ ] **Step 4: Add storefront styles using existing tokens**
+- [x] **Step 4: Add storefront styles using existing tokens**
 
 Use only `--black`, `--ink`, `--muted`, `--line`, `--paper`, and existing font variables. Thumbnail
 targets are at least 44px, overflow horizontally on small screens, and do not shift product details.
 Old price uses a visible line-through; discount text is not color-only.
 
-- [ ] **Step 5: Run focused tests and typecheck**
+- [x] **Step 5: Run focused tests and typecheck**
 
 Run: `node --experimental-strip-types --test tests/storefront-regression.test.ts tests/storefront.test.ts tests/product-gallery-pricing.test.ts && npm run typecheck`
 
 Expected: PASS; current price remains the only price consumed by order code.
 
-- [ ] **Step 6: Commit storefront slice**
+- [x] **Step 6: Commit storefront slice**
 
 ```bash
 git add app/components/ProductPrice.vue app/components/ProductCard.vue app/pages/products/[slug].vue app/assets/css/main.css tests/storefront-regression.test.ts tests/storefront.test.ts

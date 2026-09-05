@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const route = useRoute()
-const { t, localized, money } = useLanguage()
+const { t, localized } = useLanguage()
 const catalog = useCatalog()
 const product = computed(() => catalog.value.products.find((p) => p.slug === route.params.slug))
 if (!product.value) throw createError({ statusCode: 404, statusMessage: 'Piece not found' })
@@ -8,6 +8,11 @@ const category = computed(() =>
   catalog.value.categories.find((c) => c.slug === product.value?.category),
 )
 const selectedSize = ref('')
+const selectedImageIndex = ref(0)
+const productImages = computed(() => product.value?.images?.length
+  ? product.value.images
+  : product.value ? [product.value.image] : [])
+const selectedImage = computed(() => productImages.value[selectedImageIndex.value] || product.value?.image || '')
 const message = ref('')
 const zoom = ref(false)
 const actualSize = ref(true)
@@ -33,6 +38,7 @@ watch(
   () => route.params.slug,
   () => {
     selectedSize.value = ''
+    selectedImageIndex.value = 0
     message.value = ''
   },
 )
@@ -76,23 +82,36 @@ useSeoMeta({
           @click="zoom = true"
         >
           <StoreImage
-            :src="product.image"
+            :src="selectedImage"
             sizes="(max-width: 767px) 100vw, 55vw"
-            :alt="localized(product.name)"
+            :alt="`${localized(product.name)} — ${t('image', 'صورة')} ${selectedImageIndex + 1}`"
             width="1086"
             height="1448"
             fetchpriority="high"
           /><span class="zoom-label"
             >{{ t('Explore the details', 'شوف التفاصيل') }}<KhtIcon name="plus" /></span
           ><span class="product-code">{{ product.code }}</span></button
-        ><span class="image-note">{{
-          t('Product image / Front view', 'صورة المنتج / أمامية')
+        ><div v-if="productImages.length > 1" class="product-thumbnails" role="group" :aria-label="t('Product images', 'صور المنتج')">
+          <button
+            v-for="(image, index) in productImages"
+            :key="image"
+            type="button"
+            class="product-thumbnail"
+            :class="{ selected: selectedImageIndex === index }"
+            :aria-pressed="selectedImageIndex === index"
+            :aria-label="`${t('Show image', 'اعرض الصورة')} ${index + 1}`"
+            @click="selectedImageIndex = index"
+          >
+            <StoreImage :src="image" sizes="88px" :alt="`${localized(product.name)} — ${t('image', 'صورة')} ${index + 1}`" loading="lazy" />
+          </button>
+        </div><span class="image-note">{{
+          t(`Product image ${selectedImageIndex + 1} of ${productImages.length}`, `صورة المنتج ${selectedImageIndex + 1} من ${productImages.length}`)
         }}</span>
       </div>
       <div class="product-details">
         <p class="eyebrow">DROP 001 / {{ product.code }}</p>
         <h1>{{ localized(product.name) }}</h1>
-        <p class="detail-price">{{ money(product.price) }}</p>
+        <ProductPrice class="detail-price" :price="product.price" :compare-at-price="product.compareAtPrice" />
         <p class="product-description">{{ localized(product.description) }}</p>
         <div class="color-choice">
           <span class="color-swatch" /><span>{{ t('Black / White', 'أسود / أبيض') }}</span>
@@ -179,8 +198,8 @@ useSeoMeta({
       </div>
     </section>
     <div v-if="stickyVisible" class="mobile-buy-bar">
-      <span>{{ money(product.price) }}</span
-      ><button class="button button-dark" @click="addToBag">
+      <ProductPrice :price="product.price" :compare-at-price="product.compareAtPrice" compact />
+      <button class="button button-dark" @click="addToBag">
         {{ selectedSize ? t('Add to bag', 'أضف للسلة') : t('Select size', 'اختار مقاسك')
         }}<KhtIcon name="arrow" />
       </button>
@@ -206,9 +225,9 @@ useSeoMeta({
         :aria-label="t('Product image, scroll to explore', 'صورة المنتج، مرّر لاستكشافها')"
       >
         <StoreImage
-          :src="product.image"
+          :src="selectedImage"
           sizes="1086px"
-          :alt="localized(product.name)"
+          :alt="`${localized(product.name)} — ${t('image', 'صورة')} ${selectedImageIndex + 1}`"
           class="zoomed-product"
           width="1086"
           height="1448"
