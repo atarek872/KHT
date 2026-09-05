@@ -73,3 +73,10 @@ test('inventory guidance and abandoned-cart time remain useful on long mobile se
   assert.match(abandoned, /setInterval\([\s\S]*60000/)
   assert.match(abandoned, /onBeforeUnmount\(\(\) => clearInterval\(clockTimer\)\)/)
 })
+
+test('product gallery uses responsive cards with full-size touch actions', () => {
+  assert.match(css, /admin-product-gallery__list[\s\S]*grid-template-columns:\s*repeat\(auto-fill, minmax\(180px, 1fr\)\)/)
+  assert.match(css, /admin-product-gallery__action[\s\S]*min-height:\s*44px/)
+  const mobile = css.slice(css.indexOf('@media (max-width: 767px)'))
+  assert.match(mobile, /admin-product-gallery__list[\s\S]*grid-template-columns:\s*1fr/)
+})

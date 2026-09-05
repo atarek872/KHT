@@ -223,7 +223,7 @@ git commit -m "feat: persist product galleries and compare prices"
 - Consumes: `AdminProductInput.images`, `AdminProductInput.compareAtPrice` from Task 2.
 - Produces: ordered Admin payload with one to eight images and optional previous price.
 
-- [ ] **Step 1: Add failing Admin behavior/contract tests**
+- [x] **Step 1: Add failing Admin behavior/contract tests**
 
 Update Admin UI assertions to require a multiple native file input, `1 / 8` count guidance, Primary
 text, named Move previous/Move next/Remove actions, current/previous visible labels, and a guarded
@@ -233,7 +233,7 @@ Run: `node --experimental-strip-types --test tests/admin-products.test.ts tests/
 
 Expected: FAIL because the form supports only one `image` and one price field.
 
-- [ ] **Step 2: Implement ordered upload state**
+- [x] **Step 2: Implement ordered upload state**
 
 Initialize new products with `images: []` and `compareAtPrice: null`. Upload selected files until the
 eight-image limit, preserving successes and one actionable failure message. Implement stable moves:
@@ -249,26 +249,26 @@ function moveImage(index: number, offset: -1 | 1) {
 Removing a newly uploaded URL calls the existing authenticated media-delete endpoint; existing URLs
 are removed from the form and cleaned after successful save by Task 2.
 
-- [ ] **Step 3: Render accessible gallery and pricing controls**
+- [x] **Step 3: Render accessible gallery and pricing controls**
 
 Use `<input type="file" multiple>` and an ordered list of preview cards. Every button gets a stable
 English accessible name including image position. Use existing monochrome buttons and focus tokens.
 Add `Current price (EGP)` and `Previous price (EGP) — optional`, with `min`, `step=1`, and adjacent
 help. Prevent submit while `uploading` and announce upload errors with `role="alert"`.
 
-- [ ] **Step 4: Add responsive Admin styles**
+- [x] **Step 4: Add responsive Admin styles**
 
 Use the existing CSS variables and flat borders. Gallery cards become a responsive grid; previews use
 consistent aspect ratio; action buttons remain at least 44px; mobile collapses to one or two columns
 without changing DOM/tab order.
 
-- [ ] **Step 5: Run focused tests and typecheck**
+- [x] **Step 5: Run focused tests and typecheck**
 
 Run: `node --experimental-strip-types --test tests/admin-products.test.ts tests/admin-accessibility.test.ts tests/admin-responsive.test.ts && npm run typecheck`
 
 Expected: PASS with no new colors, fonts, gradients, shadows, or inaccessible controls.
 
-- [ ] **Step 6: Commit Admin UI slice**
+- [x] **Step 6: Commit Admin UI slice**
 
 ```bash
 git add app/components/admin/products/ProductForm.vue app/assets/css/admin.css tests/admin-products.test.ts tests/admin-accessibility.test.ts tests/admin-responsive.test.ts

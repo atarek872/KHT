@@ -84,14 +84,21 @@ test('products list uses restrained actions and responsive table/card presentati
   assert.match(page, /admin-products-mobile/)
 })
 
-test('product editor groups supported fields and uploads one primary image', () => {
+test('product editor manages an ordered gallery and optional previous price', () => {
   const form = read('../app/components/admin/products/ProductForm.vue')
   for (const section of ['General', 'Media', 'Pricing', 'Variants & inventory'])
     assert.match(form, new RegExp(`title="${section.replace('&', '&amp;')}|title="${section}`))
   assert.match(form, /\/api\/admin\/media/)
   assert.match(form, /image\/jpeg,image\/png,image\/webp/)
-  assert.match(form, /Remove image/)
-  assert.doesNotMatch(form, /SEO|alt text|reorder/i)
+  assert.match(form, /type="file"[^>]*multiple/)
+  assert.match(form, /1 \/ 8|\{\{ form\.images\.length \}\} \/ 8/)
+  assert.match(form, />Primary</)
+  for (const action of ['Move previous', 'Move next', 'Remove image']) assert.match(form, new RegExp(action))
+  assert.match(form, /Current price \(EGP\)/)
+  assert.match(form, /Previous price \(EGP\).*optional/)
+  assert.match(form, /:disabled="uploading \|\| form\.images\.length >= 8"/)
+  assert.match(form, /:disabled="busy \|\| uploading"/)
+  assert.doesNotMatch(form, /SEO|alt text/i)
 })
 
 test('media deletion protects referenced images and edit cleanup happens after save', () => {

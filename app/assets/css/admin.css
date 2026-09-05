@@ -2075,6 +2075,92 @@
   gap: 8px;
 }
 
+.kht-admin .admin-product-form__pricing {
+  max-width: 760px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.kht-admin .admin-product-gallery {
+  display: grid;
+  gap: 18px;
+}
+
+.kht-admin .admin-product-gallery__toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 18px;
+}
+
+.kht-admin .admin-product-gallery__toolbar p,
+.kht-admin .admin-product-gallery__empty {
+  margin: 0;
+  color: #666666;
+  font-size: 0.75rem;
+}
+
+.kht-admin .admin-product-gallery__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.kht-admin .admin-product-gallery__item {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+
+.kht-admin .admin-product-gallery__item .admin-product-media__preview {
+  width: 100%;
+  position: relative;
+}
+
+.kht-admin .admin-product-gallery__primary {
+  position: absolute;
+  inset-block-start: 8px;
+  inset-inline-start: 8px;
+  padding: 5px 8px;
+  color: var(--kht-white);
+  background: var(--kht-gray-800);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.kht-admin .admin-product-gallery__actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.kht-admin .admin-product-gallery__action {
+  min-height: 44px;
+  padding: 7px;
+  color: var(--kht-gray-800);
+  background: var(--kht-white);
+  border: 1px solid var(--kht-gray-200);
+  border-radius: var(--kht-admin-radius);
+  font: inherit;
+  font-size: 0.6875rem;
+}
+
+.kht-admin .admin-product-gallery__action:last-child {
+  grid-column: 1 / -1;
+}
+
+.kht-admin .admin-product-gallery__action:disabled {
+  color: var(--kht-gray-600);
+  background: var(--kht-gray-100);
+}
+
 .kht-admin .admin-product-media {
   display: grid;
   grid-template-columns: 180px minmax(0, 1fr);
@@ -3073,8 +3159,13 @@
   }
 
   .kht-admin .admin-product-form__grid,
+  .kht-admin .admin-product-form__pricing,
   .kht-admin .admin-product-media,
   .kht-admin .admin-product-variant {
+    grid-template-columns: 1fr;
+  }
+
+  .kht-admin .admin-product-gallery__list {
     grid-template-columns: 1fr;
   }
 

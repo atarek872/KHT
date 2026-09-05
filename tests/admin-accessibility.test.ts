@@ -116,3 +116,12 @@ test('empty, error, success, disabled, loading and unauthorized states are annou
   assert.match(createOrder, /title="Order created"/)
   assert.match(product, /role="status"/)
 })
+
+test('product gallery controls expose state and stable accessible names', () => {
+  const productForm = read('../app/components/admin/products/ProductForm.vue')
+  assert.match(productForm, /role="alert"/)
+  assert.match(productForm, /:aria-label="`Move previous image \$\{index \+ 1\}`"/)
+  assert.match(productForm, /:aria-label="`Move next image \$\{index \+ 1\}`"/)
+  assert.match(productForm, /:aria-label="`Remove image \$\{index \+ 1\}`"/)
+  assert.match(productForm, /:aria-busy="uploading \|\| undefined"/)
+})
