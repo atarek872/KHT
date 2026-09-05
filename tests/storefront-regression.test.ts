@@ -41,6 +41,19 @@ test('standalone catalog preserves original categories, products, prices, images
   assert.deepEqual(catalog.products[0]?.sizes.map((size) => size.name), ['S', 'M', 'L', 'XL', 'XXL'])
 })
 
+test('a configured D1 catalog is never labelled as demo data', async () => {
+  const emptyDatabase = {
+    prepare() {
+      return { all: async () => ({ results: [] }) }
+    },
+  }
+
+  const catalog = await getCatalog(emptyDatabase as never)
+  assert.equal(catalog.demo, false)
+  assert.deepEqual(catalog.categories, [])
+  assert.deepEqual(catalog.products, [])
+})
+
 test('D1 storefront adapter preserves stable merchandising and active navigation rules', () => {
   const catalog = read('../server/services/catalog.ts')
   assert.match(catalog, /FROM categories WHERE active = 1 ORDER BY sort_order, name_en/)

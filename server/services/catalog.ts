@@ -43,6 +43,7 @@ export async function getCatalog(
   ])
   return {
     ...fallbackCatalog,
+    demo: false,
     categories: (categoriesResult.results || []).map((category) => ({
       slug: category.slug,
       name: { en: category.nameEn, ar: category.nameAr },

@@ -18,6 +18,7 @@ export default defineEventHandler((event) => {
     'X-Frame-Options': 'DENY',
     'Referrer-Policy': 'strict-origin-when-cross-origin',
     'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=()',
+    'Strict-Transport-Security': 'max-age=31536000',
     'X-Request-Id': requestId,
   })
 })

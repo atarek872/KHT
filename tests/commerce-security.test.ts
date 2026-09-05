@@ -82,6 +82,7 @@ test('security middleware sets a request id and restrictive browser headers', ()
     'X-Content-Type-Options',
     'Referrer-Policy',
     'Permissions-Policy',
+    'Strict-Transport-Security',
     "frame-ancestors 'none'",
     'X-Request-Id',
   ]) {
