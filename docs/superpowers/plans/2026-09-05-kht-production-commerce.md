@@ -1037,10 +1037,15 @@ The user will add categories, products, images, stock, and shipping after public
 states now; run the controlled COD order and inventory-restoration acceptance after those records
 exist and before commercial operation.
 
-- [ ] **Step 5: Deploy the exact accepted source revision**
+- [x] **Step 5: Deploy the exact accepted source revision**
 
 Build once from the accepted commit, verify the Worker entrypoint, deploy production, and smoke test
 the production Worker URL before changing DNS.
+
+Revision `7d1e302` is deployed at
+`https://kht-commerce-production.atarek872.workers.dev` as Worker version
+`ce8eb4f5-9134-435c-98fe-954180375d8a`. Public, authentication, empty-state, security-header,
+logout, D1-cleanliness, and R2 integrity smoke checks passed before DNS work.
 
 - [ ] **Step 6: Attach the custom domain only after publication approval**
 
@@ -1053,6 +1058,12 @@ after the domain, policies, contact channels, checkout, Admin, D1, and R2 all pa
 Document the deployed Worker version and previous known-good version. Verify storefront, one test
 checkout, tracking, Admin login, media, security headers, and logout. If any critical check fails,
 restore the previous Worker version and leave DNS pointing only at a healthy deployment.
+
+Rollback data is recorded: the previous healthy Worker version is
+`999ac769-df37-448c-913a-f6a65a515568`; the clean D1 bookmark is
+`00000005-00000008-000050dd-4ddedc76f3a19b395f083a90f96eb260`; and a clean ignored SQL export
+exists locally. Final domain verification and a real COD lifecycle remain open until DNS and the
+owner-entered product/shipping records exist.
 
 - [ ] **Step 8: Commit production deployment metadata**
 

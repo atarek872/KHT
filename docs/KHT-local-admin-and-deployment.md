@@ -173,6 +173,24 @@ bookmark at every release and before risky data changes. Workers Logs are enable
 environment at full sampling for the low-traffic candidate; lower the sampling rate deliberately if
 traffic volume makes retention or cost inappropriate.
 
+### Production candidate release record — 2026-09-05
+
+- Source revision: `7d1e302`
+- Public Worker URL: `https://kht-commerce-production.atarek872.workers.dev`
+- Current Worker version: `ce8eb4f5-9134-435c-98fe-954180375d8a`
+- Previous healthy Worker version: `999ac769-df37-448c-913a-f6a65a515568`
+- Clean D1 Time Travel bookmark:
+  `00000005-00000008-000050dd-4ddedc76f3a19b395f083a90f96eb260`
+- Clean SQL export: `.cloudflare-deploy/production-clean-launch.sql` (local, ignored)
+- Production Admin credential record: `.production-admin` (local, ignored)
+
+The deployed smoke test confirmed the public storefront and Admin pages return HTTP 200, Admin
+APIs reject unauthenticated access, the production Admin can sign in and sign out, catalog and
+shipping responses are empty and not labelled as demo data, and CSP, HSTS, framing, referrer, and
+permissions headers are present. A controlled R2 upload was read back with the same SHA-256 and
+deleted. A complete COD checkout and order-state test remains intentionally deferred until the owner
+adds at least one category, active product variant with stock, and enabled shipping zone.
+
 ## Rollback
 
 Record the deployed Cloudflare Worker version and the previous known-good Worker version at every
