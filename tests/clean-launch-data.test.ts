@@ -11,6 +11,7 @@ const migrations = [
   '0005_abandoned_carts.sql',
   '0006_commerce_safety.sql',
   '0007_production_commerce.sql',
+  '0008_product_gallery_sale_pricing.sql',
 ]
 
 const operationUrl = new URL('../server/db/operations/empty-commerce.sql', import.meta.url)
@@ -30,6 +31,7 @@ test('clean launch operation leaves no catalog, shipping, customer, order, or ca
 
     for (const table of [
       'products',
+      'product_images',
       'inventory_variants',
       'categories',
       'shipping_zones',

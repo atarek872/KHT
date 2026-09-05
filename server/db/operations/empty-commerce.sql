@@ -9,6 +9,7 @@ DELETE FROM orders;
 DELETE FROM discounts;
 DELETE FROM customers;
 DELETE FROM inventory_variants;
+DELETE FROM product_images;
 DELETE FROM products;
 DELETE FROM categories;
 DELETE FROM shipping_zones;

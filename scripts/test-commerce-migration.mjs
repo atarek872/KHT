@@ -10,9 +10,11 @@ database.exec(readFileSync(new URL('../server/db/migrations/0004_discounts.sql',
 database.exec(readFileSync(new URL('../server/db/migrations/0005_abandoned_carts.sql', import.meta.url), 'utf8'))
 database.exec(readFileSync(new URL('../server/db/migrations/0006_commerce_safety.sql', import.meta.url), 'utf8'))
 database.exec(readFileSync(new URL('../server/db/migrations/0007_production_commerce.sql', import.meta.url), 'utf8'))
+database.exec(readFileSync(new URL('../server/db/migrations/0008_product_gallery_sale_pricing.sql', import.meta.url), 'utf8'))
 assert.equal(database.prepare('SELECT COUNT(*) AS count FROM inventory_variants').get().count, 15)
 assert.equal(database.prepare('SELECT COUNT(*) AS count FROM products').get().count, 3)
 assert.equal(database.prepare('SELECT COUNT(*) AS count FROM categories').get().count, 3)
+assert.equal(database.prepare('SELECT COUNT(*) AS count FROM product_images').get().count, 3)
 assert.deepEqual(
   database.prepare('SELECT name_en AS name FROM categories ORDER BY sort_order').all().map((row) => row.name),
   ['T-shirts', 'Tracksuits', 'Trousers'],

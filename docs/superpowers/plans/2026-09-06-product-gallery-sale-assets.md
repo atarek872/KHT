@@ -39,7 +39,7 @@
 - Produces: `product_images(id, product_id, url, sort_order)` ordered by `sort_order`.
 - Preserves: `products.image` and backfills it into gallery position zero.
 
-- [ ] **Step 1: Write failing migration behavior tests**
+- [x] **Step 1: Write failing migration behavior tests**
 
 Create a test that applies migrations `0001`–`0008`, then asserts literal outcomes:
 
@@ -59,13 +59,13 @@ assert.throws(() => sqlite.exec(`INSERT INTO product_images VALUES ('duplicate',
 
 This catches a missing backfill, weak compare-price constraint, or missing gallery uniqueness.
 
-- [ ] **Step 2: Run the new test and verify RED**
+- [x] **Step 2: Run the new test and verify RED**
 
 Run: `node --experimental-strip-types --test tests/product-gallery-pricing.test.ts`
 
 Expected: FAIL because migration `0008_product_gallery_sale_pricing.sql` does not exist.
 
-- [ ] **Step 3: Implement migration 0008**
+- [x] **Step 3: Implement migration 0008**
 
 ```sql
 ALTER TABLE products ADD COLUMN compare_at_price INTEGER
@@ -90,13 +90,13 @@ SELECT 'primary-' || id, id, image, 0 FROM products;
 Add migration 0008 to the local migration runners. Delete `product_images` before `products` in the
 clean operation and assert it is empty in the clean-operation test.
 
-- [ ] **Step 4: Run migration tests and verify GREEN**
+- [x] **Step 4: Run migration tests and verify GREEN**
 
 Run: `node --experimental-strip-types --test tests/product-gallery-pricing.test.ts tests/clean-launch-data.test.ts && npm run test:migration`
 
 Expected: PASS with three backfilled starter images and existing inventory/order constraints intact.
 
-- [ ] **Step 5: Commit schema slice**
+- [x] **Step 5: Commit schema slice**
 
 ```bash
 git add server/db/migrations/0008_product_gallery_sale_pricing.sql server/db/operations/empty-commerce.sql scripts/test-commerce-migration.mjs tests/product-gallery-pricing.test.ts tests/clean-launch-data.test.ts
