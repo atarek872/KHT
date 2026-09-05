@@ -1,8 +1,10 @@
 import { activateProduct } from '../../../../services/adminProducts'
 import { requireAdmin } from '../../../../utils/adminAuth'
+import { requireSameOrigin } from '../../../../utils/requestGuards'
 
 export default defineEventHandler(async (event) => {
   const { database } = await requireAdmin(event)
+  requireSameOrigin(event)
   const id = getRouterParam(event, 'id') || ''
   if (!id) throw createError({ statusCode: 400, statusMessage: 'Invalid product.' })
   try {

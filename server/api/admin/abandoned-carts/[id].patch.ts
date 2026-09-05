@@ -1,11 +1,13 @@
 import type { CartRecoveryState } from '../../../../shared/abandonedCart'
 import { updateRecoveryState } from '../../../services/abandonedCarts'
 import { requireAdmin } from '../../../utils/adminAuth'
+import { requireJsonBody, requireSameOrigin } from '../../../utils/requestGuards'
 
 export default defineEventHandler(async (event) => {
   const { database, email } = await requireAdmin(event)
+  requireSameOrigin(event)
   const id = getRouterParam(event, 'id') || ''
-  const body = await readBody<{ recoveryState?: unknown; note?: unknown }>(event)
+  const body = await requireJsonBody<{ recoveryState?: unknown; note?: unknown }>(event, 4_096)
   const validStates: CartRecoveryState[] = ['contacted', 'dismissed', 'recovered']
   if (
     !id ||

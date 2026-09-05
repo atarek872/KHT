@@ -772,7 +772,7 @@ git commit -m "feat: publish KHT COD policies and contact configuration"
 - Produces: `enforceRateLimit(event, scope, limit, windowSeconds)` using a privacy-preserving hash.
 - Produces: shared safe error mapping with a request identifier.
 
-- [ ] **Step 1: Write failing security tests**
+- [x] **Step 1: Write failing security tests**
 
 ```ts
 test('commerce mutations reject non-JSON and oversized bodies', () => {
@@ -786,31 +786,31 @@ test('public sensitive endpoints use rate limits', () => {
 })
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `node --experimental-strip-types --test tests/commerce-security.test.ts`
 
 Expected: FAIL because the guards do not exist.
 
-- [ ] **Step 3: Implement request guards and safe headers**
+- [x] **Step 3: Implement request guards and safe headers**
 
 Set `Content-Security-Policy`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`,
 `Permissions-Policy`, and `frame-ancestors 'none'`. Ensure the CSP includes only resources already
 used by KHT and does not break R2 images or Nuxt assets.
 
-- [ ] **Step 4: Add bounded rate limits**
+- [x] **Step 4: Add bounded rate limits**
 
 Use a D1-backed fixed window keyed by a SHA-256 hash of scope plus the connecting IP. Store only the
 hash, count, and expiry. Apply stricter limits to Admin login and order tracking than cart snapshots;
 return `429` with `Retry-After` when exceeded.
 
-- [ ] **Step 5: Run security, auth, and cookie tests**
+- [x] **Step 5: Run security, auth, and cookie tests**
 
 Run: `node --experimental-strip-types --test tests/commerce-security.test.ts tests/admin-login.test.ts tests/admin-cookie-security.test.ts`
 
 Expected: PASS.
 
-- [ ] **Step 6: Commit security controls**
+- [x] **Step 6: Commit security controls**
 
 ```bash
 git add server/utils/requestGuards.ts server/utils/rateLimit.ts server/middleware/securityHeaders.ts server/api tests/commerce-security.test.ts tests/admin-login.test.ts tests/admin-cookie-security.test.ts

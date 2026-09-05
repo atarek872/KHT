@@ -1,11 +1,13 @@
 import type { OrderFulfillmentStatus } from '../../../../shared/adminOrder'
 import { isOrderFulfillmentStatus, transitionOrder } from '../../../services/orderTransitions'
 import { requireAdmin } from '../../../utils/adminAuth'
+import { requireJsonBody, requireSameOrigin } from '../../../utils/requestGuards'
 
 export default defineEventHandler(async (event) => {
   const { database, email } = await requireAdmin(event)
+  requireSameOrigin(event)
   const id = getRouterParam(event, 'id') || ''
-  const body = await readBody<{ fulfillmentStatus?: unknown; note?: unknown }>(event)
+  const body = await requireJsonBody<{ fulfillmentStatus?: unknown; note?: unknown }>(event, 4_096)
   if (
     !id ||
     !isOrderFulfillmentStatus(body?.fulfillmentStatus) ||

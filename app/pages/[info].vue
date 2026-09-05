@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useStoreContact } from '../../shared/storeConfig'
+import { useStoreContact } from '#shared/storeConfig'
 
 const { t, localized } = useLanguage()
 const route = useRoute()

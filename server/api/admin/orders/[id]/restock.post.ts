@@ -1,10 +1,12 @@
 import { restockReturnedOrder } from '../../../../services/orderTransitions'
 import { requireAdmin } from '../../../../utils/adminAuth'
+import { requireJsonBody, requireSameOrigin } from '../../../../utils/requestGuards'
 
 export default defineEventHandler(async (event) => {
   const { database, email } = await requireAdmin(event)
+  requireSameOrigin(event)
   const id = getRouterParam(event, 'id') || ''
-  const body = await readBody<{ note?: unknown }>(event)
+  const body = await requireJsonBody<{ note?: unknown }>(event, 4_096)
   if (!id || (body?.note !== undefined && typeof body.note !== 'string')) {
     throw createError({ statusCode: 400, statusMessage: 'Invalid restock request.' })
   }
