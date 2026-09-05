@@ -16,8 +16,8 @@ useSeoMeta({
           sizes="(max-width: 767px) 100vw, 72vw"
           :alt="
             t(
-              'Two models in black KHT concept streetwear with signature white lines',
-              'موديلان بملابس KHT التصورية السوداء وخطوط بيضاء مميزة',
+              'Two models in black KHT streetwear with signature white lines',
+              'موديلان بملابس KHT السوداء وخطوط بيضاء مميزة',
             )
           "
           fetchpriority="high"

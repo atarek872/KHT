@@ -35,8 +35,8 @@ useSeoMeta({ title: () => t('Your bag — KHT', 'سلتك — KHT') })
         <p class="muted small-copy">
           {{
             t(
-              'This is a concept storefront. No payment will be taken.',
-              'دي نسخة تصورية من المتجر. لا يتم تحصيل أي مبلغ.',
+              'Cash on delivery only. Delivery is calculated before you place the order.',
+              'الدفع عند الاستلام فقط. تكلفة الشحن بتتحسب قبل تسجيل الطلب.',
             )
           }}
         </p>

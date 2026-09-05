@@ -22,7 +22,7 @@ function submitSearch() {
   <div class="announcement">
     <span>{{ t('DROP 001 — THE FIRST CHAPTER', 'الإصدار 001 — الفصل الأول') }}</span
     ><span class="announcement-secondary">{{ t('BLACK. WHITE. LINE.', 'أسود. أبيض. خط.') }}</span
-    ><span>{{ t('CONCEPT COLLECTION', 'مجموعة تصورية') }}</span>
+    ><span>{{ t('THE KHT COLLECTION', 'مجموعة KHT') }}</span>
   </div>
   <header class="site-header">
     <NuxtLink to="/" class="wordmark" aria-label="KHT home">KHT<span class="logo-line" /></NuxtLink>

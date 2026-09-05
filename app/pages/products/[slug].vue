@@ -86,7 +86,7 @@ useSeoMeta({
             >{{ t('Explore the details', 'شوف التفاصيل') }}<KhtIcon name="plus" /></span
           ><span class="product-code">{{ product.code }}</span></button
         ><span class="image-note">{{
-          t('Concept image / Front view', 'صورة تصورية / أمامية')
+          t('Product image / Front view', 'صورة المنتج / أمامية')
         }}</span>
       </div>
       <div class="product-details">
@@ -156,8 +156,8 @@ useSeoMeta({
         <p class="product-demo-note">
           {{
             t(
-              'Concept piece. Sample price. Checkout is a demonstration; no payment will be taken.',
-              'قطعة تصورية بسعر تجريبي. إتمام الطلب للتجربة فقط؛ لا يتم تحصيل مبلغ.',
+              'Price and stock are confirmed when you place your cash on delivery order.',
+              'السعر والمخزون بيتأكدوا وقت تسجيل طلب الدفع عند الاستلام.',
             )
           }}
         </p>
@@ -215,7 +215,7 @@ useSeoMeta({
         />
       </div>
       <p class="muted">
-        {{ t('Concept garment. Front view.', 'قطعة تصورية. صورة أمامية.') }}
+        {{ t('Product garment. Front view.', 'القطعة من الأمام.') }}
       </p></OverlayPanel
     >
   </main>

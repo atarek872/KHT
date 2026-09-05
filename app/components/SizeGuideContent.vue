@@ -6,8 +6,8 @@ const { t } = useLanguage()
     <p>
       {{
         t(
-          'Our concept collection uses relaxed and oversized silhouettes. The table below illustrates body measurements in centimetres; final garment measurements are not yet available.',
-          'المجموعة التصورية بقصّات واسعة ومريحة. الجدول مثال لقياسات الجسم بالسنتيمتر؛ قياسات القطع النهائية غير متاحة بعد.',
+          'The KHT collection uses relaxed and oversized silhouettes. Use the body measurements below in centimetres and choose the larger size when you are between two sizes.',
+          'مجموعة KHT بقصّات واسعة ومريحة. استخدم قياسات الجسم بالسنتيمتر، ولو قياسك بين مقاسين اختار المقاس الأكبر.',
         )
       }}
     </p>
@@ -15,7 +15,7 @@ const { t } = useLanguage()
       <table>
         <caption>
           {{
-            t('Illustrative body measurements (cm)', 'قياسات جسم توضيحية (سم)')
+            t('Body measurements (cm)', 'قياسات الجسم (سم)')
           }}
         </caption>
         <thead>
@@ -65,8 +65,8 @@ const { t } = useLanguage()
     <p>
       {{
         t(
-          'Tracksuit jackets and trousers share the selected size in this concept collection.',
-          'الجاكيت والبنطلون في السوت بنفس المقاس المختار في المجموعة التصورية.',
+          'Tracksuit jackets and trousers share the selected size unless the product page states otherwise.',
+          'الجاكيت والبنطلون في السوت بنفس المقاس المختار إلا لو صفحة المنتج موضحة غير كده.',
         )
       }}
     </p>

@@ -687,7 +687,7 @@ git commit -m "feat: make abandoned carts actionable"
 - Produces original bilingual KHT policy copy for shipping, inspection, returns, exchanges, privacy,
   terms, and COD ordering.
 
-- [ ] **Step 1: Write failing production-copy tests**
+- [x] **Step 1: Write failing production-copy tests**
 
 ```ts
 test('storefront no longer claims checkout is a concept preview', () => {
@@ -704,13 +704,13 @@ test('policies describe actual COD and cart data handling', () => {
 })
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `node --experimental-strip-types --test tests/production-copy.test.ts`
 
 Expected: FAIL because concept-preview language remains.
 
-- [ ] **Step 3: Add typed public business configuration**
+- [x] **Step 3: Add typed public business configuration**
 
 ```ts
 export function useStoreContact() {
@@ -726,7 +726,7 @@ export function useStoreContact() {
 Keep empty values hidden on staging. Add only variable names and safe examples to `.env.example`;
 never commit live credentials or personal contact data.
 
-- [ ] **Step 4: Replace demo copy with original bilingual operating copy**
+- [x] **Step 4: Replace demo copy with original bilingual operating copy**
 
 Implement the approved KHT terms: inspection at delivery, refusal with shipping charge, exchange
 within three calendar days, customer-paid exchange delivery, eligible unused/unaltered items with
@@ -734,18 +734,18 @@ tags and packaging, and exclusions for custom orders. The privacy page must desc
 cart tracking, order records, and data-rights contact without mentioning Shopify, customer accounts,
 card data, or automated marketing.
 
-- [ ] **Step 5: Update metadata and launch guard**
+- [x] **Step 5: Update metadata and launch guard**
 
 Keep staging `noindex`. Make production robots configuration explicit through an environment flag,
 but leave indexing disabled until the public launch approval.
 
-- [ ] **Step 6: Run copy and storefront regressions**
+- [x] **Step 6: Run copy and storefront regressions**
 
 Run: `node --experimental-strip-types --test tests/production-copy.test.ts tests/storefront-regression.test.ts tests/checkout-form.test.ts`
 
 Expected: PASS.
 
-- [ ] **Step 7: Commit production copy**
+- [x] **Step 7: Commit production copy**
 
 ```bash
 git add shared/storeConfig.ts app/pages app/components/SiteFooter.vue nuxt.config.ts .env.example tests/production-copy.test.ts tests/storefront-regression.test.ts tests/checkout-form.test.ts

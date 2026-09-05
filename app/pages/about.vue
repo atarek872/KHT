@@ -30,9 +30,7 @@ useSeoMeta({ title: 'The story behind the line — KHT' })
     <StoreImage
       class="about-campaign"
       src="/images/tee.png"
-      :alt="
-        t('The white chest line on the KHT concept tee', 'الخط الأبيض على صدر تيشرت KHT التصوري')
-      "
+      :alt="t('The white chest line on the KHT tee', 'الخط الأبيض على صدر تيشرت KHT')"
       sizes="(max-width: 767px) 100vw, 70vw"
       width="1086"
       height="1448"

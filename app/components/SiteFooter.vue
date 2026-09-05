@@ -1,6 +1,9 @@
 <script setup lang="ts">
+import { useStoreContact } from '../../shared/storeConfig'
+
 const { t, localized } = useLanguage()
 const catalog = useCatalog()
+const contact = useStoreContact()
 </script>
 <template>
   <footer class="site-footer">
@@ -26,6 +29,16 @@ const catalog = useCatalog()
         ><NuxtLink to="/shipping">{{ t('Shipping & returns', 'الشحن والاسترجاع') }}</NuxtLink
         ><NuxtLink to="/track-order">{{ t('Your order', 'طلبك') }}</NuxtLink
         ><NuxtLink to="/contact">{{ t('Contact', 'تواصل معنا') }}</NuxtLink>
+        <a v-if="contact.email" :href="contact.emailHref">{{ contact.email }}</a>
+        <a v-if="contact.phone" :href="contact.phoneHref" dir="ltr">{{ contact.phone }}</a>
+        <a
+          v-if="contact.whatsapp"
+          :href="contact.whatsappHref"
+          target="_blank"
+          rel="noopener noreferrer"
+          dir="ltr"
+          >WhatsApp · {{ contact.whatsapp }}</a
+        >
       </div>
       <div class="footer-statement">
         <span>{{ t('THE LINE CONNECTS US.', 'الخط يجمعنا.') }}</span
@@ -37,7 +50,7 @@ const catalog = useCatalog()
     <div class="footer-bottom">
       <span>© {{ new Date().getFullYear() }} KHT</span
       ><span class="footer-concept">{{
-        t('Concept storefront · Sample products & prices', 'متجر تصوري · منتجات وأسعار تجريبية')
+        t('Cash on delivery · Egypt', 'الدفع عند الاستلام · مصر')
       }}</span>
       <div>
         <NuxtLink to="/privacy">{{ t('Privacy', 'الخصوصية') }}</NuxtLink

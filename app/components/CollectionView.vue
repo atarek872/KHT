@@ -62,11 +62,7 @@ useSeoMeta({ title: () => `${title.value} — KHT` })
       <div class="section-heading">
         <div>
           <p class="eyebrow">
-            {{
-              drop
-                ? t('THE ORIGIN / CONCEPT COLLECTION', 'البداية / مجموعة تصورية')
-                : 'KHT / DROP 001'
-            }}
+            {{ drop ? t('THE ORIGIN / KHT COLLECTION', 'البداية / مجموعة KHT') : 'KHT / DROP 001' }}
           </p>
           <h1>{{ title }}</h1>
         </div>
@@ -154,8 +150,8 @@ useSeoMeta({ title: () => `${title.value} — KHT` })
     <p class="catalog-note">
       {{
         t(
-          'Concept garments and sample prices. Explore the fit, the form, the line.',
-          'قطع تصورية وأسعار تجريبية. اكتشف القَصّة والشكل والخط.',
+          'Considered essentials with a clear fit, form, and line.',
+          'قطع أساسية مدروسة بقَصّة وشكل وخط واضح.',
         )
       }}
     </p>
