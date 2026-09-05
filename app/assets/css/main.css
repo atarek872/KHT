@@ -2762,8 +2762,8 @@ thead {
     font-size: 0.9375rem;
   }
   .about-campaign {
-    height: 400px;
-    object-position: 75% center;
+    height: auto;
+    object-position: center;
   }
   .about-ending {
     flex-direction: column;

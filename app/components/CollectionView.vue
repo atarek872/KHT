@@ -71,11 +71,11 @@ useSeoMeta({ title: () => `${title.value} — KHT` })
     </header>
     <div v-if="drop" class="drop-banner">
       <StoreImage
-        src="/images/tracksuit.png"
-        :alt="t('The Line Tracksuit, front view', 'سوت ذا لاين، صورة أمامية')"
+        src="/images/drop-001-banner.jpg"
+        :alt="t('Black KHT hooded set, front and back views', 'سوت KHT أسود، من الأمام والخلف')"
         sizes="(max-width: 767px) 45vw, 38vw"
-        width="1086"
-        height="1448"
+        width="1024"
+        height="1280"
       /><span>{{ t('THE FIRST CHAPTER.', 'الفصل الأول.') }}</span>
     </div>
     <form v-if="search" class="collection-search" @submit.prevent="updateQuery('q', searchText)">

@@ -122,6 +122,12 @@ test('storefront presents sale pricing and an accessible ordered product gallery
   assert.match(detail, /selectedImageIndex\.value = 0/)
 })
 
+test('Drop and story campaign replacements do not alter the homepage hero', () => {
+  assert.match(read('../app/components/CollectionView.vue'), /\/images\/drop-001-banner\.jpg/)
+  assert.match(read('../app/pages/about.vue'), /\/images\/our-story-cover\.png/)
+  assert.match(read('../app/pages/index.vue'), /\/images\/campaign\.png/)
+})
+
 test('admin styles remain isolated from storefront visual selectors', () => {
   const adminCss = read('../app/assets/css/admin.css')
   const mainCss = read('../app/assets/css/main.css')

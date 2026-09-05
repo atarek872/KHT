@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 
 const read = (path: string) => readFileSync(new URL(path, import.meta.url), 'utf8')
 
@@ -34,8 +34,19 @@ test('policies describe actual COD, exchanges, and cart data handling', () => {
   assert.match(page, /30 calendar days|ثلاثين يوم/i)
   assert.match(page, /cart contents|محتويات السلة/i)
   assert.match(page, /inspection at delivery|فحص الطلب عند الاستلام/i)
-  assert.match(page, /19588/)
+  assert.doesNotMatch(page, /19588/)
   assert.doesNotMatch(page, /Shopify|credit card/i)
+})
+
+test('approved Drop and story images are scoped without changing the homepage hero', () => {
+  const drop = read('../app/components/CollectionView.vue')
+  const about = read('../app/pages/about.vue')
+  const home = read('../app/pages/index.vue')
+  assert.match(drop, /src="\/images\/drop-001-banner\.jpg"/)
+  assert.match(about, /src="\/images\/our-story-cover\.png"/)
+  assert.match(home, /src="\/images\/campaign\.png"/)
+  assert.equal(existsSync(new URL('../public/images/drop-001-banner.jpg', import.meta.url)), true)
+  assert.equal(existsSync(new URL('../public/images/our-story-cover.png', import.meta.url)), true)
 })
 
 test('public contact settings and indexing gate are explicit', () => {

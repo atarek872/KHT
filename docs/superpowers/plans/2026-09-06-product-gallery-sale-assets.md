@@ -353,7 +353,7 @@ git commit -m "feat: show product galleries and sale prices"
 - Produces: `/images/drop-001-banner.webp` and `/images/our-story-cover.webp` plus responsive srcsets.
 - Preserves: home page `/images/campaign.png` source.
 
-- [ ] **Step 1: Add failing asset-placement tests**
+- [x] **Step 1: Add failing asset-placement tests**
 
 Assert the supplied source files exist, the Drop banner references `/images/drop-001-banner.jpg`, the
 About page references `/images/our-story-cover.png`, the home page still references
@@ -363,31 +363,31 @@ Run: `node --experimental-strip-types --test tests/production-copy.test.ts tests
 
 Expected: FAIL on old Drop/About sources and current hotline copy.
 
-- [ ] **Step 2: Copy approved originals and extend optimizer**
+- [x] **Step 2: Copy approved originals and extend optimizer**
 
 Copy the exact supplied files to the named public paths. Extend `optimize-images.mjs` with source
 descriptors so both PNG and JPG originals generate WebP originals and unique widths 240, 480, 800,
 and intrinsic width without enlargement. Run: `npm run images:optimize`.
 
-- [ ] **Step 3: Wire the approved page placements**
+- [x] **Step 3: Wire the approved page placements**
 
 Update only `CollectionView`'s `drop-banner` source and `/about`'s `about-campaign` source, intrinsic
 dimensions, and accurate bilingual alternative text. Extend `StoreImage`'s optimized-name matching.
 Do not edit `app/pages/index.vue`.
 
-- [ ] **Step 4: Remove hotline number**
+- [x] **Step 4: Remove hotline number**
 
 Remove `19588` from English and Arabic complaints copy and adjust the test to require its absence
 while retaining assertions for the 14-day and 30-day rights.
 
-- [ ] **Step 5: Run asset and storefront verification**
+- [x] **Step 5: Run asset and storefront verification**
 
 Run: `node --experimental-strip-types --test tests/production-copy.test.ts tests/storefront-regression.test.ts && npm run typecheck`
 
 Expected: PASS, and every generated responsive WebP stays below 500 KB where its source dimensions
 permit.
 
-- [ ] **Step 6: Commit content/assets slice**
+- [x] **Step 6: Commit content/assets slice**
 
 ```bash
 git add public/images scripts/optimize-images.mjs app/components/StoreImage.vue app/components/CollectionView.vue app/pages/about.vue app/pages/[info].vue tests/production-copy.test.ts tests/storefront-regression.test.ts

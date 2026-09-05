@@ -29,11 +29,11 @@ useSeoMeta({ title: 'The story behind the line — KHT' })
     </section>
     <StoreImage
       class="about-campaign"
-      src="/images/tee.png"
-      :alt="t('The white chest line on the KHT tee', 'الخط الأبيض على صدر تيشرت KHT')"
+      src="/images/our-story-cover.png"
+      :alt="t('KHT — Black. White. Line. brand cover', 'غلاف KHT — أسود. أبيض. خط.')"
       sizes="(max-width: 767px) 100vw, 70vw"
-      width="1086"
-      height="1448"
+      width="2659"
+      height="984"
       loading="lazy"
     />
     <section class="about-ending">

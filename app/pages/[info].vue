@@ -45,8 +45,8 @@ const pages: Record<
       {
         heading: { en: 'Complaints', ar: 'الشكاوى' },
         body: {
-          en: 'Please contact KHT first so we can resolve your request. If it is not resolved, you may contact the Egyptian Consumer Protection Agency through cpa.gov.eg or its hotline 19588. Keep your order reference and proof of purchase.',
-          ar: 'تواصل مع KHT أولًا علشان نحل طلبك. لو المشكلة ما اتحلتش، تقدر تتواصل مع جهاز حماية المستهلك من خلال cpa.gov.eg أو الخط الساخن 19588. احتفظ برقم الطلب وإثبات الشراء.',
+          en: 'Please contact KHT first so we can resolve your request. If it is not resolved, you may contact the Egyptian Consumer Protection Agency through cpa.gov.eg. Keep your order reference and proof of purchase.',
+          ar: 'تواصل مع KHT أولًا علشان نحل طلبك. لو المشكلة ما اتحلتش، تقدر تتواصل مع جهاز حماية المستهلك من خلال cpa.gov.eg. احتفظ برقم الطلب وإثبات الشراء.',
         },
       },
     ],
