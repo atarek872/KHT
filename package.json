@@ -12,7 +12,7 @@
     "images:optimize": "node scripts/optimize-images.mjs",
     "dev": "nuxt dev --host 127.0.0.1",
     "build": "nuxt build",
-    "build:cloudflare": "nuxt build --preset cloudflare_module && node scripts/stage-sites.mjs",
+    "build:cloudflare": "node scripts/clean-cloudflare-build.mjs && nuxt build --preset cloudflare_module && node scripts/stage-sites.mjs",
     "verify:cloudflare-build": "node scripts/verify-cloudflare-build.mjs",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",

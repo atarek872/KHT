@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { getDiscountPercentage } from '../../shared/productPricing'
+import { getDiscountPercentage } from '#shared/productPricing'
 
 const props = withDefaults(defineProps<{
   price: number

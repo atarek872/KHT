@@ -82,6 +82,15 @@ test('staging verification checks the callable Worker entrypoint', () => {
   )
 })
 
+test('Cloudflare builds remove stale staged output before compiling', () => {
+  const packageJson = JSON.parse(read('../package.json'))
+  assert.match(packageJson.scripts['build:cloudflare'], /^node scripts\/clean-cloudflare-build\.mjs &&/)
+  const cleaner = read('../scripts/clean-cloudflare-build.mjs')
+  assert.match(cleaner, /join\(project, 'dist'\)/)
+  assert.match(cleaner, /isSymbolicLink\(\)/)
+  assert.match(cleaner, /rmSync\(staging, \{ recursive: true \}\)/)
+})
+
 test('staging credentials and deployment artifacts are ignored', () => {
   const ignore = read('../.gitignore')
 

@@ -14,12 +14,10 @@ const emptyProduct: AdminProductInput = {
   name: { en: '', ar: '' }, description: { en: '', ar: '' }, detail: { en: '', ar: '' },
   fit: { en: '', ar: '' }, variants: [],
 }
-const form = reactive<AdminProductInput>(clone({
-  ...emptyProduct,
-  ...props.initial,
-  compareAtPrice: props.initial?.compareAtPrice ?? null,
-  images: props.initial?.images || (initialImage ? [initialImage] : []),
-}))
+const startingProduct = clone(props.initial || emptyProduct)
+startingProduct.compareAtPrice = props.initial?.compareAtPrice ?? null
+startingProduct.images = props.initial?.images || (initialImage ? [initialImage] : [])
+const form = reactive<AdminProductInput>(startingProduct)
 
 function addVariant() {
   form.variants.push({ sku: '', size: '', color: 'Black', stock: 0, active: true })
