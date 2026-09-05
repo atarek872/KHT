@@ -1,0 +1,41 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "kht-commerce",
+  "main": "dist/server/index.js",
+  "compatibility_date": "2026-09-04",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "dist/client",
+    "binding": "ASSETS",
+  },
+  "observability": {
+    "enabled": true,
+  },
+  "env": {
+    "staging": {
+      "name": "kht-commerce-staging",
+      "workers_dev": true,
+      "preview_urls": false,
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "kht-commerce-staging",
+          "database_id": "50faffb0-405c-43c1-a44a-ec9db275c417",
+          "migrations_dir": "server/db/migrations",
+        },
+      ],
+      "r2_buckets": [
+        {
+          "binding": "PRODUCT_MEDIA",
+          "bucket_name": "kht-product-media-staging",
+        },
+      ],
+      "vars": {
+        "NUXT_PUBLIC_STORE_INDEXING_ENABLED": "false",
+        "NUXT_PUBLIC_STORE_CONTACT_EMAIL": "",
+        "NUXT_PUBLIC_STORE_PHONE": "",
+        "NUXT_PUBLIC_STORE_WHATSAPP": "",
+      },
+    },
+  },
+}

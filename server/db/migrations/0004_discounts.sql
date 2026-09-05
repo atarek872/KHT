@@ -20,7 +20,7 @@ CREATE TRIGGER validate_discount_before_order
 BEFORE INSERT ON orders
 FOR EACH ROW WHEN NEW.discount_id IS NOT NULL
 BEGIN
-  SELECT CASE WHEN NOT EXISTS (
+  SELECT RAISE(ABORT, 'DISCOUNT_UNAVAILABLE') WHERE NOT EXISTS (
     SELECT 1 FROM discounts d WHERE d.id = NEW.discount_id
       AND d.code = NEW.discount_code
       AND d.active = 1
@@ -28,7 +28,7 @@ BEGIN
       AND (d.valid_until IS NULL OR datetime(d.valid_until) >= datetime('now'))
       AND (d.minimum_order IS NULL OR NEW.subtotal >= d.minimum_order)
       AND (d.usage_limit IS NULL OR d.current_usage < d.usage_limit)
-  ) THEN RAISE(ABORT, 'DISCOUNT_UNAVAILABLE') END;
+  );
 END;
 
 CREATE TRIGGER consume_discount_after_order

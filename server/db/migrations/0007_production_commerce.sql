@@ -88,11 +88,10 @@ CREATE TRIGGER validate_order_statuses_before_update
 BEFORE UPDATE OF payment_status, fulfillment_status ON orders
 FOR EACH ROW
 BEGIN
-  SELECT CASE
-    WHEN NEW.payment_status NOT IN ('pending', 'paid', 'failed', 'refunded')
-      THEN RAISE(ABORT, 'INVALID_PAYMENT_STATUS')
-    WHEN NEW.fulfillment_status NOT IN
-      ('pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled', 'returned')
-      THEN RAISE(ABORT, 'INVALID_FULFILLMENT_STATUS')
-  END;
+  SELECT RAISE(ABORT, 'INVALID_PAYMENT_STATUS')
+  WHERE NEW.payment_status NOT IN ('pending', 'paid', 'failed', 'refunded');
+
+  SELECT RAISE(ABORT, 'INVALID_FULFILLMENT_STATUS')
+  WHERE NEW.fulfillment_status NOT IN
+    ('pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled', 'returned');
 END;

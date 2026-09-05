@@ -78,6 +78,8 @@ npm run test:migration
 npm run test:production-readiness
 npm run typecheck
 npm run build:cloudflare
+npm run verify:cloudflare-build
+npx wrangler deploy --env staging --dry-run
 ```
 
 The readiness test covers durable COD creation, CRM identity matching, delivery and payment status,
@@ -88,7 +90,10 @@ and Admin authentication requirements.
 
 - `server/db/seeds/local-demo.sql` is for local testing only.
 - Production and staging must never run the demo seed or copy the local `.wrangler/` directory.
-- Production receives forward-only migration files from `server/db/migrations/` and real catalog
+- The migrations bootstrap the three current starter products and their inventory, but do not add
+  demo customers, carts, or orders. Replace the starter catalog with the accepted final catalog
+  before a public production launch.
+- Production receives forward-only migration files from `server/db/migrations/` and final catalog
   data entered after deployment.
 - A cancelled order restores reserved stock once. A returned order restores stock only after the
   separate inspection/restock action.
@@ -99,6 +104,25 @@ Generate a new password and hash for every environment. Never reuse the local pa
 or production, and never commit a password, hash, API token, or `.dev.vars` file. Update the
 Cloudflare secrets `ADMIN_EMAIL` and `ADMIN_PASSWORD_HASH`, deploy, verify the new login, then end
 old browser sessions if required.
+
+The generator uses 100,000 PBKDF2-SHA256 iterations, which is the maximum accepted by the
+Cloudflare Workers Web Crypto runtime. Do not raise the iteration count without verifying it on a
+deployed Worker; a higher Node-compatible value can make Admin login fail only at the edge.
+
+## Private staging deployment
+
+The private staging environment is deployed at:
+
+- `https://kht-commerce-staging.atarek872.workers.dev`
+
+It uses the isolated `kht-commerce-staging` D1 database and
+`kht-product-media-staging` R2 bucket. All seven migrations are applied. The local demo seed was
+not applied. Preview URLs are disabled and indexing is set to `noindex, nofollow`.
+
+Cloudflare Access protects all Worker traffic before the application runs. Its allow policy is
+limited to members of this Cloudflare account, which currently means the account owner. Testing
+therefore has two distinct sign-ins: first Cloudflare Access, then the KHT Admin login at
+`/admin/login`. Do not remove Access protection or attach the public domain during staging review.
 
 ## Staging and production gates
 

@@ -906,8 +906,13 @@ git commit -m "test: verify production COD commerce flow"
 
 - Create: `wrangler.jsonc`
 - Create: `scripts/verify-cloudflare-build.mjs`
+- Create: `tests/cloudflare-staging.test.ts`
+- Create: `.gitattributes`
 - Modify: `.gitignore`
 - Modify: `.openai/hosting.json`
+- Modify: `package.json`
+- Modify: `scripts/create-admin-password-hash.mjs`
+- Modify: `server/db/migrations/*.sql`
 - Modify: `docs/KHT-local-admin-and-deployment.md`
 
 **Interfaces:**
@@ -917,14 +922,14 @@ git commit -m "test: verify production COD commerce flow"
   `kht-product-media-staging` R2 bucket.
 - Produces: no public DNS mutation.
 
-- [ ] **Step 1: Verify Cloudflare authentication interactively**
+- [x] **Step 1: Verify Cloudflare authentication interactively**
 
 Run: `npx wrangler whoami`.
 
 If not authenticated, run `npx wrangler login` and let the user complete Cloudflare authorization
 in the opened browser. Do not request or store the user's Cloudflare password.
 
-- [ ] **Step 2: Create isolated staging resources**
+- [x] **Step 2: Create isolated staging resources**
 
 Run:
 
@@ -937,7 +942,7 @@ Record the exact D1 database ID returned by Wrangler in the staging environment 
 `wrangler.jsonc`. The committed file may contain Cloudflare resource identifiers, but never account
 tokens, Admin passwords, or password hashes.
 
-- [ ] **Step 3: Configure staging bindings and secrets**
+- [x] **Step 3: Configure staging bindings and secrets**
 
 Declare `DB`, `PRODUCT_MEDIA`, and `ASSETS` bindings, `nodejs_compat`, the staged Worker entrypoint,
 and `noindex` public configuration. Generate a new staging Admin password locally and set
@@ -948,14 +953,14 @@ Create a Cloudflare Access application for the staging Worker hostname and allow
 the currently signed-in Cloudflare owner. Verify an unauthenticated private-browser request is
 redirected to Access before continuing.
 
-- [ ] **Step 4: Apply migrations without demo seeds**
+- [x] **Step 4: Apply migrations without demo seeds**
 
 Run: `npx wrangler d1 migrations apply DB --env staging --remote`.
 
 Expected: migrations `0001` through `0007` apply successfully. Do not run `npm run local:seed` or
 execute `server/db/seeds/local-demo.sql` against the remote database.
 
-- [ ] **Step 5: Build and deploy staging**
+- [x] **Step 5: Build and deploy staging**
 
 Run:
 
@@ -965,14 +970,16 @@ node scripts/verify-cloudflare-build.mjs
 npx wrangler deploy --env staging
 ```
 
-The verification script imports `dist/server/index.js` and exits non-zero unless the default export
-has a callable `fetch` method.
+The verification script follows the generated re-export and statically confirms that the
+Cloudflare entrypoint contains a default Worker export with an async `fetch`. Wrangler's dry-run
+performs the runtime-aware bundle validation because Node cannot import `cloudflare:` modules.
 
-- [ ] **Step 6: Run deployed smoke tests**
+- [x] **Step 6: Run deployed smoke tests**
 
-Test the generated `workers.dev` staging URL for storefront browsing, checkout failure on empty
-catalog, Admin login, authenticated and unauthenticated APIs, D1 reads/writes, R2 upload/read/delete,
-security headers, and `noindex`. Do not add products or accept orders from outside the test team.
+Test the generated `workers.dev` staging URL for storefront browsing, a controlled COD checkout,
+Admin login, authenticated and unauthenticated APIs, D1 reads/writes, R2 upload/read/delete,
+security headers, and `noindex`. Cancel and delete the controlled order and confirm inventory is
+restored before handing staging to the user.
 
 - [ ] **Step 7: Prepare Namecheap DNS without changing it**
 
@@ -980,7 +987,7 @@ Open Namecheap only when the user is present and signed in. Inspect the current 
 `tkteck.it.com`, document conflicts, and propose the exact record change. Do not delete, replace, or
 publish DNS records until the user explicitly approves the public launch after staging review.
 
-- [ ] **Step 8: Commit staging configuration**
+- [x] **Step 8: Commit staging configuration**
 
 ```bash
 git add wrangler.jsonc scripts/verify-cloudflare-build.mjs .gitignore .openai/hosting.json docs/KHT-local-admin-and-deployment.md

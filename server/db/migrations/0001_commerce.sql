@@ -93,12 +93,11 @@ CREATE TRIGGER reserve_inventory_before_order_item
 BEFORE INSERT ON order_items
 FOR EACH ROW
 BEGIN
-  SELECT CASE
-    WHEN (SELECT stock FROM inventory_variants WHERE id = NEW.variant_id AND active = 1) IS NULL
-      THEN RAISE(ABORT, 'VARIANT_UNAVAILABLE')
-    WHEN (SELECT stock FROM inventory_variants WHERE id = NEW.variant_id) < NEW.quantity
-      THEN RAISE(ABORT, 'INSUFFICIENT_STOCK')
-  END;
+  SELECT RAISE(ABORT, 'VARIANT_UNAVAILABLE')
+  WHERE (SELECT stock FROM inventory_variants WHERE id = NEW.variant_id AND active = 1) IS NULL;
+
+  SELECT RAISE(ABORT, 'INSUFFICIENT_STOCK')
+  WHERE (SELECT stock FROM inventory_variants WHERE id = NEW.variant_id) < NEW.quantity;
 END;
 
 CREATE TRIGGER decrement_inventory_after_order_item
