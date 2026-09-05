@@ -30,9 +30,11 @@ test('storefront no longer claims checkout is a concept preview', () => {
 test('policies describe actual COD, exchanges, and cart data handling', () => {
   const page = read('../app/pages/[info].vue')
   assert.match(page, /cash on delivery|الدفع عند الاستلام/i)
-  assert.match(page, /three calendar days|ثلاثة أيام/i)
+  assert.match(page, /14 calendar days|أربعة عشر يوم/i)
+  assert.match(page, /30 calendar days|ثلاثين يوم/i)
   assert.match(page, /cart contents|محتويات السلة/i)
   assert.match(page, /inspection at delivery|فحص الطلب عند الاستلام/i)
+  assert.match(page, /19588/)
   assert.doesNotMatch(page, /Shopify|credit card/i)
 })
 

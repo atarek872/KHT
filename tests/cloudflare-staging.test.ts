@@ -32,6 +32,33 @@ test('staging config binds isolated D1 and R2 with indexing disabled', () => {
   assert.equal(staging.vars.NUXT_PUBLIC_STORE_WHATSAPP, '')
 })
 
+test('production candidate uses isolated public Cloudflare resources and real contact details', () => {
+  const config = readJsonc('../wrangler.jsonc')
+  const production = config.env.production
+
+  assert.equal(production.name, 'kht-commerce-production')
+  assert.equal(production.workers_dev, true)
+  assert.equal(production.preview_urls, false)
+  assert.notEqual(
+    production.d1_databases[0].database_id,
+    config.env.staging.d1_databases[0].database_id,
+  )
+  assert.deepEqual(production.d1_databases[0], {
+    binding: 'DB',
+    database_name: 'kht-commerce-production',
+    database_id: production.d1_databases[0].database_id,
+    migrations_dir: 'server/db/migrations',
+  })
+  assert.deepEqual(production.r2_buckets, [
+    { binding: 'PRODUCT_MEDIA', bucket_name: 'kht-product-media-production' },
+  ])
+  assert.equal(production.vars.NUXT_PUBLIC_STORE_INDEXING_ENABLED, 'false')
+  assert.equal(production.vars.NUXT_PUBLIC_STORE_CONTACT_EMAIL, 'atarek872@hotmail.com')
+  assert.equal(production.vars.NUXT_PUBLIC_STORE_PHONE, '01124023663')
+  assert.equal(production.vars.NUXT_PUBLIC_STORE_WHATSAPP, '')
+  assert.deepEqual(production.observability, { enabled: true, head_sampling_rate: 1 })
+})
+
 test('Sites metadata keeps only logical persistence bindings', () => {
   const hosting = JSON.parse(read('../.openai/hosting.json'))
 
@@ -59,6 +86,7 @@ test('staging credentials and deployment artifacts are ignored', () => {
   const ignore = read('../.gitignore')
 
   assert.match(ignore, /^\.staging-admin(?:\..*)?$/m)
+  assert.match(ignore, /^\.production-admin(?:\..*)?$/m)
   assert.match(ignore, /^\.cloudflare-deploy\/$/m)
 })
 

@@ -996,6 +996,12 @@ git commit -m "chore: configure private Cloudflare staging"
 
 ### Task 11: User acceptance and separately approved public launch
 
+> **Approved candidate deviation (2026-09-05):** The user explicitly approved a public
+> production-candidate release before final catalog, shipping, legal identity, registration, tax,
+> or invoice details are available. The candidate stays `noindex`, uses COD only, exposes the real
+> phone and email supplied by the user, and starts with empty D1 catalog and operational data. Final
+> commercial operation remains a later counsel-reviewed gate.
+
 **Files:**
 
 - Modify: `wrangler.jsonc`
@@ -1007,26 +1013,29 @@ git commit -m "chore: configure private Cloudflare staging"
 - Consumes: approved staging build and final business contact values.
 - Produces: production Worker, production D1/R2 resources, and approved `tkteck.it.com` route.
 
-- [ ] **Step 1: Collect launch-only business values**
+- [x] **Step 1: Collect candidate business values and record deferred legal values**
 
 Require the final customer-service email, phone or WhatsApp number, shipping zones/rates, final
 products/images/stock, and a new production Admin password. Keep the public launch blocked if any
 required value is missing.
 
-- [ ] **Step 2: Obtain explicit user acceptance of staging**
+- [x] **Step 2: Obtain explicit user approval for candidate publication**
 
 Present the staging URL and a short acceptance checklist. The user must explicitly approve the
 storefront, checkout, Admin operations, policy copy, and production publication.
 
-- [ ] **Step 3: Create clean production resources**
+- [x] **Step 3: Create clean production resources**
 
-Create `kht-commerce-production` and `kht-product-media-production`, configure production-only
-bindings and secrets, and apply migrations `0001` through `0007` without demo seeds.
+Created `kht-commerce-production` and `kht-product-media-production`, configured production-only
+bindings and secrets, and applied migrations `0001` through `0007` without demo seeds. The explicit
+clean-launch operation then removed the starter catalog and shipping rows from both staging and
+production after verified pre-delete counts.
 
-- [ ] **Step 4: Load user-supplied production catalog and configuration**
+- [x] **Step 4: Leave catalog and shipping empty for owner entry through Admin**
 
-Use Admin to add final products, images, stock, and shipping. Verify storefront totals and one
-controlled COD order, then cancel that order and confirm inventory restoration.
+The user will add categories, products, images, stock, and shipping after publication. Verify empty
+states now; run the controlled COD order and inventory-restoration acceptance after those records
+exist and before commercial operation.
 
 - [ ] **Step 5: Deploy the exact accepted source revision**
 

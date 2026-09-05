@@ -142,6 +142,37 @@ Before public production launch, all of the following are required:
 Indexing stays disabled unless `NUXT_PUBLIC_STORE_INDEXING_ENABLED=true` is deliberately configured
 for the accepted production release.
 
+## Public production candidate
+
+The September 2026 public-candidate release is deliberately separate from the final commercial
+launch. It uses `kht-commerce-production` D1 and `kht-product-media-production` R2, with Workers
+observability enabled. Its public contact values are `01124023663` and
+`atarek872@hotmail.com`; WhatsApp remains unconfigured. Search indexing remains disabled until the
+custom domain and final business details are accepted.
+
+Both remote databases were intentionally emptied with
+`server/db/operations/empty-commerce.sql` after the migrations were applied. The operation removes
+catalog, inventory, shipping, discount, customer, order, cart, rate-limit, and Admin-session rows
+without dropping schema. Run it only against an explicitly selected non-live environment and verify
+row counts before and after. Product media must be inspected separately because R2 is not modified
+by the D1 operation.
+
+The production candidate therefore opens with no products or shipping zones. The owner will add
+categories, products, images, variants, stock, and shipping rates through Admin. Until at least one
+active product with stock and one enabled shipping zone exist, a shopper cannot create a valid COD
+order.
+
+Policy copy reflects the Egyptian Consumer Protection Agency's published 14-day eligible return
+window and 30-day defective-item window, plus the Agency hotline. The privacy notice describes the
+current order, cart-recovery, D1, and R2 processing. Legal business identity, address, commercial
+registration, tax details, and invoice wording remain launch-owner and counsel tasks before real
+commercial operation.
+
+Cloudflare D1 Time Travel is always enabled for production-backend databases. Record a current
+bookmark at every release and before risky data changes. Workers Logs are enabled in the production
+environment at full sampling for the low-traffic candidate; lower the sampling rate deliberately if
+traffic volume makes retention or cost inappropriate.
+
 ## Rollback
 
 Record the deployed Cloudflare Worker version and the previous known-good Worker version at every

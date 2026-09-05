@@ -24,22 +24,29 @@ const pages: Record<
       {
         heading: { en: 'Inspection at delivery', ar: 'فحص الطلب عند الاستلام' },
         body: {
-          en: 'You may request inspection at delivery before accepting the parcel. If the item is wrong, damaged, or materially different from the confirmed order, refuse it and contact KHT. If you refuse a correct order or cannot be reached, the delivery charge remains payable.',
-          ar: 'من حقك تطلب فحص الطلب عند الاستلام قبل قبول الشحنة. لو القطعة غلط أو تالفة أو مختلفة بشكل واضح عن الطلب المؤكد، ارفضها وتواصل مع KHT. لو رفضت طلب صحيح أو تعذر الوصول ليك، بتتحمل تكلفة الشحن.',
+          en: 'You may request inspection at delivery where the courier permits it. If the item is wrong, damaged, or materially different from the confirmed order, refuse it and contact KHT through the official customer-care channel. This inspection option does not limit your statutory return rights.',
+          ar: 'تقدر تطلب فحص الطلب عند الاستلام إذا كانت شركة الشحن تسمح بذلك. لو القطعة غلط أو تالفة أو مختلفة بشكل واضح عن الطلب المؤكد، ارفضها وتواصل مع KHT من خلال خدمة العملاء الرسمية. إمكانية الفحص لا تقلل من حقوقك القانونية في الاستبدال أو الاسترجاع.',
         },
       },
       {
-        heading: { en: 'Returns & exchanges', ar: 'الاستبدال والاسترجاع' },
+        heading: { en: '14-day returns', ar: 'الاستبدال والاسترجاع خلال 14 يوم' },
         body: {
-          en: 'Request an exchange within three calendar days of delivery. Items must be unused, unwashed, unaltered, and returned with all tags and original packaging. The customer pays both exchange delivery trips unless KHT sent a wrong or defective item. Custom-made or altered items are not eligible unless defective.',
-          ar: 'اطلب الاستبدال خلال ثلاثة أيام تقويمية من الاستلام. لازم القطعة تكون غير مستخدمة وغير مغسولة أو معدلة، وبكل التيكتات والتغليف الأصلي. العميل بيتحمل مصاريف شحنتي الاستبدال إلا لو KHT بعتت قطعة غلط أو فيها عيب. الطلبات المصنوعة أو المعدلة خصيصًا لا تُستبدل إلا في حالة وجود عيب.',
+          en: 'Under Egyptian Consumer Protection Law, you may exchange or return an eligible item within 14 calendar days of receiving it, without giving a reason or bearing return costs. The item must be capable of being returned to its original condition; for clothing, keep it unused, unwashed, unaltered, with its tags and original packaging. Statutory exceptions apply, including goods made or altered to your specifications, unless defective.',
+          ar: 'طبقًا لقانون حماية المستهلك المصري، تقدر تستبدل أو تسترجع السلعة المؤهلة خلال أربعة عشر يوم تقويمي من استلامها، بدون إبداء سبب أو تحمل مصروفات الإرجاع. لازم تكون السلعة قابلة للعودة لحالتها الأصلية؛ وبالنسبة للملابس تكون غير مستخدمة أو مغسولة أو معدلة ومعها التيكتات والتغليف الأصلي. تسري الاستثناءات القانونية، ومنها السلع المصنوعة أو المعدلة حسب مواصفاتك، إلا إذا كانت معيبة.',
         },
       },
       {
-        heading: { en: 'Refund handling', ar: 'طريقة رد المبلغ' },
+        heading: { en: 'Defective items and refunds', ar: 'السلع المعيبة ورد المبلغ' },
         body: {
-          en: 'Approved refunds for cash on delivery orders are arranged through the official customer-care channel after the returned item is received and inspected. Delivery charges are not refundable unless the issue was caused by KHT.',
-          ar: 'رد قيمة طلبات الدفع عند الاستلام المقبولة بيتم ترتيبه من خلال وسيلة خدمة العملاء الرسمية بعد استلام القطعة وفحصها. مصاريف الشحن لا تُرد إلا لو المشكلة بسبب KHT.',
+          en: 'If an item is defective, you may request replacement or return within 30 calendar days of receiving it, without additional cost, subject to the applicable law. Cash on delivery refunds are arranged through the official customer-care channel after the returned item is received and inspected, without reducing any statutory right.',
+          ar: 'لو السلعة فيها عيب، تقدر تطلب استبدالها أو استرجاعها خلال ثلاثين يوم تقويمي من الاستلام، بدون تكلفة إضافية، وفقًا للقانون المعمول به. رد قيمة طلبات الدفع عند الاستلام بيتم ترتيبه من خلال خدمة العملاء الرسمية بعد استلام القطعة وفحصها، من غير ما ينتقص ده من أي حق قانوني ليك.',
+        },
+      },
+      {
+        heading: { en: 'Complaints', ar: 'الشكاوى' },
+        body: {
+          en: 'Please contact KHT first so we can resolve your request. If it is not resolved, you may contact the Egyptian Consumer Protection Agency through cpa.gov.eg or its hotline 19588. Keep your order reference and proof of purchase.',
+          ar: 'تواصل مع KHT أولًا علشان نحل طلبك. لو المشكلة ما اتحلتش، تقدر تتواصل مع جهاز حماية المستهلك من خلال cpa.gov.eg أو الخط الساخن 19588. احتفظ برقم الطلب وإثبات الشراء.',
         },
       },
     ],
@@ -76,15 +83,15 @@ const pages: Record<
       {
         heading: { en: 'How data is used and stored', ar: 'استخدام البيانات وتخزينها' },
         body: {
-          en: 'We use this data to validate stock, fulfil and track orders, prevent abuse, answer support requests, and manually follow up on contactable abandoned carts. Commerce records are stored in Cloudflare D1 and product media in Cloudflare R2. KHT does not collect card data or run automated marketing from this store.',
-          ar: 'بنستخدم البيانات للتأكد من المخزون وتنفيذ ومتابعة الطلبات ومنع إساءة الاستخدام والرد على الدعم والمتابعة اليدوية للسلات المتروكة القابلة للتواصل. سجلات المتجر محفوظة في Cloudflare D1 وصور المنتجات في Cloudflare R2. KHT لا يجمع بيانات كروت ولا يشغّل تسويق آلي من المتجر.',
+          en: 'We process data when needed to prepare and fulfil your order, meet legal duties, protect the store from abuse, answer support requests, and pursue legitimate operational interests that do not override your rights. Contactable abandoned carts may receive a manual service follow-up, not automated marketing. Commerce records are stored in Cloudflare D1 and product media in Cloudflare R2. KHT does not collect card data.',
+          ar: 'بنعالج البيانات بالقدر اللازم لتجهيز وتنفيذ طلبك، والوفاء بالالتزامات القانونية، وحماية المتجر من إساءة الاستخدام، والرد على الدعم، وتحقيق مصالح تشغيلية مشروعة لا تتغلب على حقوقك. ممكن تتم متابعة السلة المتروكة القابلة للتواصل يدويًا لخدمة الطلب، وليس كتسويق آلي. سجلات المتجر محفوظة في Cloudflare D1 وصور المنتجات في Cloudflare R2، وKHT لا يجمع بيانات كروت.',
         },
       },
       {
         heading: { en: 'Retention and your choices', ar: 'مدة الاحتفاظ وحقوقك' },
         body: {
-          en: 'We keep order and support records only as long as needed for fulfilment, disputes, fraud prevention, and legal or accounting duties. You may ask customer care to access, correct, or delete eligible personal data. Some order records may need to be retained where the law requires it.',
-          ar: 'بنحتفظ بسجلات الطلب والدعم للمدة اللازمة للتنفيذ وحل النزاعات ومنع الاحتيال والالتزامات القانونية أو المحاسبية. تقدر تطلب من خدمة العملاء الوصول لبياناتك أو تصحيحها أو حذف البيانات المؤهلة، مع الاحتفاظ ببعض سجلات الطلب لو القانون بيطلب ده.',
+          en: 'We keep order and support records only as long as needed for fulfilment, disputes, fraud prevention, and legal or accounting duties, then delete or anonymise eligible data. You may ask customer care to access, correct, update, restrict, or delete eligible personal data, withdraw consent where processing depends on it, or object where the law allows. Some records must be retained when required by law.',
+          ar: 'بنحتفظ بسجلات الطلب والدعم للمدة اللازمة للتنفيذ وحل النزاعات ومنع الاحتيال والالتزامات القانونية أو المحاسبية، وبعدها بنحذف البيانات المؤهلة أو نخليها غير مرتبطة بشخص. تقدر تطلب الوصول لبياناتك أو تصحيحها أو تحديثها أو تقييدها أو حذفها، وسحب الموافقة لو المعالجة معتمدة عليها، أو الاعتراض في الحالات التي يسمح بها القانون. بعض السجلات لازم نحتفظ بها لو القانون بيطلب ده.',
         },
       },
     ],
