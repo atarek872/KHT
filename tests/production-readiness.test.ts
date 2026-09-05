@@ -20,6 +20,7 @@ const migrationNames = [
   '0005_abandoned_carts.sql',
   '0006_commerce_safety.sql',
   '0007_production_commerce.sql',
+  '0008_product_gallery_sale_pricing.sql',
 ]
 
 function setup() {

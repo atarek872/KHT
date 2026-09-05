@@ -405,7 +405,7 @@ git commit -m "feat: publish Drop and story campaign assets"
 - Consumes: verified source revision and migration 0008.
 - Produces: deployed Worker version, D1 migration record, rollback bookmark, and smoke-test record.
 
-- [ ] **Step 1: Run complete local verification**
+- [x] **Step 1: Run complete local verification**
 
 Run each command freshly:
 
@@ -422,7 +422,7 @@ git diff --check
 
 Expected: every command exits 0; all tests pass; dry run binds only production D1/R2.
 
-- [ ] **Step 2: Commit the exact deployable revision**
+- [x] **Step 2: Commit the exact deployable revision**
 
 Commit any final documentation/checklist updates without secrets. Verify `git status --short` is
 empty and record `git rev-parse --short HEAD`.
