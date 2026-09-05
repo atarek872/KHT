@@ -9,8 +9,10 @@ const text = computed(() =>
 </script>
 
 <template>
-  <span class="admin-order-status">
+  <span class="admin-order-status" :data-status="value">
     <span aria-hidden="true" />
-    <span><span v-if="label" class="sr-only">{{ label }}: </span>{{ text }}</span>
+    <span
+      ><span v-if="label" class="sr-only">{{ label }}: </span>{{ text }}</span
+    >
   </span>
 </template>

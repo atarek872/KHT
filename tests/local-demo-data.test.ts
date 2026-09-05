@@ -78,4 +78,13 @@ test('local demo seed provides complete, repeatable admin test data', () => {
     database.prepare("SELECT stock FROM inventory_variants WHERE id = 'kht-001-m'").get()!.stock,
     10,
   )
+  assert.equal(
+    database.prepare("SELECT stock FROM inventory_variants WHERE id = 'kht-001-xl'").get()!.stock,
+    6,
+  )
+  assert.ok(
+    database
+      .prepare("SELECT inventory_restored_at FROM orders WHERE id = 'local-order-1006'")
+      .get()!.inventory_restored_at,
+  )
 })

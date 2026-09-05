@@ -122,6 +122,7 @@ export async function createDurableOrder(
   const orderNumber = `KHT-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().slice(0, 4).toUpperCase()}`
   const publicReference = `KHT-${crypto.randomUUID().replaceAll('-', '').slice(0, 20).toUpperCase()}`
   const createdAt = new Date().toISOString()
+  const createdEventId = crypto.randomUUID()
   const customerStatement = existingCustomer
     ? database.prepare(`UPDATE customers SET name = ?, phone = ?, phone_normalized = ?, email = ?,
       address = ?, governorate = ?, city = ? WHERE id = ?`)
@@ -152,7 +153,7 @@ export async function createDurableOrder(
     database.prepare(`INSERT INTO order_events
       (id, order_id, event_type, to_value, actor_email, created_at)
       VALUES (?, ?, 'created', 'pending', ?, ?)`).bind(
-        crypto.randomUUID(), orderId, options.actorEmail || 'system@kht.local', createdAt,
+        createdEventId, orderId, options.actorEmail || 'system@kht.local', createdAt,
       ),
   ]
   if (options.cartId) {
@@ -171,7 +172,12 @@ export async function createDurableOrder(
     lines: priced.lines.map((line) => ({ id: line.variant.id, productName: line.variant.productName,
       variant: `${line.variant.color} / ${line.variant.size}`, quantity: line.quantity,
       unitPrice: line.variant.unitPrice, total: line.total })),
-    allowedFulfillmentTransitions: [],
+    events: [{
+      id: createdEventId, eventType: 'created', toValue: 'pending',
+      actorEmail: options.actorEmail || 'system@kht.local', createdAt,
+    }],
+    allowedFulfillmentTransitions: ['confirmed', 'cancelled'],
+    canRestockReturned: false,
   }
   return { order, publicReference }
 }

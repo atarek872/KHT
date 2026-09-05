@@ -418,7 +418,7 @@ git commit -m "feat: persist confirmations and order tracking"
 - Produces: `transitionOrder(database, id, nextStatus, actorEmail, note?)`.
 - Produces: `restockReturnedOrder(database, id, actorEmail, note?)`.
 
-- [ ] **Step 1: Write failing state-machine tests**
+- [x] **Step 1: Write failing state-machine tests**
 
 ```ts
 test('only valid fulfillment transitions are advertised', () => {
@@ -437,13 +437,13 @@ test('cancelling restores reserved stock exactly once', async () => {
 })
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `node --experimental-strip-types --test tests/order-transitions.test.ts`
 
 Expected: FAIL because the transition service is missing.
 
-- [ ] **Step 3: Implement the transition map and conflict checks**
+- [x] **Step 3: Implement the transition map and conflict checks**
 
 ```ts
 const transitions: Record<OrderFulfillmentStatus, OrderFulfillmentStatus[]> = {
@@ -461,7 +461,7 @@ Load the current row, reject a transition not present in the map, then batch the
 update, inventory restoration when cancelling, and one audit event. Delivered COD updates payment
 to `paid` in the same batch. Cancellation updates pending COD payment to `failed`.
 
-- [ ] **Step 4: Add authenticated mutation endpoints**
+- [x] **Step 4: Add authenticated mutation endpoints**
 
 ```ts
 export default defineEventHandler(async (event) => {
@@ -480,20 +480,20 @@ export default defineEventHandler(async (event) => {
 Map stale or invalid transitions to HTTP `409`; use `404` for missing orders and `400` for malformed
 input.
 
-- [ ] **Step 5: Add clear controls and audit timeline to Admin order detail**
+- [x] **Step 5: Add clear controls and audit timeline to Admin order detail**
 
 Render only server-provided allowed next transitions. Require confirmation for cancellation and
 returned-item restocking, keep actions disabled while saving, preserve the current order on error,
 and refresh after success.
 
-- [ ] **Step 6: Run order workflow and Admin tests**
+- [x] **Step 6: Run order workflow and Admin tests**
 
 Run: `node --experimental-strip-types --test tests/order-transitions.test.ts tests/admin-orders.test.ts tests/customers.test.ts`
 
 Expected: PASS, including status controls, terminal states, COD paid-on-delivery, one-time inventory
 restoration, explicit returned restock, and audit events.
 
-- [ ] **Step 7: Commit order operations**
+- [x] **Step 7: Commit order operations**
 
 ```bash
 git add shared/adminOrder.ts server/services/orderTransitions.ts server/services/adminOrders.ts server/api/admin/orders app/pages/admin/orders app/components/admin/orders/OrderStatus.vue app/assets/css/admin.css tests/order-transitions.test.ts tests/admin-orders.test.ts tests/customers.test.ts

@@ -46,7 +46,7 @@ test('orders list includes required columns and separate desktop and mobile pres
   assert.match(page, /v-else-if="data\?\.availability === 'empty'/)
 })
 
-test('order details expose required commerce fields without frontend status mutations', () => {
+test('order details expose required commerce fields and server-controlled status actions', () => {
   const page = read('../app/pages/admin/orders/[id].vue')
 
   for (const field of [
@@ -68,15 +68,26 @@ test('order details expose required commerce fields without frontend status muta
   ]) {
     assert.match(page, new RegExp(field, 'i'), field)
   }
-  assert.doesNotMatch(page, /method:\s*'PATCH'|method:\s*'PUT'/)
-  assert.doesNotMatch(page, /allowedFulfillmentTransitions/)
+  assert.match(page, /method:\s*'PATCH'/)
+  assert.match(page, /allowedFulfillmentTransitions/)
+  assert.match(page, /AdminConfirmDialog/)
+  assert.match(page, /order\.events/)
 })
 
 test('orders CSS switches from table to structured cards below desktop width', () => {
   const css = read('../app/assets/css/admin.css')
 
   assert.match(css, /\.kht-admin \.admin-orders-mobile\s*\{\s*display:\s*none/)
-  assert.match(css, /@media \(max-width: 1023px\)[\s\S]*\.admin-orders-desktop\s*\{\s*display:\s*none/)
-  assert.match(css, /@media \(max-width: 1023px\)[\s\S]*\.admin-orders-mobile\s*\{\s*display:\s*grid/)
-  assert.match(css, /@media \(max-width: 767px\)[\s\S]*\.admin-order-detail__status\s*\{\s*grid-template-columns:\s*1fr/)
+  assert.match(
+    css,
+    /@media \(max-width: 1023px\)[\s\S]*\.admin-orders-desktop\s*\{\s*display:\s*none/,
+  )
+  assert.match(
+    css,
+    /@media \(max-width: 1023px\)[\s\S]*\.admin-orders-mobile\s*\{\s*display:\s*grid/,
+  )
+  assert.match(
+    css,
+    /@media \(max-width: 767px\)[\s\S]*\.admin-order-detail__status\s*\{\s*grid-template-columns:\s*1fr/,
+  )
 })

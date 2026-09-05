@@ -57,6 +57,22 @@ VALUES
   ('local-line-1005-1', 'local-order-1005', 'kht-002-m', 'The Line Tracksuit', 'Black / M', 'KHT-002-M', 1, 2390, 2390),
   ('local-line-1006-1', 'local-order-1006', 'kht-001-xl', 'The Line Tee', 'Black / XL', 'KHT-001-XL', 1, 890, 890);
 
+UPDATE inventory_variants
+SET stock = stock + (
+  SELECT SUM(oi.quantity) FROM order_items oi
+  WHERE oi.order_id = 'local-order-1006' AND oi.variant_id = inventory_variants.id
+)
+WHERE EXISTS (
+  SELECT 1 FROM orders
+  WHERE id = 'local-order-1006' AND inventory_restored_at IS NULL
+)
+AND EXISTS (
+  SELECT 1 FROM order_items oi
+  WHERE oi.order_id = 'local-order-1006' AND oi.variant_id = inventory_variants.id
+);
+UPDATE orders SET inventory_restored_at = datetime('now')
+WHERE id = 'local-order-1006' AND inventory_restored_at IS NULL;
+
 UPDATE orders SET payment_status = 'paid' WHERE id IN ('local-order-1001', 'local-order-1002');
 UPDATE orders SET payment_status = 'failed' WHERE id = 'local-order-1006';
 

@@ -1,22 +1,9 @@
 export type OrderPaymentMethod = 'cod'
 export type OrderPaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded'
 export type OrderFulfillmentStatus =
-  | 'pending'
-  | 'confirmed'
-  | 'processing'
-  | 'shipped'
-  | 'delivered'
-  | 'cancelled'
-  | 'returned'
+  'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'returned'
 export type OrderSource =
-  | 'website'
-  | 'instagram'
-  | 'facebook'
-  | 'tiktok'
-  | 'whatsapp'
-  | 'phone'
-  | 'admin'
-  | 'other'
+  'website' | 'instagram' | 'facebook' | 'tiktok' | 'whatsapp' | 'phone' | 'admin' | 'other'
 
 export interface AdminOrderCapabilities {
   search: boolean
@@ -68,7 +55,9 @@ export interface AdminOrderDetail extends AdminOrderSummary {
   discount: number
   discountCode?: string
   lines: AdminOrderLine[]
+  events: OrderEvent[]
   allowedFulfillmentTransitions: OrderFulfillmentStatus[]
+  canRestockReturned: boolean
 }
 
 export interface AdminOrderListResponse {
