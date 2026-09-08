@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { AdminOrderDetailResponse } from '../../../../shared/adminOrder'
+import type { AdminOrderDetailResponse, OrderFulfillmentStatus } from '../../../../shared/adminOrder'
 import OrderStatus from '../../../components/admin/orders/OrderStatus.vue'
 
 definePageMeta({ layout: 'admin' })
@@ -19,6 +19,25 @@ const date = (value: string) =>
   new Intl.DateTimeFormat('en-EG', { dateStyle: 'long', timeStyle: 'short' }).format(
     new Date(value),
   )
+
+const updating = ref(false)
+const updateError = ref('')
+const trackingNumber = ref('')
+const trackingCarrier = ref('')
+async function updateStatus(next: OrderFulfillmentStatus) {
+  if (!order.value || updating.value) return
+  updating.value = true
+  updateError.value = ''
+  try {
+    await $fetch(`/api/admin/orders/${encodeURIComponent(orderId.value)}/status`, {
+      method: 'PATCH', body: { status: next, expectedStatus: order.value.fulfillmentStatus,
+        ...(trackingNumber.value ? { trackingNumber: trackingNumber.value } : {}),
+        ...(trackingCarrier.value ? { trackingCarrier: trackingCarrier.value } : {}) },
+    })
+    await refresh()
+  } catch { updateError.value = 'Could not update this order. Refresh the order and try again.' }
+  finally { updating.value = false }
+}
 
 useSeoMeta({
   title: () => (order.value ? `${order.value.number} — KHT Admin` : 'Order — KHT Admin'),
@@ -75,6 +94,19 @@ useSeoMeta({
         <div><span>Payment method</span><strong>{{ order.paymentMethod.toUpperCase() }}</strong></div>
         <div><span>Source</span><strong>{{ order.source }}</strong></div>
       </div>
+
+      <AdminSection v-if="order.allowedFulfillmentTransitions.length" title="Update fulfillment">
+        <div v-if="order.fulfillmentStatus === 'processing'" class="admin-order-facts">
+          <label>Tracking number <input v-model="trackingNumber" maxlength="200" :disabled="updating" /></label>
+          <label>Carrier <input v-model="trackingCarrier" maxlength="200" :disabled="updating" /></label>
+        </div>
+        <div class="admin-order-detail__status">
+          <AdminButton v-for="next in order.allowedFulfillmentTransitions" :key="next" :disabled="updating" @click="updateStatus(next)">
+            Mark {{ next.replaceAll('-', ' ') }}
+          </AdminButton>
+        </div>
+        <p v-if="updateError" role="alert">{{ updateError }}</p>
+      </AdminSection>
 
       <div class="admin-order-detail__grid">
         <div class="admin-order-detail__main">

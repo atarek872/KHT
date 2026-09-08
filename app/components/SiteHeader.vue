@@ -46,6 +46,9 @@ function submitSearch() {
       >
         <KhtIcon name="search" />
       </button>
+      <NuxtLink to="/account" class="icon-button" :aria-label="t('Your account', 'حسابك')"
+        ><KhtIcon name="user"
+      /></NuxtLink>
       <button
         class="bag-button"
         :aria-label="
@@ -79,7 +82,9 @@ function submitSearch() {
         :to="`/categories/${category.slug}`"
         >{{ localized(category.name) }}</NuxtLink
       ><NuxtLink to="/drops/001">Drop 001</NuxtLink
-      ><NuxtLink to="/about">{{ t('Our story', 'عن KHT') }}</NuxtLink>
+      ><NuxtLink to="/about">{{ t('Our story', 'عن KHT') }}</NuxtLink
+      ><NuxtLink to="/account">{{ t('Your account', 'حسابك') }}</NuxtLink
+      ><NuxtLink to="/account/orders">{{ t('Track order', 'تتبع الطلب') }}</NuxtLink>
     </nav>
     <div class="panel-bottom">
       <NuxtLink to="/size-guide">{{ t('Size guide', 'دليل المقاسات') }}</NuxtLink

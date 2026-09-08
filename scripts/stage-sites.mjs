@@ -6,6 +6,7 @@ import {
   realpathSync,
   rmSync,
   writeFileSync,
+  readdirSync,
 } from 'node:fs'
 import { resolve, join } from 'node:path'
 
@@ -29,5 +30,32 @@ mkdirSync(join(staging, '.openai'), { recursive: true })
 cpSync(join(output, 'server'), join(staging, 'server'), { recursive: true })
 cpSync(join(output, 'public'), join(staging, 'client'), { recursive: true })
 cpSync(join(project, '.openai/hosting.json'), join(staging, '.openai/hosting.json'))
+// Keep the existing SQL migrations as the single source of truth. Sites consumes
+// the same ordered migrations through its Drizzle-compatible deployment journal.
+const migrationDirectory = join(staging, '.openai/drizzle')
+mkdirSync(join(migrationDirectory, 'meta'), { recursive: true })
+const migrations = readdirSync(join(project, 'server/db/migrations'))
+  .filter((name) => name.endsWith('.sql'))
+  .sort()
+for (const name of migrations)
+  cpSync(join(project, 'server/db/migrations', name), join(migrationDirectory, name))
+writeFileSync(
+  join(migrationDirectory, 'meta/_journal.json'),
+  JSON.stringify(
+    {
+      version: '7',
+      dialect: 'sqlite',
+      entries: migrations.map((name, idx) => ({
+        idx,
+        version: '6',
+        when: 1788480000000 + idx * 1000,
+        tag: name.slice(0, -4),
+        breakpoints: false,
+      })),
+    },
+    null,
+    2,
+  ),
+)
 writeFileSync(join(staging, 'server/index.js'), "export { default } from './index.mjs';\n")
 console.log('Nuxt Cloudflare worker and public assets staged for Sites.')
