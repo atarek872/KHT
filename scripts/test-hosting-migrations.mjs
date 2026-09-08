@@ -7,7 +7,14 @@ const database = new DatabaseSync(':memory:')
 for (const file of readdirSync(directory)
   .filter((name) => name.endsWith('.sql'))
   .sort()) {
-  const statements = readFileSync(new URL(file, directory), 'utf8').split(
+  const sql = readFileSync(new URL(file, directory), 'utf8')
+  assert.equal(sql.includes('\r'), false, `${file} must use LF line endings for remote D1`)
+  assert.equal(
+    /SELECT\s+CASE\b/i.test(sql),
+    false,
+    `${file} must parenthesize CASE expressions inside triggers for remote D1`,
+  )
+  const statements = sql.split(
     '--> statement-breakpoint',
   )
   assert.ok(statements.length > 1, `${file} must contain explicit statement boundaries`)
