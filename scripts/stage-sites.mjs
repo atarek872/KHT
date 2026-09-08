@@ -7,6 +7,7 @@ import {
   rmSync,
   writeFileSync,
   readdirSync,
+  readFileSync,
 } from 'node:fs'
 import { resolve, join } from 'node:path'
 
@@ -37,8 +38,27 @@ mkdirSync(join(migrationDirectory, 'meta'), { recursive: true })
 const migrations = readdirSync(join(project, 'server/db/migrations'))
   .filter((name) => name.endsWith('.sql'))
   .sort()
-for (const name of migrations)
-  cpSync(join(project, 'server/db/migrations', name), join(migrationDirectory, name))
+function drizzleStatements(sql) {
+  const statements = []
+  let current = []
+  let trigger = false
+  for (const line of sql.split(/\r?\n/)) {
+    const trimmed = line.trim().toUpperCase()
+    if (trimmed.startsWith('CREATE TRIGGER ')) trigger = true
+    current.push(line)
+    if ((!trigger && trimmed.endsWith(';')) || (trigger && line === 'END;')) {
+      statements.push(current.join('\n').trim())
+      current = []
+      trigger = false
+    }
+  }
+  if (current.join('').trim()) throw new Error('Incomplete SQL migration statement.')
+  return statements.join('\n--> statement-breakpoint\n') + '\n'
+}
+for (const name of migrations) {
+  const sql = readFileSync(join(project, 'server/db/migrations', name), 'utf8')
+  writeFileSync(join(migrationDirectory, name), drizzleStatements(sql))
+}
 writeFileSync(
   join(migrationDirectory, 'meta/_journal.json'),
   JSON.stringify(
@@ -50,7 +70,7 @@ writeFileSync(
         version: '6',
         when: 1788480000000 + idx * 1000,
         tag: name.slice(0, -4),
-        breakpoints: false,
+        breakpoints: true,
       })),
     },
     null,
