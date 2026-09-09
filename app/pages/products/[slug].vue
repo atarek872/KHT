@@ -6,6 +6,14 @@ const { t, localized } = useLanguage()
 const catalog = useCatalog()
 const product = computed(() => catalog.value.products.find((p) => p.slug === route.params.slug))
 if (!product.value) throw createError({ statusCode: 404, statusMessage: 'Piece not found' })
+const { trackViewItem, trackAddToCart } = useStoreAnalytics()
+watch(
+  () => product.value?.id,
+  () => {
+    if (product.value) trackViewItem(product.value)
+  },
+  { immediate: true },
+)
 const category = computed(() =>
   catalog.value.categories.find((c) => c.slug === product.value?.category),
 )
@@ -53,11 +61,14 @@ async function addToBag() {
   if (!product.value || buying.value) return
   buying.value = true
   message.value = ''
-  if (!bag.add(product.value, selectedSize.value))
+  if (!bag.add(product.value, selectedSize.value)) {
     message.value = t(
       'The available quantity is already in your bag, or your bag is full.',
       'الكمية المتاحة موجودة بالفعل في سلتك، أو السلة ممتلئة.',
     )
+  } else {
+    trackAddToCart(product.value, selectedSize.value)
+  }
   buying.value = false
 }
 const canonicalPath = computed(() => `/products/${product.value?.slug || String(route.params.slug)}`)

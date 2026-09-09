@@ -17,6 +17,7 @@ const {
   restore,
 } = useBag()
 const { user } = useCustomer()
+const { trackBeginCheckout, trackPurchase } = useStoreAnalytics()
 const addresses = ref<CustomerAddress[]>([])
 const addressId = ref('')
 const form = useState('checkout-draft', () => ({
@@ -49,6 +50,7 @@ watch(addressId, (id) => {
   })
 })
 onMounted(async () => {
+  if (count.value) trackBeginCheckout(lines.value, total.value)
   if (!user.value) return
   form.value.name ||= user.value.name
   form.value.email ||= user.value.email
@@ -160,6 +162,14 @@ async function submit() {
           couponCode: couponQuote.value?.couponCode,
         },
       })
+      trackPurchase({
+        transactionId: accountOrder.number,
+        value: couponQuote.value?.total ?? total.value + shipping.value,
+        shipping: couponQuote.value?.shipping ?? shipping.value,
+        discount: couponQuote.value?.discount ?? 0,
+        coupon: couponQuote.value?.couponCode,
+        items: lines.value,
+      })
       resetLocal()
       requestId.value = crypto.randomUUID()
       if (user.value) await restore(false).catch(() => undefined)
@@ -185,6 +195,14 @@ async function submit() {
         paymentMethod: 'cod',
         notes: form.value.notes || undefined,
       },
+    })
+    trackPurchase({
+      transactionId: order.reference,
+      value: order.total,
+      shipping: order.shipping,
+      discount: order.discount,
+      coupon: order.discountCode,
+      items: lines.value,
     })
     completeCheckout()
     requestId.value = crypto.randomUUID()

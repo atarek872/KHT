@@ -24,3 +24,34 @@ test('Google Analytics is production-scoped and allowed by the storefront CSP', 
   assert.match(security, /script-src[^\n]*googletagmanager\.com/)
   assert.match(security, /connect-src[^\n]*google-analytics\.com/)
 })
+
+test('the storefront sends the four GA4 commerce events from successful customer actions', () => {
+  const product = read('../app/pages/products/[slug].vue')
+  assert.match(product, /trackViewItem/)
+  assert.match(product, /trackAddToCart/)
+
+  const checkout = read('../app/pages/checkout.vue')
+  assert.match(checkout, /trackBeginCheckout/)
+  assert.match(checkout, /trackPurchase/)
+
+  const analytics = read('../app/composables/useStoreAnalytics.ts')
+  for (const event of ['view_item', 'add_to_cart', 'begin_checkout', 'purchase']) {
+    assert.match(analytics, new RegExp(`['\"]${event}['\"]`), event)
+  }
+  for (const field of [
+    'transaction_id',
+    'currency',
+    'value',
+    'shipping',
+    'coupon',
+    'item_id',
+    'item_name',
+    'item_category',
+    'item_variant',
+    'price',
+    'quantity',
+  ]) {
+    assert.match(analytics, new RegExp(field), field)
+  }
+  assert.doesNotMatch(analytics, /email|phone|address/i)
+})
