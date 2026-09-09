@@ -39,6 +39,9 @@ test('production candidate uses isolated public Cloudflare resources and real co
   assert.equal(production.name, 'kht-commerce-production')
   assert.equal(production.workers_dev, true)
   assert.equal(production.preview_urls, false)
+  assert.deepEqual(production.routes, [
+    { pattern: 'kht.tknology.online', custom_domain: true },
+  ])
   assert.notEqual(
     production.d1_databases[0].database_id,
     config.env.staging.d1_databases[0].database_id,
