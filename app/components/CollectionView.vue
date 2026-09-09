@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { matchesProduct } from '../utils/productSearch'
+import { breadcrumbList } from '#shared/storefrontSeo'
 const props = defineProps<{ category?: string; drop?: boolean; search?: boolean }>()
 const { t, localized } = useLanguage()
 const catalog = useCatalog()
@@ -53,7 +54,66 @@ const products = computed(() => {
       ? list.sort((a, b) => b.price - a.price)
       : list
 })
-useSeoMeta({ title: () => `${title.value} — KHT` })
+const canonicalPath = computed(() =>
+  props.category
+    ? `/categories/${props.category}`
+    : props.drop
+      ? '/drops/001'
+      : props.search
+        ? '/search'
+        : '/shop',
+)
+const seoTitle = computed(() =>
+  props.category
+    ? `${title.value} from Drop 001 — KHT Egypt`
+    : props.drop
+      ? 'KHT Drop 001 — Black Streetwear Collection'
+      : props.search
+        ? t('Search the KHT collection', 'ابحث في مجموعة KHT')
+        : t('KHT Streetwear Collection — Shop Drop 001', 'مجموعة KHT ستريت وير — تسوق الإصدار 001'),
+)
+const seoDescription = computed(() =>
+  props.category
+    ? t(
+        `Shop ${title.value} from KHT Drop 001. Oversized black silhouettes finished with the signature white line. Cash on delivery in Egypt.`,
+        `تسوق ${title.value} من إصدار KHT 001. قصّات سوداء أوفر سايز بخط KHT الأبيض المميز، والدفع عند الاستلام في مصر.`,
+      )
+    : props.drop
+      ? t(
+          'Shop KHT Drop 001: oversized hoodies, wide-leg pants and complete black streetwear sets with the signature white line.',
+          'تسوق إصدار KHT 001: هوديز أوفر سايز وبناطيل واسعة وأطقم ستريت وير سوداء كاملة بخط KHT الأبيض المميز.',
+        )
+      : t(
+          'Shop KHT black streetwear in Egypt. Explore oversized hoodies, wide-leg pants and complete sets from Drop 001.',
+          'تسوق ملابس KHT السوداء في مصر. اكتشف الهوديز الأوفر سايز والبناطيل الواسعة والأطقم الكاملة من إصدار 001.',
+        ),
+)
+const seoImage = computed(() =>
+  categoryData.value?.image || (props.drop ? '/images/drop-001-banner.jpg' : '/images/campaign.png'),
+)
+const structuredData = computed(() => ({
+  '@context': 'https://schema.org',
+  ...breadcrumbList(
+    props.category
+      ? [
+          { name: 'KHT', path: '/' },
+          { name: t('Collection', 'المجموعة'), path: '/shop' },
+          { name: title.value, path: canonicalPath.value },
+        ]
+      : [
+          { name: 'KHT', path: '/' },
+          { name: title.value, path: canonicalPath.value },
+        ],
+  ),
+}))
+useStoreSeo({
+  title: seoTitle,
+  description: seoDescription,
+  path: canonicalPath,
+  image: seoImage,
+  imageAlt: title,
+  structuredData,
+})
 </script>
 <template>
   <main id="main" class="light-surface collection-page">

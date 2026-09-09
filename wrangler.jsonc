@@ -7,6 +7,7 @@
   "assets": {
     "directory": "dist/client",
     "binding": "ASSETS",
+    "run_worker_first": ["/robots.txt", "/sitemap.xml"],
   },
   "observability": {
     "enabled": true,
@@ -39,7 +40,7 @@
     },
     "production": {
       "name": "kht-commerce-production",
-      "workers_dev": true,
+      "workers_dev": false,
       "preview_urls": false,
       "routes": [
         {
@@ -72,7 +73,7 @@
         },
       ],
       "vars": {
-        "NUXT_PUBLIC_STORE_INDEXING_ENABLED": "false",
+        "NUXT_PUBLIC_STORE_INDEXING_ENABLED": "true",
         "NUXT_PUBLIC_STORE_CONTACT_EMAIL": "atarek872@hotmail.com",
         "NUXT_PUBLIC_STORE_PHONE": "01124023663",
         "NUXT_PUBLIC_STORE_WHATSAPP": "",

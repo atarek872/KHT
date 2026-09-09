@@ -1,31 +1,68 @@
 <script setup lang="ts">
+import { useStoreContact } from '#shared/storeConfig'
+
 const { t, localized } = useLanguage()
 const catalog = useCatalog()
+const contact = useStoreContact()
 const homepageUrl = 'https://kht.tknology.online/'
 const socialImageUrl = 'https://kht.tknology.online/images/campaign.png'
 const socialTitle = 'KHT — Black. White. Line.'
 const socialDescription =
   'Meet Drop 001. Oversized silhouettes. Considered details. A single white line.'
+const storeStructuredData = computed(() => ({
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'OnlineStore',
+      '@id': `${homepageUrl}#store`,
+      name: 'KHT',
+      alternateName: 'KHT — Black. White. Line.',
+      url: homepageUrl,
+      logo: 'https://kht.tknology.online/favicon.svg',
+      image: socialImageUrl,
+      description: socialDescription,
+      areaServed: 'EG',
+      currenciesAccepted: 'EGP',
+      paymentAccepted: 'Cash on delivery',
+      contactPoint: contact.configured
+        ? {
+            '@type': 'ContactPoint',
+            contactType: 'customer service',
+            email: contact.email || undefined,
+            telephone: contact.phone ? contact.phone.replace(/^0/, '+20') : undefined,
+            areaServed: 'EG',
+            availableLanguage: ['Arabic', 'English'],
+          }
+        : undefined,
+      hasMerchantReturnPolicy: {
+        '@type': 'MerchantReturnPolicy',
+        applicableCountry: 'EG',
+        returnPolicyCountry: 'EG',
+        returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
+        merchantReturnDays: 14,
+        returnMethod: 'https://schema.org/ReturnByMail',
+        returnFees: 'https://schema.org/FreeReturn',
+      },
+    },
+    {
+      '@type': 'WebSite',
+      '@id': `${homepageUrl}#website`,
+      name: 'KHT',
+      alternateName: 'KHT Egypt',
+      url: homepageUrl,
+      inLanguage: ['en', 'ar'],
+      publisher: { '@id': `${homepageUrl}#store` },
+    },
+  ],
+}))
 
-useSeoMeta({
+useStoreSeo({
   title: socialTitle,
   description: socialDescription,
-  ogTitle: socialTitle,
-  ogDescription: socialDescription,
-  ogType: 'website',
-  ogUrl: homepageUrl,
-  ogImage: socialImageUrl,
-  ogImageAlt: 'KHT Drop 001 campaign',
-  ogImageWidth: 1672,
-  ogImageHeight: 941,
-  twitterCard: 'summary_large_image',
-  twitterTitle: socialTitle,
-  twitterDescription: socialDescription,
-  twitterImage: socialImageUrl,
-  twitterImageAlt: 'KHT Drop 001 campaign',
-})
-useHead({
-  link: [{ rel: 'canonical', href: homepageUrl }],
+  path: homepageUrl,
+  image: socialImageUrl,
+  imageAlt: 'Two models wearing black KHT Drop 001 streetwear',
+  structuredData: storeStructuredData,
 })
 </script>
 <template>

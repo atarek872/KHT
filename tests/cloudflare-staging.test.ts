@@ -11,7 +11,11 @@ test('staging config binds isolated D1 and R2 with indexing disabled', () => {
 
   assert.equal(config.main, 'dist/server/index.js')
   assert.ok(config.compatibility_flags.includes('nodejs_compat'))
-  assert.deepEqual(config.assets, { directory: 'dist/client', binding: 'ASSETS' })
+  assert.deepEqual(config.assets, {
+    directory: 'dist/client',
+    binding: 'ASSETS',
+    run_worker_first: ['/robots.txt', '/sitemap.xml'],
+  })
   assert.equal(staging.name, 'kht-commerce-staging')
   assert.equal(staging.workers_dev, true)
   assert.equal(staging.preview_urls, false)
@@ -37,7 +41,7 @@ test('production candidate uses isolated public Cloudflare resources and real co
   const production = config.env.production
 
   assert.equal(production.name, 'kht-commerce-production')
-  assert.equal(production.workers_dev, true)
+  assert.equal(production.workers_dev, false)
   assert.equal(production.preview_urls, false)
   assert.deepEqual(production.routes, [
     { pattern: 'kht.tknology.online', custom_domain: true },
@@ -55,7 +59,7 @@ test('production candidate uses isolated public Cloudflare resources and real co
   assert.deepEqual(production.r2_buckets, [
     { binding: 'PRODUCT_MEDIA', bucket_name: 'kht-product-media-production' },
   ])
-  assert.equal(production.vars.NUXT_PUBLIC_STORE_INDEXING_ENABLED, 'false')
+  assert.equal(production.vars.NUXT_PUBLIC_STORE_INDEXING_ENABLED, 'true')
   assert.equal(production.vars.NUXT_PUBLIC_STORE_CONTACT_EMAIL, 'atarek872@hotmail.com')
   assert.equal(production.vars.NUXT_PUBLIC_STORE_PHONE, '01124023663')
   assert.equal(production.vars.NUXT_PUBLIC_STORE_WHATSAPP, '')

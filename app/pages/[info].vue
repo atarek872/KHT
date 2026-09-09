@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useStoreContact } from '#shared/storeConfig'
+import { breadcrumbList } from '#shared/storefrontSeo'
 
 const { t, localized } = useLanguage()
 const route = useRoute()
@@ -146,7 +147,27 @@ const page = computed(
   () => pages[String(route.params.info) === 'returns' ? 'shipping' : String(route.params.info)],
 )
 if (!page.value) throw createError({ statusCode: 404, statusMessage: 'Page not found' })
-useSeoMeta({ title: () => `${page.value ? localized(page.value.title) : 'Page'} — KHT` })
+const canonicalPath = computed(() =>
+  String(route.params.info) === 'returns' ? '/shipping' : `/${String(route.params.info)}`,
+)
+const title = computed(() => `${page.value ? localized(page.value.title) : 'KHT'} — KHT`)
+const description = computed(() =>
+  page.value ? localized(page.value.sections[0]!.body) : 'KHT customer care.',
+)
+useStoreSeo({
+  title,
+  description,
+  path: canonicalPath,
+  image: '/images/campaign.png',
+  imageAlt: title,
+  structuredData: computed(() => ({
+    '@context': 'https://schema.org',
+    ...breadcrumbList([
+      { name: 'KHT', path: '/' },
+      { name: page.value ? localized(page.value.title) : 'Customer care', path: canonicalPath.value },
+    ]),
+  })),
+})
 </script>
 <template>
   <main v-if="page" id="main" class="info-page light-surface">

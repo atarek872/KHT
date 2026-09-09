@@ -1,6 +1,27 @@
 <script setup lang="ts">
+import { breadcrumbList } from '#shared/storefrontSeo'
+
 const { t } = useLanguage()
-useSeoMeta({ title: 'Size guide — KHT' })
+const title = computed(() => t('KHT Size Guide — Find Your Fit', 'دليل مقاسات KHT — اختار مقاسك'))
+useStoreSeo({
+  title,
+  description: computed(() =>
+    t(
+      'Use the KHT size guide to choose the intended oversized fit for Drop 001 hoodies, pants and complete sets.',
+      'استخدم دليل مقاسات KHT لاختيار القَصّة الأوفر سايز المناسبة لهوديز وبناطيل وأطقم إصدار 001.',
+    ),
+  ),
+  path: '/size-guide',
+  image: '/images/campaign.png',
+  imageAlt: title,
+  structuredData: computed(() => ({
+    '@context': 'https://schema.org',
+    ...breadcrumbList([
+      { name: 'KHT', path: '/' },
+      { name: t('Size guide', 'دليل المقاسات'), path: '/size-guide' },
+    ]),
+  })),
+})
 </script>
 <template>
   <main id="main" class="info-page light-surface">

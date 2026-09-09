@@ -1,6 +1,28 @@
 <script setup lang="ts">
+import { breadcrumbList } from '#shared/storefrontSeo'
+
 const { t } = useLanguage()
-useSeoMeta({ title: 'The story behind the line — KHT' })
+const title = computed(() => t('The KHT Story — Black. White. Line.', 'حكاية KHT — أسود. أبيض. خط.'))
+const description = computed(() =>
+  t(
+    'Discover KHT, an Egyptian streetwear label built around considered black silhouettes and one signature white line.',
+    'اكتشف KHT، علامة ستريت وير مصرية مبنية على قصّات سوداء مدروسة وخط أبيض مميز.',
+  ),
+)
+useStoreSeo({
+  title,
+  description,
+  path: '/about',
+  image: '/images/our-story-cover.png',
+  imageAlt: title,
+  structuredData: computed(() => ({
+    '@context': 'https://schema.org',
+    ...breadcrumbList([
+      { name: 'KHT', path: '/' },
+      { name: t('Our story', 'حكايتنا'), path: '/about' },
+    ]),
+  })),
+})
 </script>
 <template>
   <main id="main" class="about-page">

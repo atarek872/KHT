@@ -16,7 +16,6 @@ export default defineNuxtConfig({
             'KHT. A considered collection of oversized tees, tracksuits and trousers. Black. White. Line.',
         },
         { name: 'theme-color', content: '#0A0A0A' },
-        { name: 'robots', content: indexingEnabled ? 'index, follow' : 'noindex, nofollow' },
       ],
       link: [{ rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }],
     },

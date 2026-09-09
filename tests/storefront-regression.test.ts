@@ -73,7 +73,7 @@ test('product cards, details and responsive images retain storefront behavior', 
   assert.match(card, /loading="lazy"/)
   assert.match(detail, /:disabled="size\.stock === 0"/)
   assert.match(detail, /bag\.add\(product\.value, selectedSize\.value\)/)
-  assert.match(detail, /useSeoMeta\(/)
+  assert.match(detail, /useStoreSeo\(/)
   assert.match(image, /srcset/)
   assert.match(image, /decoding="async"/)
 })
@@ -94,10 +94,10 @@ test('homepage exposes an absolute hero image for social sharing', () => {
   const homepage = read('../app/pages/index.vue')
   assert.match(homepage, /const homepageUrl = 'https:\/\/kht\.tknology\.online\/'/)
   assert.match(homepage, /const socialImageUrl = 'https:\/\/kht\.tknology\.online\/images\/campaign\.png'/)
-  assert.match(homepage, /ogUrl:\s*homepageUrl/)
-  assert.match(homepage, /ogImage:\s*socialImageUrl/)
-  assert.match(homepage, /twitterCard:\s*'summary_large_image'/)
-  assert.match(homepage, /twitterImage:\s*socialImageUrl/)
+  assert.match(homepage, /useStoreSeo\(/)
+  assert.match(homepage, /path:\s*homepageUrl/)
+  assert.match(homepage, /image:\s*socialImageUrl/)
+  assert.match(read('../app/composables/useStoreSeo.ts'), /twitterCard:\s*'summary_large_image'/)
 })
 
 test('cart remains cookie-persisted and tracking is non-blocking without D1', () => {

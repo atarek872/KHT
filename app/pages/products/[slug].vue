@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { absoluteStoreUrl, breadcrumbList } from '#shared/storefrontSeo'
+
 const route = useRoute()
 const { t, localized } = useLanguage()
 const catalog = useCatalog()
@@ -58,10 +60,60 @@ async function addToBag() {
     )
   buying.value = false
 }
-useSeoMeta({
-  title: () => `${product.value ? localized(product.value.name) : 'Product'} — KHT`,
-  description: () => (product.value ? localized(product.value.description) : ''),
-  ogImage: () => product.value?.image,
+const canonicalPath = computed(() => `/products/${product.value?.slug || String(route.params.slug)}`)
+const seoTitle = computed(() =>
+  product.value ? `${localized(product.value.name)} — KHT Egypt` : 'KHT Product',
+)
+const seoDescription = computed(() =>
+  product.value ? localized(product.value.description) : 'Discover KHT Drop 001.',
+)
+const structuredData = computed(() => {
+  const item = product.value!
+  const inStock = item.sizes.some((size) => size.stock > 0)
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'Product',
+        '@id': `${absoluteStoreUrl(canonicalPath.value)}#product`,
+        name: localized(item.name),
+        description: localized(item.description),
+        sku: item.code,
+        image: item.images.map(absoluteStoreUrl),
+        color: t('Black / White', 'أسود / أبيض'),
+        size: item.sizes.map((size) => size.name),
+        category: category.value ? localized(category.value.name) : undefined,
+        brand: { '@type': 'Brand', name: 'KHT' },
+        offers: {
+          '@type': 'Offer',
+          url: absoluteStoreUrl(canonicalPath.value),
+          priceCurrency: 'EGP',
+          price: item.price.toFixed(2),
+          availability: inStock
+            ? 'https://schema.org/InStock'
+            : 'https://schema.org/OutOfStock',
+          itemCondition: 'https://schema.org/NewCondition',
+          seller: { '@id': 'https://kht.tknology.online/#store' },
+        },
+      },
+      breadcrumbList([
+        { name: 'KHT', path: '/' },
+        { name: t('Collection', 'المجموعة'), path: '/shop' },
+        ...(category.value
+          ? [{ name: localized(category.value.name), path: `/categories/${category.value.slug}` }]
+          : []),
+        { name: localized(item.name), path: canonicalPath.value },
+      ]),
+    ],
+  }
+})
+useStoreSeo({
+  title: seoTitle,
+  description: seoDescription,
+  path: canonicalPath,
+  image: computed(() => product.value!.image),
+  imageAlt: computed(() => localized(product.value!.name)),
+  structuredData,
 })
 </script>
 <template>

@@ -2,6 +2,7 @@
 import type { NuxtError } from '#app'
 defineProps<{ error: NuxtError }>()
 const { t, locale } = useLanguage()
+useSeoMeta({ robots: 'noindex, nofollow' })
 useHead({
   htmlAttrs: { lang: () => locale.value, dir: () => (locale.value === 'ar' ? 'rtl' : 'ltr') },
 })

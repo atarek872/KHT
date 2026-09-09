@@ -1,11 +1,22 @@
 <script setup lang="ts">
+import { PRIVATE_ROBOTS, PUBLIC_ROBOTS, isPrivateSeoPath } from '#shared/storefrontSeo'
+
 const { locale } = useLanguage()
 const catalog = useCatalog()
+const route = useRoute()
+const runtimeConfig = useRuntimeConfig()
+const indexingEnabled = computed(
+  () => String(runtimeConfig.public.storeIndexingEnabled) === 'true',
+)
+const robots = computed(() =>
+  indexingEnabled.value && !isPrivateSeoPath(route.path) ? PUBLIC_ROBOTS : PRIVATE_ROBOTS,
+)
 const { data, error } = await useFetch('/api/catalog')
 if (data.value) catalog.value = data.value
 useHead({
   htmlAttrs: { lang: () => locale.value, dir: () => (locale.value === 'ar' ? 'rtl' : 'ltr') },
 })
+useSeoMeta({ robots: () => robots.value })
 const { announcement, syncError, restore } = useBag()
 </script>
 
