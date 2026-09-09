@@ -128,6 +128,12 @@ test('Drop and story campaign replacements do not alter the homepage hero', () =
   assert.match(read('../app/pages/index.vue'), /\/images\/campaign\.png/)
 })
 
+test('Drop 001 image letterboxing matches the image background', () => {
+  const mainCss = read('../app/assets/css/main.css')
+  assert.match(mainCss, /--drop-banner-image:\s*#d1cfd0/)
+  assert.match(mainCss, /\.drop-banner img\s*\{[^}]*background:\s*var\(--drop-banner-image\)/s)
+})
+
 test('admin styles remain isolated from storefront visual selectors', () => {
   const adminCss = read('../app/assets/css/admin.css')
   const mainCss = read('../app/assets/css/main.css')

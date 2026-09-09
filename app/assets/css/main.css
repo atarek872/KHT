@@ -11,6 +11,7 @@
   --white: #fff;
   --off-white: #f5f5f2;
   --image: #eaeae7;
+  --drop-banner-image: #d1cfd0;
   --mist: #d9d9d6;
   --muted: #8a8a8a;
   --ink: #181818;
@@ -1154,7 +1155,7 @@ summary:focus-visible {
   width: 50%;
   height: 100%;
   object-fit: contain;
-  background: var(--image);
+  background: var(--drop-banner-image);
 }
 .drop-banner > span {
   position: static;
