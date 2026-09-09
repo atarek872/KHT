@@ -63,7 +63,7 @@ test('Paymob is absent rather than treated as an unverified payment integration'
   const serverFiles = files(join(root, 'server')).map((path) => path.toLowerCase())
   assert.equal(serverFiles.some((path) => /paymob|webhook|callback/.test(path)), false)
   const client = files(join(root, 'app')).map((path) => readFileSync(path, 'utf8')).join('\n')
-  assert.doesNotMatch(client, /window\.location|location\.href|paymentStatus\s*=|payment_status\s*=/)
+  assert.doesNotMatch(client, /window\.location|location\.href|paymentStatus\s*=(?!=)|payment_status\s*=(?!=)/)
 })
 
 test('client sources contain no payment credentials or secret-like literals', () => {

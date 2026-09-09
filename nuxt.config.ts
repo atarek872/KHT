@@ -5,7 +5,7 @@ const indexingEnabled = environment.NUXT_PUBLIC_STORE_INDEXING_ENABLED === 'true
 export default defineNuxtConfig({
   compatibilityDate: '2026-09-04',
   devtools: { enabled: false },
-  css: ['~/assets/css/main.css', '~/assets/css/admin.css'],
+  css: ['~/assets/css/main.css', '~/assets/css/admin.css', '~/assets/css/account.css'],
   app: {
     head: {
       title: 'KHT — Black. White. Line.',

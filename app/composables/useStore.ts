@@ -1,5 +1,9 @@
 import type { CartLine, Catalog, Locale, Localized, Product } from '../../shared/types'
+import type { CustomerUser } from '../../shared/account'
 import type { CartContactInput, CartSnapshotInput } from '../../shared/abandonedCart'
+import type { SavedCart } from '../../shared/customerCart'
+
+const cartQueues = new WeakMap<object, Promise<void>>()
 
 export function useLanguage() {
   const locale = useCookie<Locale>('kht-language', {
@@ -18,6 +22,16 @@ export const useCatalog = () =>
   useState<Catalog>('catalog', () => ({ products: [], categories: [], demo: true }))
 
 export function useBag() {
+  const app = useNuxtApp()
+  const user = useState<CustomerUser | null>('customer-user', () => null)
+  const saved = useState<SavedCart | null>('saved-cart', () => null)
+  const syncError = useState('bag-sync-error', () => '')
+  const syncing = useState('bag-syncing', () => false)
+  const previousOwner = useCookie<string | null>('kht-bag-owner', {
+    default: () => null,
+    sameSite: 'lax',
+    maxAge: 2592000,
+  })
   const raw = useCookie<CartLine[]>('kht-bag', {
     default: () => [],
     sameSite: 'lax',
@@ -54,19 +68,99 @@ export function useBag() {
   )
   function track(items: CartLine[], contact?: CartContactInput) {
     if (!import.meta.client) return
-    const body: CartSnapshotInput = { cartId: cartId.value, items }
-    if (contact) body.contact = contact
-    void $fetch('/api/cart/snapshot', {
-      method: 'PUT',
-      body,
-      keepalive: true,
-    }).catch(() => undefined)
+    const accountId = user.value?.id
+    const prior = cartQueues.get(app) || Promise.resolve()
+    syncing.value = true
+    const next = prior.then(async () => {
+      if (accountId) {
+        if (!saved.value || user.value?.id !== accountId)
+          throw new Error(
+            t('Reload your account bag before editing.', 'أعد تحميل سلة حسابك قبل التعديل.'),
+          )
+        const result = await $fetch<SavedCart>('/api/cart', {
+          method: 'PUT',
+          body: { id: saved.value.id, version: saved.value.version, items },
+        })
+        saved.value = result
+      } else {
+        const body: CartSnapshotInput = { cartId: cartId.value, items }
+        if (contact) body.contact = contact
+        await $fetch('/api/cart/snapshot', {
+          method: 'PUT',
+          body,
+          keepalive: true,
+        })
+      }
+      syncError.value = ''
+    })
+    cartQueues.set(app, next)
+    void next
+      .catch((cause) => {
+        syncError.value =
+          cause?.data?.statusMessage ||
+          cause?.message ||
+          t(
+            'Your bag could not be saved. Retry before checkout.',
+            'تعذر حفظ السلة. حاول مرة أخرى قبل إتمام الطلب.',
+          )
+      })
+      .finally(() => {
+        if (cartQueues.get(app) === next) syncing.value = false
+      })
+  }
+  async function flush() {
+    await (cartQueues.get(app) || Promise.resolve())
+    if (syncError.value) throw new Error(syncError.value)
   }
   function snapshotContact(contact: CartContactInput) {
     track(
       lines.value.map(({ id, size, quantity }) => ({ id, size, quantity })),
       contact,
     )
+  }
+  async function restore(mergeGuest = false) {
+    // Finish guest writes before merging and never merge cached account contents as guest items.
+    await (cartQueues.get(app) || Promise.resolve()).catch(() => undefined)
+    cartQueues.delete(app)
+    const guest = previousOwner.value ? [] : Array.isArray(raw.value) ? raw.value : []
+    if (!user.value) {
+      if (previousOwner.value) resetLocal()
+      return
+    }
+    syncing.value = true
+    try {
+      const result = mergeGuest
+        ? await $fetch<SavedCart>('/api/cart/merge', { method: 'POST', body: { items: guest } })
+        : await $fetch<SavedCart>('/api/cart')
+      saved.value = result
+      raw.value = result.items
+      previousOwner.value = user.value.id
+      syncError.value = ''
+      if (result.adjusted)
+        announcement.value = t(
+          'Your bags were combined. Quantities were checked against current availability.',
+          'تم دمج السلتين ومراجعة الكميات حسب المخزون الحالي.',
+        )
+    } catch (cause: any) {
+      syncError.value =
+        cause?.data?.statusMessage ||
+        t(
+          'Your saved bag could not be loaded. Please retry.',
+          'تعذر تحميل سلتك المحفوظة. حاول مرة أخرى.',
+        )
+      throw cause
+    } finally {
+      syncing.value = false
+    }
+  }
+  function resetLocal() {
+    raw.value = []
+    saved.value = null
+    previousOwner.value = null
+    cartId.value = crypto.randomUUID()
+    cartQueues.delete(app)
+    syncError.value = ''
+    open.value = false
   }
   function add(product: Product, size: string) {
     const stock = product.sizes.find((s) => s.name === size)?.stock || 0
@@ -100,9 +194,7 @@ export function useBag() {
     open.value = false
   }
   function completeCheckout() {
-    raw.value = []
-    cartId.value = crypto.randomUUID()
-    open.value = false
+    resetLocal()
     announcement.value = t('Order placed. Your bag is now empty.', 'تم تسجيل الطلب وتفريغ السلة.')
   }
   return {
@@ -117,5 +209,11 @@ export function useBag() {
     clear,
     completeCheckout,
     snapshotContact,
+    restore,
+    flush,
+    resetLocal,
+    saved,
+    syncError,
+    syncing,
   }
 }

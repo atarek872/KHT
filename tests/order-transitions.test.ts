@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import test from 'node:test'
 import {
   allowedFulfillmentTransitions,
@@ -11,15 +11,11 @@ import { createStorefrontOrder } from '../server/services/storefrontCheckout.ts'
 import type { StorefrontCheckoutInput } from '../shared/storefrontOrder.ts'
 import { createTestD1 } from './helpers/sqliteD1.ts'
 
-const migrations = [
-  '0001_commerce.sql',
-  '0002_products.sql',
-  '0003_categories.sql',
-  '0004_discounts.sql',
-  '0005_abandoned_carts.sql',
-  '0006_commerce_safety.sql',
-  '0007_production_commerce.sql',
-].map((name) => new URL(`../server/db/migrations/${name}`, import.meta.url))
+const migrationDirectory = new URL('../server/db/migrations/', import.meta.url)
+const migrations = readdirSync(migrationDirectory)
+  .filter((name) => name.endsWith('.sql'))
+  .sort()
+  .map((name) => new URL(name, migrationDirectory))
 
 function setup() {
   const testDatabase = createTestD1()
@@ -74,8 +70,9 @@ test('only valid fulfillment transitions are advertised', () => {
   assert.deepEqual(allowedFulfillmentTransitions('pending'), ['confirmed', 'cancelled'])
   assert.deepEqual(allowedFulfillmentTransitions('confirmed'), ['processing', 'cancelled'])
   assert.deepEqual(allowedFulfillmentTransitions('processing'), ['shipped', 'cancelled'])
-  assert.deepEqual(allowedFulfillmentTransitions('shipped'), ['delivered', 'returned'])
-  assert.deepEqual(allowedFulfillmentTransitions('delivered'), [])
+  assert.deepEqual(allowedFulfillmentTransitions('shipped'), ['out-for-delivery'])
+  assert.deepEqual(allowedFulfillmentTransitions('out-for-delivery'), ['delivered'])
+  assert.deepEqual(allowedFulfillmentTransitions('delivered'), ['returned'])
   assert.deepEqual(allowedFulfillmentTransitions('cancelled'), [])
   assert.deepEqual(allowedFulfillmentTransitions('returned'), [])
 })
@@ -137,6 +134,7 @@ test('delivering a COD order marks payment paid and terminal states reject chang
     await transitionOrder(database, id, 'confirmed', 'admin@kht.local')
     await transitionOrder(database, id, 'processing', 'admin@kht.local')
     await transitionOrder(database, id, 'shipped', 'admin@kht.local')
+    await transitionOrder(database, id, 'out-for-delivery', 'admin@kht.local')
     await transitionOrder(database, id, 'delivered', 'admin@kht.local')
 
     assert.deepEqual(
@@ -148,10 +146,8 @@ test('delivering a COD order marks payment paid and terminal states reject chang
         returnedRestockedAt: null,
       },
     )
-    await assert.rejects(
-      () => transitionOrder(database, id, 'returned', 'admin@kht.local'),
-      /ORDER_TRANSITION_CONFLICT/,
-    )
+    await transitionOrder(database, id, 'returned', 'admin@kht.local')
+    await assert.rejects(() => transitionOrder(database, id, 'cancelled', 'admin@kht.local'), /ORDER_TRANSITION_CONFLICT/)
     assert.equal(
       (
         sqlite
@@ -160,7 +156,7 @@ test('delivering a COD order marks payment paid and terminal states reject chang
           )
           .get() as { count: number }
       ).count,
-      4,
+      6,
     )
   } finally {
     close()
@@ -176,6 +172,8 @@ test('returned stock is restored only after one explicit inspection action', asy
     await transitionOrder(database, id, 'confirmed', 'admin@kht.local')
     await transitionOrder(database, id, 'processing', 'admin@kht.local')
     await transitionOrder(database, id, 'shipped', 'admin@kht.local')
+    await transitionOrder(database, id, 'out-for-delivery', 'admin@kht.local')
+    await transitionOrder(database, id, 'delivered', 'admin@kht.local')
     await transitionOrder(database, id, 'returned', 'admin@kht.local')
 
     assert.equal(stock(sqlite), reservedStock)

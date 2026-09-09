@@ -92,6 +92,9 @@ export async function quoteOrder(database: D1Database, input: CreateOrderInput) 
 
 interface DurableOrderOptions {
   cartId?: string
+  cartVersion?: number
+  userId?: string | null
+  expectedTotal?: number
   actorEmail?: string
 }
 
@@ -112,6 +115,9 @@ export async function createDurableOrder(
     throw new Error('DUPLICATE_ORDER_REQUEST')
   }
   const priced = await quoteOrder(database, input)
+  if (options.expectedTotal !== undefined && options.expectedTotal !== priced.total) {
+    throw new Error('Prices changed. Review your bag and total before placing your order.')
+  }
   const phoneNormalized = normalizeEgyptianPhone(input.customer.phone)
   const existingCustomer = input.customer.id
     ? await database.prepare('SELECT id FROM customers WHERE id = ?').bind(input.customer.id).first<{ id: string }>()
@@ -123,7 +129,9 @@ export async function createDurableOrder(
   const publicReference = `KHT-${crypto.randomUUID().replaceAll('-', '').slice(0, 20).toUpperCase()}`
   const createdAt = new Date().toISOString()
   const createdEventId = crypto.randomUUID()
-  const customerStatement = existingCustomer
+  const customerStatement = existingCustomer && options.cartVersion !== undefined
+    ? database.prepare('SELECT 1 FROM customers WHERE id = ?').bind(customerId)
+    : existingCustomer
     ? database.prepare(`UPDATE customers SET name = ?, phone = ?, phone_normalized = ?, email = ?,
       address = ?, governorate = ?, city = ? WHERE id = ?`)
       .bind(input.customer.name.trim(), input.customer.phone.trim(), phoneNormalized,
@@ -135,9 +143,8 @@ export async function createDurableOrder(
         .bind(customerId, input.customer.name.trim(), input.customer.phone.trim(), phoneNormalized,
           input.customer.email?.trim() || null, input.customer.address.trim(),
           input.customer.governorate.trim(), input.customer.city.trim())
-  const statements = [
-    customerStatement,
-    database.prepare(`INSERT INTO orders
+  const orderStatement = options.cartVersion === undefined
+    ? database.prepare(`INSERT INTO orders
       (id, number, public_reference, idempotency_key, customer_id, subtotal, shipping,
        shipping_governorate, discount, total, payment_method, source, notes, created_at,
        discount_id, discount_code)
@@ -145,7 +152,23 @@ export async function createDurableOrder(
         publicReference, input.requestId, customerId, priced.subtotal, priced.shipping,
         input.shippingGovernorate, priced.discount, priced.total, input.source,
         input.notes?.trim() || null, createdAt, priced.discountId || null,
-        priced.couponCode || null),
+        priced.couponCode || null)
+    : database.prepare(`INSERT INTO orders
+      (id, number, public_reference, idempotency_key, customer_id, subtotal, shipping,
+       shipping_governorate, discount, total, payment_method, source, notes, created_at,
+       discount_id, discount_code, user_id, cart_id, cart_version, shipping_snapshot)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'cod', ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(orderId,
+        orderNumber, publicReference, input.requestId, customerId, priced.subtotal, priced.shipping,
+        input.shippingGovernorate, priced.discount, priced.total, input.source,
+        input.notes?.trim() || null, createdAt, priced.discountId || null,
+        priced.couponCode || null, options.userId || null, options.cartId || null,
+        options.cartVersion, JSON.stringify({ name: input.customer.name.trim(),
+          phone: input.customer.phone.trim(), email: input.customer.email?.trim() || null,
+          address: input.customer.address.trim(), city: input.customer.city.trim(),
+          governorate: input.customer.governorate.trim() }))
+  const statements = [
+    customerStatement,
+    orderStatement,
     ...priced.lines.map((line) => database.prepare(`INSERT INTO order_items
       (id, order_id, variant_id, product_name, variant, sku, quantity, unit_price, total)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(crypto.randomUUID(), orderId, line.variant.id, line.variant.productName,
@@ -194,6 +217,7 @@ export async function createDurableOrder(
 export async function createOrder(
   database: D1Database,
   input: CreateOrderInput,
+  context?: DurableOrderOptions,
 ): Promise<AdminOrderDetail> {
-  return (await createDurableOrder(database, input)).order
+  return (await createDurableOrder(database, input, context)).order
 }

@@ -5,8 +5,9 @@ const transitions: Record<OrderFulfillmentStatus, OrderFulfillmentStatus[]> = {
   pending: ['confirmed', 'cancelled'],
   confirmed: ['processing', 'cancelled'],
   processing: ['shipped', 'cancelled'],
-  shipped: ['delivered', 'returned'],
-  delivered: [],
+  shipped: ['out-for-delivery'],
+  'out-for-delivery': ['delivered'],
+  delivered: ['returned'],
   cancelled: [],
   returned: [],
 }

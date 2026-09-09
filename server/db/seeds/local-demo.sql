@@ -46,7 +46,7 @@ VALUES
    0, 960, 'cod', 'cancelled', 'phone', 'Cancelled test order.',
    NULL, NULL, datetime('now', '-2 hours')),
   ('local-order-1007', 'KHT-LOCAL-1007', 'KHT-DEMO-1007', 'local-seed-1007', 'local-customer-002', 1290, 70, 'Giza',
-   0, 1360, 'cod', 'shipped', 'website', 'Returned order awaiting stock inspection.',
+   0, 1360, 'cod', 'delivered', 'website', 'Returned order awaiting stock inspection.',
    NULL, NULL, datetime('now', '-1 day'));
 
 UPDATE orders SET fulfillment_status = 'returned' WHERE id = 'local-order-1007';
@@ -91,7 +91,7 @@ VALUES
   ('local-event-order-1004', 'local-order-1004', 'fulfillment_status', 'pending', 'confirmed', 'Customer confirmed by phone.', 'admin@kht.local', datetime('now', '-2 days')),
   ('local-event-order-1005', 'local-order-1005', 'order_created', NULL, 'pending', 'Seeded order awaiting action.', 'system', datetime('now', '-18 hours')),
   ('local-event-order-1006', 'local-order-1006', 'fulfillment_status', 'pending', 'cancelled', 'Customer cancelled before shipping.', 'admin@kht.local', datetime('now', '-2 hours')),
-  ('local-event-order-1007', 'local-order-1007', 'fulfillment_status', 'shipped', 'returned', 'Courier returned the parcel.', 'admin@kht.local', datetime('now', '-20 hours'));
+  ('local-event-order-1007', 'local-order-1007', 'fulfillment_status', 'delivered', 'returned', 'Courier returned the parcel.', 'admin@kht.local', datetime('now', '-20 hours'));
 
 INSERT OR IGNORE INTO abandoned_carts
   (id, customer_name, phone, email, subtotal, items_count, state, recovery_state,

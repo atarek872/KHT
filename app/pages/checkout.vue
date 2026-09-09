@@ -2,8 +2,23 @@
 import type { StorefrontOrderConfirmation } from '../../shared/storefrontOrder'
 import type { OrderQuote } from '../../shared/discount'
 import type { ShippingZone } from '../../shared/shipping'
+import type { CustomerAddress } from '../../shared/account'
 const { t, money, localized } = useLanguage()
-const { lines, count, total, cartId, completeCheckout, snapshotContact } = useBag()
+const {
+  lines,
+  count,
+  total,
+  cartId,
+  completeCheckout,
+  snapshotContact,
+  flush,
+  saved,
+  resetLocal,
+  restore,
+} = useBag()
+const { user } = useCustomer()
+const addresses = ref<CustomerAddress[]>([])
+const addressId = ref('')
 const form = useState('checkout-draft', () => ({
   name: '',
   email: '',
@@ -22,6 +37,30 @@ const couponBusy = ref(false)
 const couponError = ref('')
 const couponQuote = ref<OrderQuote | null>(null)
 let contactSnapshotTimer: ReturnType<typeof setTimeout> | undefined
+watch(addressId, (id) => {
+  const address = addresses.value.find((item) => item.id === id)
+  if (!address) return
+  Object.assign(form.value, {
+    name: address.name,
+    phone: address.phone,
+    address: address.address,
+    governorate: address.governorate,
+    city: address.city,
+  })
+})
+onMounted(async () => {
+  if (!user.value) return
+  form.value.name ||= user.value.name
+  form.value.email ||= user.value.email
+  form.value.phone ||= user.value.phone
+  try {
+    addresses.value = (await $fetch<{ items: CustomerAddress[] }>('/api/account/addresses')).items
+    if (!form.value.address)
+      addressId.value = addresses.value.find((item) => item.isDefault)?.id || ''
+  } catch {
+    /* Manual delivery details remain available. */
+  }
+})
 const {
   data: shippingData,
   error: shippingError,
@@ -104,6 +143,29 @@ async function submit() {
   busy.value = true
   error.value = ''
   try {
+    if (user.value) {
+      await flush()
+      const accountOrder = await $fetch<{ id: string; number: string }>('/api/checkout/order', {
+        method: 'POST',
+        body: {
+          ...form.value,
+          shippingGovernorate: form.value.governorate,
+          requestId: requestId.value,
+          confirmed: true,
+          paymentMethod: 'cod',
+          cartId: saved.value?.id,
+          cartVersion: saved.value?.version,
+          expectedTotal: couponQuote.value?.total ?? total.value + shipping.value,
+          items: lines.value.map(({ id, size, quantity }) => ({ id, size, quantity })),
+          couponCode: couponQuote.value?.couponCode,
+        },
+      })
+      resetLocal()
+      requestId.value = crypto.randomUUID()
+      if (user.value) await restore(false).catch(() => undefined)
+      await navigateTo(`/account/orders/${accountOrder.id}`)
+      return
+    }
     const order = await $fetch<StorefrontOrderConfirmation>('/api/checkout', {
       method: 'POST',
       body: {
@@ -205,6 +267,15 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
           </fieldset>
           <fieldset>
             <legend><span>02</span>{{ t('Delivery', 'التوصيل') }}</legend>
+            <label v-if="addresses.length" class="full-field"
+              >{{ t('Saved address', 'عنوان محفوظ') }}
+              <select v-model="addressId">
+                <option value="">{{ t('Enter another address', 'إدخال عنوان آخر') }}</option>
+                <option v-for="item in addresses" :key="item.id" :value="item.id">
+                  {{ item.label }} — {{ item.address }}
+                </option>
+              </select></label
+            >
             <div class="form-grid">
               <label class="full-field"
                 >{{ t('Governorate', 'المحافظة')

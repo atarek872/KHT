@@ -1,39 +1,9 @@
+import { digest, verifyPassword } from './password'
 import type { D1Database } from './d1'
 import { requireDatabase } from './d1'
 import { isSecureRequest } from './requestSecurity'
 
 const sessionCookie = 'kht-admin-session'
-
-async function digest(value: string) {
-  const bytes = new TextEncoder().encode(value)
-  const hash = await crypto.subtle.digest('SHA-256', bytes)
-  return [...new Uint8Array(hash)].map((byte) => byte.toString(16).padStart(2, '0')).join('')
-}
-
-async function verifyPassword(password: string, encoded: string) {
-  const [iterationsText, saltText, expectedText] = encoded.split(':')
-  const iterations = Number(iterationsText)
-  if (!iterations || !saltText || !expectedText) return false
-  const decode = (value: string) =>
-    Uint8Array.from(atob(value), (character) => character.charCodeAt(0))
-  const salt = decode(saltText)
-  const expected = decode(expectedText)
-  const key = await crypto.subtle.importKey(
-    'raw',
-    new TextEncoder().encode(password),
-    'PBKDF2',
-    false,
-    ['deriveBits'],
-  )
-  const actual = new Uint8Array(
-    await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt, iterations }, key, 256),
-  )
-  if (actual.length !== expected.length) return false
-  let difference = 0
-  for (let index = 0; index < actual.length; index++)
-    difference |= actual[index]! ^ expected[index]!
-  return difference === 0
-}
 
 function adminConfig(event: { context: Record<string, unknown> }) {
   const cloudflare = event.context.cloudflare as {

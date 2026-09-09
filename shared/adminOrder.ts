@@ -1,7 +1,14 @@
 export type OrderPaymentMethod = 'cod'
 export type OrderPaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded'
 export type OrderFulfillmentStatus =
-  'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'returned'
+  | 'pending'
+  | 'confirmed'
+  | 'processing'
+  | 'shipped'
+  | 'out-for-delivery'
+  | 'delivered'
+  | 'cancelled'
+  | 'returned'
 export type OrderSource =
   'website' | 'instagram' | 'facebook' | 'tiktok' | 'whatsapp' | 'phone' | 'admin' | 'other'
 

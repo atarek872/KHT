@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import test from 'node:test'
 import { createStorefrontOrder } from '../server/services/storefrontCheckout.ts'
 import { transitionOrder } from '../server/services/orderTransitions.ts'
@@ -12,22 +12,16 @@ import { activateProduct, archiveProduct, getProduct } from '../server/services/
 import type { StorefrontCheckoutInput } from '../shared/storefrontOrder.ts'
 import { createTestD1 } from './helpers/sqliteD1.ts'
 
-const migrationNames = [
-  '0001_commerce.sql',
-  '0002_products.sql',
-  '0003_categories.sql',
-  '0004_discounts.sql',
-  '0005_abandoned_carts.sql',
-  '0006_commerce_safety.sql',
-  '0007_production_commerce.sql',
-  '0008_product_gallery_sale_pricing.sql',
-]
+const migrationsDirectory = new URL('../server/db/migrations/', import.meta.url)
+const migrationNames = readdirSync(migrationsDirectory)
+  .filter((name) => name.endsWith('.sql'))
+  .sort()
 
 function setup() {
   const result = createTestD1()
   for (const name of migrationNames) {
     result.sqlite.exec(
-      readFileSync(new URL(`../server/db/migrations/${name}`, import.meta.url), 'utf8'),
+      readFileSync(new URL(name, migrationsDirectory), 'utf8'),
     )
   }
   return result
@@ -67,7 +61,13 @@ test('complete COD operations remain durable and auditable', async () => {
       .get(deliveredRow.customerId) as { phone: string }
     assert.equal(customer.phone, '201012223334')
 
-    for (const status of ['confirmed', 'processing', 'shipped', 'delivered'] as const) {
+    for (const status of [
+      'confirmed',
+      'processing',
+      'shipped',
+      'out-for-delivery',
+      'delivered',
+    ] as const) {
       await transitionOrder(database, deliveredRow.id, status, adminEmail)
     }
     const finalDelivered = sqlite
@@ -85,7 +85,7 @@ test('complete COD operations remain durable and auditable', async () => {
           .prepare('SELECT COUNT(*) AS count FROM order_events WHERE order_id = ?')
           .get(deliveredRow.id) as { count: number }
       ).count,
-      5,
+      6,
     )
 
     const stockBeforeCancellation = (
