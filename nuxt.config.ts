@@ -27,6 +27,7 @@ export default defineNuxtConfig({
       storePhone: environment.NUXT_PUBLIC_STORE_PHONE || '',
       storeWhatsApp: environment.NUXT_PUBLIC_STORE_WHATSAPP || '',
       storeIndexingEnabled: indexingEnabled,
+      googleTagId: environment.NUXT_PUBLIC_GOOGLE_TAG_ID || '',
     },
   },
   typescript: { strict: true },
