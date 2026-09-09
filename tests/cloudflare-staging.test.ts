@@ -14,6 +14,7 @@ test('staging config binds isolated D1 and R2 with indexing disabled', () => {
   assert.deepEqual(config.assets, {
     directory: 'dist/client',
     binding: 'ASSETS',
+    html_handling: 'none',
     run_worker_first: ['/robots.txt', '/sitemap.xml'],
   })
   assert.equal(staging.name, 'kht-commerce-staging')
