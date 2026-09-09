@@ -59,6 +59,12 @@
           "bucket_name": "kht-product-media-production",
         },
       ],
+      "send_email": [
+        {
+          "name": "EMAIL",
+          "remote": true,
+        },
+      ],
       "vars": {
         "NUXT_PUBLIC_STORE_INDEXING_ENABLED": "false",
         "NUXT_PUBLIC_STORE_CONTACT_EMAIL": "atarek872@hotmail.com",

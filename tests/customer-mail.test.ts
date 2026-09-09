@@ -1,6 +1,29 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { sendPasswordReset } from '../server/services/customerMail.ts'
+
+test('Cloudflare Worker email binding sends password reset without an API token', async () => {
+  let message: any
+  await sendPasswordReset(
+    {
+      EMAIL: {
+        async send(payload) {
+          message = payload
+          return { messageId: 'message-id' }
+        },
+      },
+      MAIL_FROM: 'no-reply@kht.tknology.online',
+      PUBLIC_SITE_URL: 'https://example.com',
+    },
+    'customer@example.com',
+    'opaque-token',
+  )
+
+  assert.equal(message.to, 'customer@example.com')
+  assert.equal(message.from, 'no-reply@kht.tknology.online')
+  assert.match(message.text, /https:\/\/example.com\/account\/reset-password#token=opaque-token/)
+})
+
 test('Cloudflare reset delivery uses a fragment token and rejects provider failures', async () => {
   const original = globalThis.fetch
   let payload: any
