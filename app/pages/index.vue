@@ -1,10 +1,31 @@
 <script setup lang="ts">
 const { t, localized } = useLanguage()
 const catalog = useCatalog()
+const homepageUrl = 'https://kht.tknology.online/'
+const socialImageUrl = 'https://kht.tknology.online/images/campaign.png'
+const socialTitle = 'KHT — Black. White. Line.'
+const socialDescription =
+  'Meet Drop 001. Oversized silhouettes. Considered details. A single white line.'
+
 useSeoMeta({
-  title: 'KHT — Black. White. Line.',
-  description: 'Meet Drop 001. Oversized silhouettes. Considered details. A single white line.',
-  ogImage: '/images/campaign.png',
+  title: socialTitle,
+  description: socialDescription,
+  ogTitle: socialTitle,
+  ogDescription: socialDescription,
+  ogType: 'website',
+  ogUrl: homepageUrl,
+  ogImage: socialImageUrl,
+  ogImageAlt: 'KHT Drop 001 campaign',
+  ogImageWidth: 1672,
+  ogImageHeight: 941,
+  twitterCard: 'summary_large_image',
+  twitterTitle: socialTitle,
+  twitterDescription: socialDescription,
+  twitterImage: socialImageUrl,
+  twitterImageAlt: 'KHT Drop 001 campaign',
+})
+useHead({
+  link: [{ rel: 'canonical', href: homepageUrl }],
 })
 </script>
 <template>

@@ -499,46 +499,11 @@ summary:focus-visible {
   object-fit: cover;
 }
 .product-code {
-  position: absolute;
-  top: 20px;
-  left: 20px;
+  display: block;
   font-size: 0.75rem;
   letter-spacing: 0.08em;
   color: var(--description);
-}
-.product-image-action {
-  position: absolute;
-  inset-inline: 20px;
-  bottom: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 0.75rem;
-  opacity: 0;
-  transform: translateY(4px);
-  transition:
-    opacity 0.16s,
-    transform 0.16s;
-}
-.product-hover-line {
-  position: absolute;
-  bottom: 64px;
-  inset-inline-start: 20px;
-  width: 32px;
-  height: 2px;
-  background: var(--black);
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform 0.2s;
-}
-.product-image-link:hover .product-image-action,
-.product-image-link:focus-visible .product-image-action {
-  opacity: 1;
-  transform: translateY(0);
-}
-.product-image-link:hover .product-hover-line,
-.product-image-link:focus-visible .product-hover-line {
-  transform: scaleX(1);
+  margin-top: 6px;
 }
 .product-meta {
   display: flex;
@@ -1197,16 +1162,6 @@ summary:focus-visible {
   width: 100%;
   height: auto;
 }
-.zoom-label {
-  position: absolute;
-  bottom: 22px;
-  left: 22px;
-  right: 22px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.75rem;
-}
 .product-gallery .image-note {
   display: block;
   font-size: 0.75rem;
@@ -1253,6 +1208,12 @@ summary:focus-visible {
   font-size: clamp(48px, 4.8vw, 76px);
   text-transform: uppercase;
   font-weight: 600;
+}
+.detail-product-code {
+  color: var(--description);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  margin-top: 10px;
 }
 .detail-price {
   font-size: 1.125rem;
@@ -2316,11 +2277,6 @@ thead {
   .product-image-link {
     aspect-ratio: 3/4;
   }
-  .product-code {
-    font-size: 0.75rem;
-    top: 13px;
-    left: 12px;
-  }
   .product-meta {
     padding-top: 13px;
     gap: 5px;
@@ -2333,9 +2289,6 @@ thead {
   }
   .product-price {
     font-size: 0.75rem;
-  }
-  .product-image-action {
-    display: none;
   }
   .collection-footnote {
     font-size: 0.75rem;

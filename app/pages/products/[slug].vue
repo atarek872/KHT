@@ -88,9 +88,7 @@ useSeoMeta({
             width="1086"
             height="1448"
             fetchpriority="high"
-          /><span class="zoom-label"
-            >{{ t('Explore the details', 'شوف التفاصيل') }}<KhtIcon name="plus" /></span
-          ><span class="product-code">{{ product.code }}</span></button
+          /></button
         ><div v-if="productImages.length > 1" class="product-thumbnails" role="group" :aria-label="t('Product images', 'صور المنتج')">
           <button
             v-for="(image, index) in productImages"
@@ -109,8 +107,9 @@ useSeoMeta({
         }}</span>
       </div>
       <div class="product-details">
-        <p class="eyebrow">DROP 001 / {{ product.code }}</p>
+        <p class="eyebrow">DROP 001</p>
         <h1>{{ localized(product.name) }}</h1>
+        <p class="detail-product-code">{{ product.code }}</p>
         <ProductPrice class="detail-price" :price="product.price" :compare-at-price="product.compareAtPrice" />
         <p class="product-description">{{ localized(product.description) }}</p>
         <div class="color-choice">

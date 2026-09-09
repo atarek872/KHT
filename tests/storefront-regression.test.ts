@@ -78,6 +78,28 @@ test('product cards, details and responsive images retain storefront behavior', 
   assert.match(image, /decoding="async"/)
 })
 
+test('product imagery stays clean and product codes appear below product names', () => {
+  const card = read('../app/components/ProductCard.vue')
+  const detail = read('../app/pages/products/[slug].vue')
+  const cardImage = card.match(/class="product-image-link"[\s\S]*?<\/NuxtLink>/)?.[0] ?? ''
+  const detailImage = detail.match(/class="product-main-image"[\s\S]*?<\/button>/)?.[0] ?? ''
+  assert.doesNotMatch(cardImage, /product-code|product-image-action|product-hover-line/)
+  assert.doesNotMatch(detailImage, /product-code|zoom-label/)
+  assert.doesNotMatch(card, /product-image-action|product-hover-line/)
+  assert.ok(card.indexOf('{{ localized(product.name) }}') < card.indexOf('class="product-code"'))
+  assert.ok(detail.indexOf('<h1>{{ localized(product.name) }}</h1>') < detail.indexOf('class="detail-product-code"'))
+})
+
+test('homepage exposes an absolute hero image for social sharing', () => {
+  const homepage = read('../app/pages/index.vue')
+  assert.match(homepage, /const homepageUrl = 'https:\/\/kht\.tknology\.online\/'/)
+  assert.match(homepage, /const socialImageUrl = 'https:\/\/kht\.tknology\.online\/images\/campaign\.png'/)
+  assert.match(homepage, /ogUrl:\s*homepageUrl/)
+  assert.match(homepage, /ogImage:\s*socialImageUrl/)
+  assert.match(homepage, /twitterCard:\s*'summary_large_image'/)
+  assert.match(homepage, /twitterImage:\s*socialImageUrl/)
+})
+
 test('cart remains cookie-persisted and tracking is non-blocking without D1', () => {
   const store = read('../app/composables/useStore.ts')
   const endpoint = read('../server/api/cart/snapshot.put.ts')

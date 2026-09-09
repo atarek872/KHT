@@ -9,22 +9,21 @@ const { t, localized } = useLanguage()
       :to="`/products/${product.slug}`"
       class="product-image-link"
       :aria-label="localized(product.name)"
-      ><StoreImage
+    >
+      <StoreImage
         :src="product.image"
         :alt="localized(product.name) + ' — ' + t('black with a white line', 'أسود بخط أبيض')"
         loading="lazy"
         width="900"
-        height="1200" /><span class="product-code">{{ product.code }}</span
-      ><span class="product-image-action"
-        ><span>{{ t('Discover piece', 'شوف القطعة') }}</span
-        ><KhtIcon name="arrow" /></span
-      ><span class="product-hover-line"
-    /></NuxtLink>
+        height="1200"
+      />
+    </NuxtLink>
     <div class="product-meta">
       <div>
         <NuxtLink :to="`/products/${product.slug}`"
           ><h3>{{ localized(product.name) }}</h3></NuxtLink
-        ><span>{{ t('Black / White', 'أسود / أبيض') }}</span>
+        ><span class="product-code">{{ product.code }}</span
+        ><span class="product-color">{{ t('Black / White', 'أسود / أبيض') }}</span>
       </div>
       <ProductPrice :price="product.price" :compare-at-price="product.compareAtPrice" compact />
     </div>
