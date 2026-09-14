@@ -37,6 +37,7 @@ const couponCode = ref('')
 const couponBusy = ref(false)
 const couponError = ref('')
 const couponQuote = ref<OrderQuote | null>(null)
+const welcomeBusy = ref(false)
 let contactSnapshotTimer: ReturnType<typeof setTimeout> | undefined
 watch(addressId, (id) => {
   const address = addresses.value.find((item) => item.id === id)
@@ -62,6 +63,7 @@ onMounted(async () => {
   } catch {
     /* Manual delivery details remain available. */
   }
+  await refreshAutomaticOffer()
 })
 const {
   data: shippingData,
@@ -111,18 +113,43 @@ async function applyCoupon() {
   }
 }
 
+async function refreshAutomaticOffer() {
+  if (!user.value || !count.value || !selectedShipping.value || couponCode.value.trim()) return
+  welcomeBusy.value = true
+  try {
+    const quote = await $fetch<OrderQuote>('/api/discounts/quote', {
+      method: 'POST',
+      body: {
+        shippingGovernorate: form.value.governorate,
+        items: lines.value.map(({ id, size, quantity }) => ({ id, size, quantity })),
+      },
+    })
+    couponQuote.value = quote.promotion === 'welcome' ? quote : null
+  } catch {
+    couponQuote.value = null
+  } finally {
+    welcomeBusy.value = false
+  }
+}
+
 watch(
   () => lines.value.map((line) => `${line.id}:${line.size}:${line.quantity}`).join('|'),
   () => {
     couponQuote.value = null
     couponError.value = ''
+    void nextTick(refreshAutomaticOffer)
   },
 )
 watch(couponCode, (value) => {
   if (couponQuote.value && value.trim().toUpperCase() !== couponQuote.value.couponCode) {
     couponQuote.value = null
   }
+  if (!value.trim()) void refreshAutomaticOffer()
 })
+watch(
+  () => [user.value?.id, form.value.governorate],
+  () => void refreshAutomaticOffer(),
+)
 watch(
   () => [form.value.name, form.value.phone, form.value.email],
   () => {
@@ -239,6 +266,46 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
     <template v-if="count"
       ><div class="commerce-grid">
         <form id="checkout-form" class="checkout-form" @submit.prevent="submit">
+          <aside
+            v-if="!user"
+            class="checkout-welcome-offer"
+            aria-labelledby="checkout-welcome-title"
+          >
+            <p class="eyebrow">KHT / {{ t('WELCOME GIFT', 'هدية ترحيب') }}</p>
+            <h2 id="checkout-welcome-title">
+              {{ t('Take 5% off your first order', 'خصم ٥٪ على أول طلب') }}
+            </h2>
+            <p>
+              {{
+                t(
+                  'Create an account or sign in before ordering. We will apply your gift automatically.',
+                  'أنشئ حساباً أو سجل الدخول قبل الطلب، وهنطبق هديتك تلقائياً.',
+                )
+              }}
+            </p>
+            <div>
+              <NuxtLink
+                class="button button-dark"
+                :to="{ path: '/account/register', query: { returnTo: '/checkout' } }"
+                >{{ t('Create account', 'إنشاء حساب') }}<KhtIcon name="arrow"
+              /></NuxtLink>
+              <NuxtLink
+                class="checkout-welcome-login"
+                :to="{ path: '/account/login', query: { returnTo: '/checkout' } }"
+                >{{ t('Sign in', 'تسجيل الدخول') }}</NuxtLink
+              >
+            </div>
+          </aside>
+          <p v-else-if="welcomeBusy" class="checkout-welcome-status" role="status">
+            {{ t('Checking your welcome gift…', 'جارٍ التحقق من هدية الترحيب…') }}
+          </p>
+          <p
+            v-else-if="couponQuote?.promotion === 'welcome'"
+            class="checkout-welcome-status applied"
+            role="status"
+          >
+            {{ t('Your 5% welcome gift is applied.', 'تم تطبيق هدية الترحيب بخصم ٥٪.') }}
+          </p>
           <fieldset>
             <legend><span>01</span>{{ t('Your details', 'بياناتك') }}</legend>
             <div class="form-grid">
@@ -391,7 +458,11 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
               </div>
               <p v-if="couponError" class="field-error" role="alert">{{ couponError }}</p>
               <p v-else-if="couponQuote" role="status">
-                {{ t('Coupon applied.', 'تم تطبيق الكوبون.') }}
+                {{
+                  couponQuote.promotion === 'welcome'
+                    ? t('Welcome gift applied automatically.', 'تم تطبيق هدية الترحيب تلقائياً.')
+                    : t('Coupon applied.', 'تم تطبيق الكوبون.')
+                }}
               </p>
             </div>
             <div class="checkout-final-total" aria-live="polite">
@@ -443,7 +514,11 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
             ><span>{{ money(shipping) }}</span>
           </div>
           <div v-if="couponQuote?.discount" class="summary-row">
-            <span>{{ t('Discount', 'الخصم') }} · {{ couponQuote.couponCode }}</span
+            <span>{{
+              couponQuote.promotion === 'welcome'
+                ? t('Welcome gift · 5%', 'هدية الترحيب · ٥٪')
+                : `${t('Discount', 'الخصم')} · ${couponQuote.couponCode}`
+            }}</span
             ><span>− {{ money(couponQuote.discount) }}</span>
           </div>
           <div class="summary-row summary-total">

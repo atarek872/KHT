@@ -29,4 +29,5 @@ export interface OrderQuote {
   discount: number
   total: number
   couponCode?: string
+  promotion?: 'welcome'
 }

@@ -84,8 +84,8 @@
       ],
       "vars": {
         "NUXT_PUBLIC_STORE_INDEXING_ENABLED": "true",
-        "NUXT_PUBLIC_STORE_CONTACT_EMAIL": "atarek872@hotmail.com",
-        "NUXT_PUBLIC_STORE_PHONE": "01124023663",
+        "NUXT_PUBLIC_STORE_CONTACT_EMAIL": "kht.egstore@gmail.com",
+        "NUXT_PUBLIC_STORE_PHONE": "",
         "NUXT_PUBLIC_STORE_WHATSAPP": "",
         "NUXT_PUBLIC_GOOGLE_TAG_ID": "G-YHQBDWSBKG",
       },

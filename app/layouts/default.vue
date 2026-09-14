@@ -7,9 +7,7 @@ const route = useRoute()
 const runtimeConfig = useRuntimeConfig()
 const configuredGoogleTagId = String(runtimeConfig.public.googleTagId || '')
 const googleTagId = /^G-[A-Z0-9]+$/.test(configuredGoogleTagId) ? configuredGoogleTagId : ''
-const indexingEnabled = computed(
-  () => String(runtimeConfig.public.storeIndexingEnabled) === 'true',
-)
+const indexingEnabled = computed(() => String(runtimeConfig.public.storeIndexingEnabled) === 'true')
 const robots = computed(() =>
   indexingEnabled.value && !isPrivateSeoPath(route.path) ? PUBLIC_ROBOTS : PRIVATE_ROBOTS,
 )
@@ -60,6 +58,7 @@ const { announcement, syncError, restore } = useBag()
     <slot />
     <SiteFooter />
     <BagDrawer />
+    <WelcomeGift />
     <span class="sr-only" role="status" aria-live="polite">{{ announcement }}</span>
   </div>
 </template>

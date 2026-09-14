@@ -63,8 +63,8 @@ test('production candidate uses isolated public Cloudflare resources and real co
     { binding: 'PRODUCT_MEDIA', bucket_name: 'kht-product-media-production' },
   ])
   assert.equal(production.vars.NUXT_PUBLIC_STORE_INDEXING_ENABLED, 'true')
-  assert.equal(production.vars.NUXT_PUBLIC_STORE_CONTACT_EMAIL, 'atarek872@hotmail.com')
-  assert.equal(production.vars.NUXT_PUBLIC_STORE_PHONE, '01124023663')
+  assert.equal(production.vars.NUXT_PUBLIC_STORE_CONTACT_EMAIL, 'kht.egstore@gmail.com')
+  assert.equal(production.vars.NUXT_PUBLIC_STORE_PHONE, '')
   assert.equal(production.vars.NUXT_PUBLIC_STORE_WHATSAPP, '')
   assert.deepEqual(production.observability, { enabled: true, head_sampling_rate: 1 })
 })
@@ -94,7 +94,10 @@ test('staging verification checks the callable Worker entrypoint', () => {
 
 test('Cloudflare builds remove stale staged output before compiling', () => {
   const packageJson = JSON.parse(read('../package.json'))
-  assert.match(packageJson.scripts['build:cloudflare'], /^node scripts\/clean-cloudflare-build\.mjs &&/)
+  assert.match(
+    packageJson.scripts['build:cloudflare'],
+    /^node scripts\/clean-cloudflare-build\.mjs &&/,
+  )
   const cleaner = read('../scripts/clean-cloudflare-build.mjs')
   assert.match(cleaner, /join\(project, 'dist'\)/)
   assert.match(cleaner, /isSymbolicLink\(\)/)

@@ -146,8 +146,8 @@ for the accepted production release.
 
 The September 2026 public-candidate release is deliberately separate from the final commercial
 launch. It uses `kht-commerce-production` D1 and `kht-product-media-production` R2, with Workers
-observability enabled. Its public contact values are `01124023663` and
-`atarek872@hotmail.com`; WhatsApp remains unconfigured. Search indexing remains disabled until the
+observability enabled. Its public contact email is `kht.egstore@gmail.com`; public phone and
+WhatsApp links remain unconfigured. Search indexing remains disabled until the
 custom domain and final business details are accepted.
 
 Both remote databases were intentionally emptied with
