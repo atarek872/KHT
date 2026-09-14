@@ -3,19 +3,40 @@ import { useStoreContact } from '#shared/storeConfig'
 
 const { t, localized } = useLanguage()
 const catalog = useCatalog()
-const contact = useStoreContact()
+const storeContent = useStoreContent()
+const brand = computed(() => storeContent.value.brand)
+const contact = computed(() =>
+  useStoreContact({
+    email: brand.value.contactEmail,
+    phone: brand.value.contactPhone,
+    whatsapp: brand.value.contactWhatsApp,
+  }),
+)
+const collectionLinks = computed(() =>
+  storeContent.value.navigation.filter(
+    (item) => item.enabled && item.footerColumn === 'collection',
+  ),
+)
+const careLinks = computed(() =>
+  storeContent.value.navigation.filter((item) => item.enabled && item.footerColumn === 'care'),
+)
 </script>
 <template>
   <footer class="site-footer">
     <div class="footer-top">
       <div class="footer-brand">
-        <NuxtLink to="/" class="wordmark">KHT<span class="logo-line" /></NuxtLink>
-        <p>BLACK. WHITE. LINE.</p>
-        <span>{{ t('Nothing more. Nothing less.', 'من غير زيادة. من غير نقصان.') }}</span>
+        <NuxtLink to="/" class="wordmark">
+          <img v-if="brand.logoUrl" :src="brand.logoUrl" :alt="brand.name" />
+          <template v-else>{{ brand.name }}<span class="logo-line" /></template>
+        </NuxtLink>
+        <p>{{ t(brand.tagline.en, brand.tagline.ar) }}</p>
+        <span>{{ t(brand.subline.en, brand.subline.ar) }}</span>
       </div>
       <div class="footer-links">
-        <p>{{ t('Collection', 'المجموعة') }}</p>
-        <NuxtLink to="/shop">{{ t('Shop all', 'كل المنتجات') }}</NuxtLink
+        <p>{{ t(brand.footerCollectionTitle.en, brand.footerCollectionTitle.ar) }}</p>
+        <NuxtLink v-for="item in collectionLinks" :key="item.id" :to="item.href">{{
+          t(item.label.en, item.label.ar)
+        }}</NuxtLink
         ><NuxtLink
           v-for="category in catalog.categories"
           :key="category.slug"
@@ -24,11 +45,10 @@ const contact = useStoreContact()
         >
       </div>
       <div class="footer-links">
-        <p>{{ t('Customer care', 'المساعدة') }}</p>
-        <NuxtLink to="/size-guide">{{ t('Size guide', 'دليل المقاسات') }}</NuxtLink
-        ><NuxtLink to="/shipping">{{ t('Shipping & returns', 'الشحن والاسترجاع') }}</NuxtLink
-        ><NuxtLink to="/track-order">{{ t('Your order', 'طلبك') }}</NuxtLink
-        ><NuxtLink to="/contact">{{ t('Contact', 'تواصل معنا') }}</NuxtLink>
+        <p>{{ t(brand.footerCareTitle.en, brand.footerCareTitle.ar) }}</p>
+        <NuxtLink v-for="item in careLinks" :key="item.id" :to="item.href">{{
+          t(item.label.en, item.label.ar)
+        }}</NuxtLink>
         <a v-if="contact.email" :href="contact.emailHref">{{ contact.email }}</a>
         <a v-if="contact.phone" :href="contact.phoneHref" dir="ltr">{{ contact.phone }}</a>
         <a
@@ -41,20 +61,21 @@ const contact = useStoreContact()
         >
       </div>
       <div class="footer-statement">
-        <span>{{ t('THE LINE CONNECTS US.', 'الخط يجمعنا.') }}</span
-        ><NuxtLink to="/about" class="text-link"
-          >{{ t('Discover the story', 'اعرف الحكاية') }}<KhtIcon name="arrow"
+        <span>{{ t(brand.footerStatement.en, brand.footerStatement.ar) }}</span
+        ><NuxtLink :to="brand.footerStatementLinkUrl" class="text-link"
+          >{{ t(brand.footerStatementLinkLabel.en, brand.footerStatementLinkLabel.ar)
+          }}<KhtIcon name="arrow"
         /></NuxtLink>
       </div>
     </div>
     <div class="footer-bottom">
-      <span>© {{ new Date().getFullYear() }} KHT</span
+      <span>© {{ new Date().getFullYear() }} {{ brand.name }}</span
       ><span class="footer-concept">{{
-        t('Cash on delivery · Egypt', 'الدفع عند الاستلام · مصر')
+        t(brand.footerPaymentLine.en, brand.footerPaymentLine.ar)
       }}</span>
       <div>
-        <NuxtLink to="/privacy">{{ t('Privacy', 'الخصوصية') }}</NuxtLink
-        ><NuxtLink to="/terms">{{ t('Terms', 'الشروط') }}</NuxtLink>
+        <NuxtLink to="/privacy">{{ t(brand.privacyLabel.en, brand.privacyLabel.ar) }}</NuxtLink
+        ><NuxtLink to="/terms">{{ t(brand.termsLabel.en, brand.termsLabel.ar) }}</NuxtLink>
       </div>
     </div>
   </footer>

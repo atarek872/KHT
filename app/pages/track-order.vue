@@ -2,6 +2,8 @@
 import type { StorefrontOrderView } from '../../shared/storefrontOrder'
 
 const { t, money } = useLanguage()
+const storeContent = useStoreContent()
+const page = computed(() => storeContent.value.pages.trackOrder)
 const reference = ref('')
 const phone = ref('')
 const busy = ref(false)
@@ -27,39 +29,83 @@ async function findOrder() {
     busy.value = false
   }
 }
-useSeoMeta({ title: 'Track your order — KHT', robots: 'noindex, nofollow' })
+useStoreSeo({
+  title: computed(() => t(page.value.seo.title.en, page.value.seo.title.ar)),
+  description: computed(() => t(page.value.seo.description.en, page.value.seo.description.ar)),
+  path: '/track-order',
+  robots: 'noindex, nofollow',
+})
 </script>
 <template>
   <main id="main" class="info-page light-surface">
-    <p class="eyebrow">KHT / {{ t('YOUR ORDER', 'طلبك') }}</p>
-    <h1>{{ t('FOLLOW YOUR PIECE.', 'تابع قطعتك.') }}</h1>
+    <ContentPageHero v-if="page.hero.enabled" :page="page" />
+    <template v-else
+      ><p class="eyebrow">{{ t(page.hero.eyebrow.en, page.hero.eyebrow.ar) }}</p>
+      <h1>{{ t(page.hero.title.en, page.hero.title.ar) }}</h1></template
+    >
     <div class="info-body">
       <p>
-        {{
-          t(
-            'Enter the order reference and the same phone number used at checkout.',
-            'اكتب رقم الطلب ونفس رقم الموبايل اللي استخدمته وقت الطلب.',
-          )
-        }}
+        {{ t(page.hero.body.en, page.hero.body.ar) }}
       </p>
       <form class="tracking-form" @submit.prevent="findOrder">
         <label for="reference">{{ t('Order reference', 'رقم الطلب') }}</label>
-        <input id="reference" v-model.trim="reference" placeholder="KHT-XXXXXXXXXXXXXXXXXXXX" required maxlength="64" autocapitalize="characters" spellcheck="false" dir="ltr" />
+        <input
+          id="reference"
+          v-model.trim="reference"
+          placeholder="KHT-XXXXXXXXXXXXXXXXXXXX"
+          required
+          maxlength="64"
+          autocapitalize="characters"
+          spellcheck="false"
+          dir="ltr"
+        />
         <label for="tracking-phone">{{ t('Phone number', 'رقم الموبايل') }}</label>
-        <input id="tracking-phone" v-model.trim="phone" type="tel" inputmode="tel" autocomplete="tel" required maxlength="30" />
+        <input
+          id="tracking-phone"
+          v-model.trim="phone"
+          type="tel"
+          inputmode="tel"
+          autocomplete="tel"
+          required
+          maxlength="30"
+        />
         <button class="button button-dark" :disabled="busy">
-          {{ busy ? t('Checking…', 'جارٍ البحث…') : t('Track order', 'تابع الطلب') }}<KhtIcon name="arrow" />
+          {{ busy ? t('Checking…', 'جارٍ البحث…') : t('Track order', 'تابع الطلب')
+          }}<KhtIcon name="arrow" />
         </button>
         <p v-if="error" role="alert" class="form-error">{{ error }}</p>
       </form>
-      <section v-if="order" class="tracking-result" aria-live="polite" :aria-label="t('Order status', 'حالة الطلب')">
+      <section
+        v-if="order"
+        class="tracking-result"
+        aria-live="polite"
+        :aria-label="t('Order status', 'حالة الطلب')"
+      >
         <p class="eyebrow">{{ t('ORDER FOUND', 'تم العثور على الطلب') }}</p>
         <h2 dir="ltr">{{ order.reference }}</h2>
         <dl>
-          <div><dt>{{ t('Order status', 'حالة الطلب') }}</dt><dd>{{ order.fulfillmentStatus }}</dd></div>
-          <div><dt>{{ t('Payment', 'الدفع') }}</dt><dd>{{ t('Cash on delivery', 'الدفع عند الاستلام') }} · {{ order.paymentStatus }}</dd></div>
-          <div><dt>{{ t('Total', 'الإجمالي') }}</dt><dd>{{ money(order.total) }}</dd></div>
-          <div><dt>{{ t('Placed', 'تاريخ الطلب') }}</dt><dd>{{ new Intl.DateTimeFormat('en-EG', { dateStyle: 'medium' }).format(new Date(order.createdAt)) }}</dd></div>
+          <div>
+            <dt>{{ t('Order status', 'حالة الطلب') }}</dt>
+            <dd>{{ order.fulfillmentStatus }}</dd>
+          </div>
+          <div>
+            <dt>{{ t('Payment', 'الدفع') }}</dt>
+            <dd>{{ t('Cash on delivery', 'الدفع عند الاستلام') }} · {{ order.paymentStatus }}</dd>
+          </div>
+          <div>
+            <dt>{{ t('Total', 'الإجمالي') }}</dt>
+            <dd>{{ money(order.total) }}</dd>
+          </div>
+          <div>
+            <dt>{{ t('Placed', 'تاريخ الطلب') }}</dt>
+            <dd>
+              {{
+                new Intl.DateTimeFormat('en-EG', { dateStyle: 'medium' }).format(
+                  new Date(order.createdAt),
+                )
+              }}
+            </dd>
+          </div>
         </dl>
       </section>
     </div>

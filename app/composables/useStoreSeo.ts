@@ -20,8 +20,15 @@ interface StoreSeoOptions {
 export function useStoreSeo(options: StoreSeoOptions) {
   const route = useRoute()
   const { locale } = useLanguage()
+  const storeContent = useStoreContent()
   const canonical = computed(() => absoluteStoreUrl(toValue(options.path) || route.path))
-  const image = computed(() => absoluteStoreUrl(toValue(options.image) || DEFAULT_SOCIAL_IMAGE))
+  const image = computed(() =>
+    absoluteStoreUrl(
+      toValue(options.image) ||
+        storeContent.value.brand.defaultSocialImageUrl ||
+        DEFAULT_SOCIAL_IMAGE,
+    ),
+  )
   const title = computed(() => toValue(options.title))
   const description = computed(() => toValue(options.description))
   const imageAlt = computed(() => toValue(options.imageAlt) || title.value)
@@ -35,7 +42,7 @@ export function useStoreSeo(options: StoreSeoOptions) {
     ogUrl: () => canonical.value,
     ogImage: () => image.value,
     ogImageAlt: () => imageAlt.value,
-    ogSiteName: 'KHT',
+    ogSiteName: () => storeContent.value.brand.name,
     ogLocale: () => (locale.value === 'ar' ? 'ar_EG' : 'en_US'),
     ogLocaleAlternate: () => (locale.value === 'ar' ? 'en_US' : 'ar_EG'),
     twitterCard: 'summary_large_image',

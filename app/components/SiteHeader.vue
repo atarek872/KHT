@@ -1,5 +1,15 @@
 <script setup lang="ts">
 const { t, locale, localized } = useLanguage()
+const storeContent = useStoreContent()
+const brand = computed(() => storeContent.value.brand)
+const navigation = computed(() => storeContent.value.navigation.filter((item) => item.enabled))
+const desktopNavigation = computed(() => navigation.value.filter((item) => item.desktop))
+const mobileMainNavigation = computed(() =>
+  navigation.value.filter((item) => item.mobile && item.mobileSection === 'main'),
+)
+const mobileBottomNavigation = computed(() =>
+  navigation.value.filter((item) => item.mobile && item.mobileSection === 'bottom'),
+)
 const catalog = useCatalog()
 const bag = useBag()
 const menu = ref(false)
@@ -20,16 +30,21 @@ function submitSearch() {
 </script>
 <template>
   <div class="announcement">
-    <span>{{ t('DROP 001 — THE FIRST CHAPTER', 'الإصدار 001 — الفصل الأول') }}</span
-    ><span class="announcement-secondary">{{ t('BLACK. WHITE. LINE.', 'أسود. أبيض. خط.') }}</span
-    ><span>{{ t('THE KHT COLLECTION', 'مجموعة KHT') }}</span>
+    <span>{{ t(brand.announcementStart.en, brand.announcementStart.ar) }}</span
+    ><span class="announcement-secondary">{{
+      t(brand.announcementCenter.en, brand.announcementCenter.ar)
+    }}</span
+    ><span>{{ t(brand.announcementEnd.en, brand.announcementEnd.ar) }}</span>
   </div>
   <header class="site-header">
-    <NuxtLink to="/" class="wordmark" aria-label="KHT home">KHT<span class="logo-line" /></NuxtLink>
+    <NuxtLink to="/" class="wordmark" :aria-label="`${brand.name} home`">
+      <img v-if="brand.logoUrl" :src="brand.logoUrl" :alt="brand.name" />
+      <template v-else>{{ brand.name }}<span class="logo-line" /></template>
+    </NuxtLink>
     <nav class="desktop-nav" :aria-label="t('Main navigation', 'التنقل الرئيسي')">
-      <NuxtLink to="/shop">{{ t('Shop all', 'كل المنتجات') }}</NuxtLink>
-      <NuxtLink to="/drops/001">Drop 001<span class="nav-dot" /></NuxtLink>
-      <NuxtLink to="/about">{{ t('Our story', 'عن KHT') }}</NuxtLink>
+      <NuxtLink v-for="item in desktopNavigation" :key="item.id" :to="item.href">
+        {{ t(item.label.en, item.label.ar) }}<span v-if="item.id === 'drop-001'" class="nav-dot" />
+      </NuxtLink>
     </nav>
     <div class="header-actions">
       <button
@@ -75,20 +90,20 @@ function submitSearch() {
     @close="menu = false"
   >
     <nav class="mobile-nav">
-      <NuxtLink to="/shop">{{ t('Shop all', 'كل المنتجات') }}</NuxtLink
+      <NuxtLink v-for="item in mobileMainNavigation" :key="item.id" :to="item.href">{{
+        t(item.label.en, item.label.ar)
+      }}</NuxtLink
       ><NuxtLink
         v-for="category in catalog.categories"
         :key="category.slug"
         :to="`/categories/${category.slug}`"
         >{{ localized(category.name) }}</NuxtLink
-      ><NuxtLink to="/drops/001">Drop 001</NuxtLink
-      ><NuxtLink to="/about">{{ t('Our story', 'عن KHT') }}</NuxtLink
-      ><NuxtLink to="/account">{{ t('Your account', 'حسابك') }}</NuxtLink
-      ><NuxtLink to="/account/orders">{{ t('Track order', 'تتبع الطلب') }}</NuxtLink>
+      ><NuxtLink to="/account">{{ t('Your account', 'حسابك') }}</NuxtLink>
     </nav>
     <div class="panel-bottom">
-      <NuxtLink to="/size-guide">{{ t('Size guide', 'دليل المقاسات') }}</NuxtLink
-      ><NuxtLink to="/shipping">{{ t('Shipping & returns', 'الشحن والاسترجاع') }}</NuxtLink>
+      <NuxtLink v-for="item in mobileBottomNavigation" :key="item.id" :to="item.href">{{
+        t(item.label.en, item.label.ar)
+      }}</NuxtLink>
     </div>
   </OverlayPanel>
   <OverlayPanel :open="search" :title="t('Find your piece', 'اختار قطعتك')" @close="search = false">

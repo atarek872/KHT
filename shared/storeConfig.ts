@@ -8,11 +8,15 @@ export interface StoreContact {
   configured: boolean
 }
 
-export function useStoreContact(): StoreContact {
+export function useStoreContact(overrides?: {
+  email?: string
+  phone?: string
+  whatsapp?: string
+}): StoreContact {
   const config = useRuntimeConfig().public
-  const email = String(config.storeContactEmail || '').trim()
-  const phone = String(config.storePhone || '').trim()
-  const whatsapp = String(config.storeWhatsApp || '').trim()
+  const email = String(overrides?.email ?? config.storeContactEmail ?? '').trim()
+  const phone = String(overrides?.phone ?? config.storePhone ?? '').trim()
+  const whatsapp = String(overrides?.whatsapp ?? config.storeWhatsApp ?? '').trim()
   const whatsappDigits = whatsapp.replace(/\D/g, '')
 
   return {

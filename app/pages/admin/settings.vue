@@ -8,6 +8,14 @@ import type {
 definePageMeta({ layout: 'admin' })
 useSeoMeta({ title: 'Settings — KHT Admin', robots: 'noindex, nofollow' })
 
+const route = useRoute()
+const settingsViews = ['availability', 'brand', 'navigation', 'pages', 'publishing'] as const
+type SettingsView = (typeof settingsViews)[number]
+const view = computed<SettingsView>(() => {
+  const requested = String(route.query.section || 'availability') as SettingsView
+  return settingsViews.includes(requested) ? requested : 'availability'
+})
+
 const { data, error, status, refresh } = await useFetch<StoreCurtain>('/api/admin/store-curtain')
 const form = reactive<StoreCurtainInput>({
   enabled: false,
@@ -199,198 +207,233 @@ onBeforeUnmount(() => {
       description="Store availability and customer-facing system controls."
     />
 
-    <div v-if="status === 'pending' && !data" class="admin-orders-loading" role="status">
-      <AdminLoader label="Loading settings" /><span />
-    </div>
-    <AdminEmptyState
-      v-else-if="error || !data"
-      title="Settings unavailable"
-      description="Store availability settings could not be loaded."
-      ><template #actions
-        ><AdminButton @click="refresh()">Retry</AdminButton></template
-      ></AdminEmptyState
-    >
-
-    <form v-else class="admin-store-curtain" @submit.prevent="save">
-      <p
-        v-if="feedback"
-        :class="feedbackError ? 'admin-create-order__error' : 'admin-state-notice'"
-        :role="feedbackError ? 'alert' : 'status'"
+    <nav class="admin-settings-tabs" aria-label="Settings sections">
+      <NuxtLink to="/admin/settings" :aria-current="view === 'availability' ? 'page' : undefined"
+        >Availability</NuxtLink
       >
-        {{ feedback }}
-      </p>
-
-      <section
-        class="admin-store-curtain__status"
-        :class="{ 'admin-store-curtain__status--active': form.enabled }"
+      <NuxtLink
+        to="/admin/settings?section=brand"
+        :aria-current="view === 'brand' ? 'page' : undefined"
+        >Brand</NuxtLink
       >
-        <div>
-          <span>Store status</span
-          ><strong>{{ form.enabled ? 'STORE CURTAIN ACTIVE' : 'STOREFRONT OPEN' }}</strong>
-        </div>
-        <AdminCheckbox
-          v-model="form.enabled"
-          label="Activate Store Curtain"
-          help="Saving while active immediately covers every customer-facing page. Admin remains available."
-        />
-      </section>
+      <NuxtLink
+        to="/admin/settings?section=navigation"
+        :aria-current="view === 'navigation' ? 'page' : undefined"
+        >Navigation</NuxtLink
+      >
+      <NuxtLink
+        to="/admin/settings?section=pages"
+        :aria-current="view === 'pages' ? 'page' : undefined"
+        >Pages &amp; SEO</NuxtLink
+      >
+      <NuxtLink
+        to="/admin/settings?section=publishing"
+        :aria-current="view === 'publishing' ? 'page' : undefined"
+        >Publishing</NuxtLink
+      >
+    </nav>
 
-      <p v-if="form.enabled" class="admin-store-curtain__warning" role="status">
-        Visitors will see this curtain immediately after you save. They cannot close it or use the
-        store until it is disabled or the automatic opening time arrives.
-      </p>
+    <AdminSettingsStoreContentEditor v-if="view !== 'availability'" :view="view" />
 
-      <div class="admin-store-curtain__workspace">
-        <div class="admin-store-curtain__controls">
-          <AdminSection
-            title="Store availability"
-            description="Choose the message customers see while the storefront is covered."
-          >
-            <div class="admin-store-curtain__grid">
-              <AdminSelect v-model="form.mode" label="Curtain mode" @change="applyModePreset">
-                <option value="coming_soon">Coming Soon</option>
-                <option value="under_construction">Under Construction</option>
-                <option value="custom">Custom message</option>
-              </AdminSelect>
-              <AdminInput v-model="form.title.en" label="English title" required maxlength="100" />
-              <AdminInput
-                v-model="form.title.ar"
-                label="Arabic title"
-                required
-                maxlength="100"
-                dir="rtl"
-              />
-              <AdminTextarea
-                v-model="form.message.en"
-                label="English message"
-                required
-                maxlength="500"
-              />
-              <AdminTextarea
-                v-model="form.message.ar"
-                label="Arabic message"
-                required
-                maxlength="500"
-                dir="rtl"
-              />
-            </div>
-          </AdminSection>
+    <template v-else>
+      <div v-if="status === 'pending' && !data" class="admin-orders-loading" role="status">
+        <AdminLoader label="Loading settings" /><span />
+      </div>
+      <AdminEmptyState
+        v-else-if="error || !data"
+        title="Settings unavailable"
+        description="Store availability settings could not be loaded."
+        ><template #actions
+          ><AdminButton @click="refresh()">Retry</AdminButton></template
+        ></AdminEmptyState
+      >
 
-          <AdminSection
-            title="Optional image"
-            description="Use one focused campaign image. It will appear in black and white."
-          >
-            <div class="admin-store-curtain__media">
-              <img v-if="form.imageUrl" :src="form.imageUrl" alt="Current Store Curtain" />
-              <label class="admin-product-media__upload">
-                <span>{{
-                  uploading ? 'Uploading image' : form.imageUrl ? 'Replace image' : 'Upload image'
-                }}</span>
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  :disabled="uploading"
-                  @change="uploadImage"
-                />
-              </label>
-              <AdminButton v-if="form.imageUrl" variant="quiet" @click="removeImage"
-                >Remove image</AdminButton
-              >
-              <p>JPG, PNG, or WebP · Maximum 5 MB.</p>
-            </div>
-          </AdminSection>
+      <form v-else class="admin-store-curtain" @submit.prevent="save">
+        <p
+          v-if="feedback"
+          :class="feedbackError ? 'admin-create-order__error' : 'admin-state-notice'"
+          :role="feedbackError ? 'alert' : 'status'"
+        >
+          {{ feedback }}
+        </p>
 
-          <AdminSection title="Countdown" description="Schedule the reveal in Cairo local time.">
-            <div class="admin-store-curtain__grid">
-              <AdminCheckbox v-model="form.countdownEnabled" label="Enable countdown" />
-              <div v-if="form.countdownEnabled" class="admin-field">
-                <label class="admin-field__label" for="store-curtain-launch"
-                  >Opening date and time — Cairo</label
-                >
-                <input
-                  id="store-curtain-launch"
-                  v-model="launchAtLocal"
-                  class="admin-field__control"
-                  type="datetime-local"
-                  required
-                />
-              </div>
-              <AdminCheckbox
-                v-if="form.countdownEnabled"
-                v-model="form.autoDisableAtLaunch"
-                label="Open the store automatically when the countdown ends"
-              />
-            </div>
-          </AdminSection>
+        <section
+          class="admin-store-curtain__status"
+          :class="{ 'admin-store-curtain__status--active': form.enabled }"
+        >
+          <div>
+            <span>Store status</span
+            ><strong>{{ form.enabled ? 'STORE CURTAIN ACTIVE' : 'STOREFRONT OPEN' }}</strong>
+          </div>
+          <AdminCheckbox
+            v-model="form.enabled"
+            label="Activate Store Curtain"
+            help="Saving while active immediately covers every customer-facing page. Admin remains available."
+          />
+        </section>
 
-          <AdminSection
-            title="Optional link"
-            description="Send customers to a store page or a secure external profile."
-          >
-            <div class="admin-store-curtain__grid">
-              <AdminCheckbox v-model="form.ctaEnabled" label="Show a button" />
-              <template v-if="form.ctaEnabled">
+        <p v-if="form.enabled" class="admin-store-curtain__warning" role="status">
+          Visitors will see this curtain immediately after you save. They cannot close it or use the
+          store until it is disabled or the automatic opening time arrives.
+        </p>
+
+        <div class="admin-store-curtain__workspace">
+          <div class="admin-store-curtain__controls">
+            <AdminSection
+              title="Store availability"
+              description="Choose the message customers see while the storefront is covered."
+            >
+              <div class="admin-store-curtain__grid">
+                <AdminSelect v-model="form.mode" label="Curtain mode" @change="applyModePreset">
+                  <option value="coming_soon">Coming Soon</option>
+                  <option value="under_construction">Under Construction</option>
+                  <option value="custom">Custom message</option>
+                </AdminSelect>
                 <AdminInput
-                  v-model="form.ctaLabel.en"
-                  label="English button label"
+                  v-model="form.title.en"
+                  label="English title"
                   required
-                  maxlength="80"
+                  maxlength="100"
                 />
                 <AdminInput
-                  v-model="form.ctaLabel.ar"
-                  label="Arabic button label"
+                  v-model="form.title.ar"
+                  label="Arabic title"
                   required
-                  maxlength="80"
+                  maxlength="100"
                   dir="rtl"
                 />
-                <AdminInput
-                  v-model="form.ctaUrl"
-                  label="Button destination"
+                <AdminTextarea
+                  v-model="form.message.en"
+                  label="English message"
                   required
-                  help="Use a store path such as /contact or a complete HTTPS link."
+                  maxlength="500"
                 />
-              </template>
+                <AdminTextarea
+                  v-model="form.message.ar"
+                  label="Arabic message"
+                  required
+                  maxlength="500"
+                  dir="rtl"
+                />
+              </div>
+            </AdminSection>
+
+            <AdminSection
+              title="Optional image"
+              description="Use one focused campaign image. It will appear in black and white."
+            >
+              <div class="admin-store-curtain__media">
+                <img v-if="form.imageUrl" :src="form.imageUrl" alt="Current Store Curtain" />
+                <label class="admin-product-media__upload">
+                  <span>{{
+                    uploading ? 'Uploading image' : form.imageUrl ? 'Replace image' : 'Upload image'
+                  }}</span>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    :disabled="uploading"
+                    @change="uploadImage"
+                  />
+                </label>
+                <AdminButton v-if="form.imageUrl" variant="quiet" @click="removeImage"
+                  >Remove image</AdminButton
+                >
+                <p>JPG, PNG, or WebP · Maximum 5 MB.</p>
+              </div>
+            </AdminSection>
+
+            <AdminSection title="Countdown" description="Schedule the reveal in Cairo local time.">
+              <div class="admin-store-curtain__grid">
+                <AdminCheckbox v-model="form.countdownEnabled" label="Enable countdown" />
+                <div v-if="form.countdownEnabled" class="admin-field">
+                  <label class="admin-field__label" for="store-curtain-launch"
+                    >Opening date and time — Cairo</label
+                  >
+                  <input
+                    id="store-curtain-launch"
+                    v-model="launchAtLocal"
+                    class="admin-field__control"
+                    type="datetime-local"
+                    required
+                  />
+                </div>
+                <AdminCheckbox
+                  v-if="form.countdownEnabled"
+                  v-model="form.autoDisableAtLaunch"
+                  label="Open the store automatically when the countdown ends"
+                />
+              </div>
+            </AdminSection>
+
+            <AdminSection
+              title="Optional link"
+              description="Send customers to a store page or a secure external profile."
+            >
+              <div class="admin-store-curtain__grid">
+                <AdminCheckbox v-model="form.ctaEnabled" label="Show a button" />
+                <template v-if="form.ctaEnabled">
+                  <AdminInput
+                    v-model="form.ctaLabel.en"
+                    label="English button label"
+                    required
+                    maxlength="80"
+                  />
+                  <AdminInput
+                    v-model="form.ctaLabel.ar"
+                    label="Arabic button label"
+                    required
+                    maxlength="80"
+                    dir="rtl"
+                  />
+                  <AdminInput
+                    v-model="form.ctaUrl"
+                    label="Button destination"
+                    required
+                    help="Use a store path such as /contact or a complete HTTPS link."
+                  />
+                </template>
+              </div>
+            </AdminSection>
+          </div>
+
+          <aside class="admin-store-curtain__preview" aria-label="Store Curtain Preview">
+            <div class="admin-store-curtain__preview-bar">
+              <span>Preview</span>
+              <div aria-label="Preview language">
+                <button
+                  type="button"
+                  :aria-pressed="previewLanguage === 'en'"
+                  @click="previewLanguage = 'en'"
+                >
+                  EN
+                </button>
+                <button
+                  type="button"
+                  :aria-pressed="previewLanguage === 'ar'"
+                  @click="previewLanguage = 'ar'"
+                >
+                  AR
+                </button>
+              </div>
             </div>
-          </AdminSection>
+            <StoreCurtain :curtain="previewCurtain" :language="previewLanguage" preview />
+          </aside>
         </div>
 
-        <aside class="admin-store-curtain__preview" aria-label="Store Curtain Preview">
-          <div class="admin-store-curtain__preview-bar">
-            <span>Preview</span>
-            <div aria-label="Preview language">
-              <button
-                type="button"
-                :aria-pressed="previewLanguage === 'en'"
-                @click="previewLanguage = 'en'"
-              >
-                EN
-              </button>
-              <button
-                type="button"
-                :aria-pressed="previewLanguage === 'ar'"
-                @click="previewLanguage = 'ar'"
-              >
-                AR
-              </button>
-            </div>
-          </div>
-          <StoreCurtain :curtain="previewCurtain" :language="previewLanguage" preview />
-        </aside>
-      </div>
-
-      <footer class="admin-store-curtain__actions">
-        <p v-if="data.updatedBy">
-          Last saved by {{ data.updatedBy }} ·
-          {{ new Date(data.updatedAt).toLocaleString('en-EG', { timeZone: 'Africa/Cairo' }) }}
-        </p>
-        <AdminButton
-          type="submit"
-          :loading="saving"
-          :disabled="saving || uploading"
-          loading-label="Saving settings"
-          >Save settings</AdminButton
-        >
-      </footer>
-    </form>
+        <footer class="admin-store-curtain__actions">
+          <p v-if="data.updatedBy">
+            Last saved by {{ data.updatedBy }} ·
+            {{ new Date(data.updatedAt).toLocaleString('en-EG', { timeZone: 'Africa/Cairo' }) }}
+          </p>
+          <AdminButton
+            type="submit"
+            :loading="saving"
+            :disabled="saving || uploading"
+            loading-label="Saving settings"
+            >Save settings</AdminButton
+          >
+        </footer>
+      </form>
+    </template>
   </div>
 </template>

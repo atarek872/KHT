@@ -16,6 +16,7 @@ const migrationNames = [
   '0007_production_commerce.sql',
   '0008_product_gallery_sale_pricing.sql',
   '0013_store_curtain.sql',
+  '0014_storefront_content.sql',
 ]
 
 const migrationUrls = migrationNames.map(

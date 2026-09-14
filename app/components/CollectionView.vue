@@ -4,6 +4,7 @@ import { breadcrumbList } from '#shared/storefrontSeo'
 const props = defineProps<{ category?: string; drop?: boolean; search?: boolean }>()
 const { t, localized } = useLanguage()
 const catalog = useCatalog()
+const storeContent = useStoreContent()
 const route = useRoute()
 const router = useRouter()
 const size = computed({
@@ -25,6 +26,8 @@ function updateQuery(key: string, value: string) {
   router.replace({ query: { ...route.query, [key]: value || undefined } })
 }
 const categoryData = computed(() => catalog.value.categories.find((c) => c.slug === props.category))
+const pageKey = computed(() => (props.drop ? 'drop' : props.category ? 'category' : 'shop'))
+const page = computed(() => storeContent.value.pages[pageKey.value])
 if (props.category && !categoryData.value)
   throw createError({ statusCode: 404, statusMessage: 'Collection not found' })
 const title = computed(() =>
@@ -33,8 +36,8 @@ const title = computed(() =>
     : categoryData.value
       ? localized(categoryData.value.name)
       : props.drop
-        ? 'DROP 001.'
-        : t('THE COLLECTION.', 'المجموعة.'),
+        ? t(page.value.hero.title.en, page.value.hero.title.ar)
+        : t(page.value.hero.title.en, page.value.hero.title.ar),
 )
 const products = computed(() => {
   const query = props.search
@@ -67,10 +70,10 @@ const seoTitle = computed(() =>
   props.category
     ? `${title.value} from Drop 001 — KHT Egypt`
     : props.drop
-      ? 'KHT Drop 001 — Black Streetwear Collection'
+      ? t(page.value.seo.title.en, page.value.seo.title.ar)
       : props.search
         ? t('Search the KHT collection', 'ابحث في مجموعة KHT')
-        : t('KHT Streetwear Collection — Shop Drop 001', 'مجموعة KHT ستريت وير — تسوق الإصدار 001'),
+        : t(page.value.seo.title.en, page.value.seo.title.ar),
 )
 const seoDescription = computed(() =>
   props.category
@@ -79,17 +82,15 @@ const seoDescription = computed(() =>
         `تسوق ${title.value} من إصدار KHT 001. قصّات سوداء أوفر سايز بخط KHT الأبيض المميز، والدفع عند الاستلام في مصر.`,
       )
     : props.drop
-      ? t(
-          'Shop KHT Drop 001: oversized hoodies, wide-leg pants and complete black streetwear sets with the signature white line.',
-          'تسوق إصدار KHT 001: هوديز أوفر سايز وبناطيل واسعة وأطقم ستريت وير سوداء كاملة بخط KHT الأبيض المميز.',
-        )
-      : t(
-          'Shop KHT black streetwear in Egypt. Explore oversized hoodies, wide-leg pants and complete sets from Drop 001.',
-          'تسوق ملابس KHT السوداء في مصر. اكتشف الهوديز الأوفر سايز والبناطيل الواسعة والأطقم الكاملة من إصدار 001.',
-        ),
+      ? t(page.value.seo.description.en, page.value.seo.description.ar)
+      : t(page.value.seo.description.en, page.value.seo.description.ar),
 )
-const seoImage = computed(() =>
-  categoryData.value?.image || (props.drop ? '/images/drop-001-banner.jpg' : '/images/campaign.png'),
+const seoImage = computed(
+  () =>
+    page.value.seo.socialImageUrl ||
+    categoryData.value?.image ||
+    page.value.hero.imageUrl ||
+    '/images/campaign.png',
 )
 const structuredData = computed(() => ({
   '@context': 'https://schema.org',
@@ -117,22 +118,23 @@ useStoreSeo({
 </script>
 <template>
   <main id="main" class="light-surface collection-page">
-    <header class="collection-page-heading">
+    <ContentPageHero v-if="page.hero.enabled && !drop" :page="page" />
+    <header v-if="!page.hero.enabled || drop" class="collection-page-heading">
       <NuxtLink to="/" class="breadcrumb">{{ t('Home', 'الرئيسية') }}</NuxtLink>
       <div class="section-heading">
         <div>
           <p class="eyebrow">
-            {{ drop ? t('THE ORIGIN / KHT COLLECTION', 'البداية / مجموعة KHT') : 'KHT / DROP 001' }}
+            {{ t(page.hero.eyebrow.en, page.hero.eyebrow.ar) }}
           </p>
           <h1>{{ title }}</h1>
         </div>
-        <p>{{ t('Black. White. A line that makes it yours.', 'أسود. أبيض. خط يشبهك.') }}</p>
+        <p>{{ t(page.hero.body.en, page.hero.body.ar) }}</p>
       </div>
     </header>
     <div v-if="drop" class="drop-banner">
       <StoreImage
-        src="/images/drop-001-banner.jpg"
-        :alt="t('Black KHT hooded set, front and back views', 'سوت KHT أسود، من الأمام والخلف')"
+        :src="page.hero.imageUrl || '/images/drop-001-banner.jpg'"
+        :alt="t(page.hero.imageAlt.en, page.hero.imageAlt.ar)"
         sizes="(max-width: 767px) 45vw, 38vw"
         width="1024"
         height="1280"
