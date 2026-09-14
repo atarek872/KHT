@@ -14,6 +14,8 @@ const campaignInput = (overrides: Partial<WelcomeCampaignInput> = {}): WelcomeCa
   desktopDelaySeconds: 30,
   mobileDelaySeconds: 60,
   dismissalDays: 30,
+  displayMode: 'home',
+  displayPath: '/',
   eyebrow: { en: 'KHT / WELCOME GIFT', ar: 'KHT / هدية ترحيب' },
   title: { en: 'YOUR FIRST ORDER. 5% OFF.', ar: 'خصم ٥٪ على أول طلب.' },
   body: {
@@ -32,10 +34,17 @@ test('welcome campaign settings persist through one validated service', async ()
   try {
     const saved = await saveWelcomeCampaign(
       database,
-      campaignInput({ desktopDelaySeconds: 20, title: { en: 'JOIN THE LINE.', ar: 'انضم للخط.' } }),
+      campaignInput({
+        desktopDelaySeconds: 20,
+        displayMode: 'path',
+        displayPath: '/drops/001',
+        title: { en: 'JOIN THE LINE.', ar: 'انضم للخط.' },
+      }),
       'admin@example.com',
     )
     assert.equal(saved.desktopDelaySeconds, 20)
+    assert.equal(saved.displayMode, 'path')
+    assert.equal(saved.displayPath, '/drops/001')
     assert.equal(saved.title.en, 'JOIN THE LINE.')
     assert.equal(saved.discount?.code, 'WELCOME5')
     assert.deepEqual((await getWelcomeCampaign(database)).title, saved.title)
@@ -44,6 +53,14 @@ test('welcome campaign settings persist through one validated service', async ()
       saveWelcomeCampaign(
         database,
         campaignInput({ primaryRedirect: 'https://example.com' }),
+        'admin@example.com',
+      ),
+      /store-relative path/i,
+    )
+    await assert.rejects(
+      saveWelcomeCampaign(
+        database,
+        campaignInput({ displayMode: 'path', displayPath: 'https://example.com' }),
         'admin@example.com',
       ),
       /store-relative path/i,
@@ -162,6 +179,9 @@ test('admin and storefront routes expose only their intended campaign controls',
     'Desktop delay',
     'Mobile delay',
     'Dismiss for',
+    'Show on',
+    'Specific page',
+    'Page path',
     'Coupon',
     'English title',
     'Arabic title',
@@ -175,5 +195,7 @@ test('admin and storefront routes expose only their intended campaign controls',
   assert.match(discountForm, /Once per customer/)
   assert.match(discountForm, /First order only/)
   assert.match(popup, /\/api\/storefront\/welcome-campaign/)
+  assert.match(popup, /campaign\.value\.displayMode/)
+  assert.match(popup, /campaign\.value\.displayPath/)
   assert.doesNotMatch(popup, /const dismissalWindow = 30|60_000|30_000/)
 })

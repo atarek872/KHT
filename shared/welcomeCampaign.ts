@@ -1,12 +1,16 @@
 import type { Discount, DiscountType } from './discount'
 import type { Localized } from './types'
 
+export type WelcomeCampaignDisplayMode = 'home' | 'path'
+
 export interface WelcomeCampaignInput {
   enabled: boolean
   discountId: string
   desktopDelaySeconds: number
   mobileDelaySeconds: number
   dismissalDays: number
+  displayMode: WelcomeCampaignDisplayMode
+  displayPath: string
   eyebrow: Localized
   title: Localized
   body: Localized
@@ -28,6 +32,8 @@ export interface PublicWelcomeCampaign {
   desktopDelaySeconds: number
   mobileDelaySeconds: number
   dismissalDays: number
+  displayMode: WelcomeCampaignDisplayMode
+  displayPath: string
   eyebrow: Localized
   title: Localized
   body: Localized

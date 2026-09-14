@@ -12,6 +12,8 @@ type CampaignRow = {
   desktopDelaySeconds: number
   mobileDelaySeconds: number
   dismissalDays: number
+  displayMode: WelcomeCampaign['displayMode']
+  displayPath: string
   eyebrowEn: string
   eyebrowAr: string
   titleEn: string
@@ -45,6 +47,7 @@ type CampaignRow = {
 const campaignQuery = `SELECT c.enabled, c.discount_id AS discountId,
   c.desktop_delay_seconds AS desktopDelaySeconds,
   c.mobile_delay_seconds AS mobileDelaySeconds, c.dismissal_days AS dismissalDays,
+  c.display_mode AS displayMode, c.display_path AS displayPath,
   c.eyebrow_en AS eyebrowEn, c.eyebrow_ar AS eyebrowAr,
   c.title_en AS titleEn, c.title_ar AS titleAr, c.body_en AS bodyEn, c.body_ar AS bodyAr,
   c.primary_label_en AS primaryLabelEn, c.primary_label_ar AS primaryLabelAr,
@@ -87,6 +90,8 @@ function mapCampaign(row: CampaignRow): WelcomeCampaign {
     desktopDelaySeconds: row.desktopDelaySeconds,
     mobileDelaySeconds: row.mobileDelaySeconds,
     dismissalDays: row.dismissalDays,
+    displayMode: row.displayMode,
+    displayPath: row.displayPath,
     eyebrow: { en: row.eyebrowEn, ar: row.eyebrowAr },
     title: { en: row.titleEn, ar: row.titleAr },
     body: { en: row.bodyEn, ar: row.bodyAr },
@@ -120,6 +125,15 @@ function redirectPath(value: string, label: string) {
   return path
 }
 
+function campaignDisplayPath(value: string) {
+  const path = redirectPath(value, 'Page path')
+  if (/[?#{}]/.test(path)) throw new Error('Page path must contain only the page pathname.')
+  if (/^\/(?:account|admin|cart|checkout|order-confirmation|track-order)(?:\/|$)/.test(path)) {
+    throw new Error('Choose a public shopping page for the campaign prompt.')
+  }
+  return path.length > 1 ? path.replace(/\/+$/, '') : '/'
+}
+
 export function validateWelcomeCampaign(input: WelcomeCampaignInput) {
   if (!input || typeof input !== 'object') throw new Error('Campaign settings are required.')
   for (const [label, value, minimum, maximum] of [
@@ -132,6 +146,9 @@ export function validateWelcomeCampaign(input: WelcomeCampaignInput) {
     }
   }
   if (!input.discountId?.trim()) throw new Error('Choose a campaign coupon.')
+  if (!['home', 'path'].includes(input.displayMode))
+    throw new Error('Choose where to show the campaign.')
+  if (input.displayMode === 'path') campaignDisplayPath(input.displayPath)
   requiredText(input.eyebrow.en, 'English eyebrow', 80)
   requiredText(input.eyebrow.ar, 'Arabic eyebrow', 80)
   requiredText(input.title.en, 'English title', 140)
@@ -164,7 +181,7 @@ export async function saveWelcomeCampaign(
     desktop_delay_seconds=?, mobile_delay_seconds=?, dismissal_days=?, eyebrow_en=?, eyebrow_ar=?,
     title_en=?, title_ar=?, body_en=?, body_ar=?, primary_label_en=?, primary_label_ar=?,
     primary_redirect=?, secondary_label_en=?, secondary_label_ar=?, secondary_redirect=?,
-    updated_at=?, updated_by=? WHERE id=1`,
+    display_mode=?, display_path=?, updated_at=?, updated_by=? WHERE id=1`,
     )
     .bind(
       input.enabled ? 1 : 0,
@@ -184,6 +201,8 @@ export async function saveWelcomeCampaign(
       input.secondaryLabel.en.trim(),
       input.secondaryLabel.ar.trim(),
       input.secondaryRedirect.trim(),
+      input.displayMode,
+      input.displayMode === 'home' ? '/' : campaignDisplayPath(input.displayPath),
       updatedAt,
       actorEmail,
     )
@@ -202,6 +221,8 @@ export async function getPublicWelcomeCampaign(
     desktopDelaySeconds: campaign.desktopDelaySeconds,
     mobileDelaySeconds: campaign.mobileDelaySeconds,
     dismissalDays: campaign.dismissalDays,
+    displayMode: campaign.displayMode,
+    displayPath: campaign.displayPath,
     eyebrow: campaign.eyebrow,
     title: campaign.title,
     body: campaign.body,

@@ -29,6 +29,8 @@ watch(
       desktopDelaySeconds: campaign.desktopDelaySeconds,
       mobileDelaySeconds: campaign.mobileDelaySeconds,
       dismissalDays: campaign.dismissalDays,
+      displayMode: campaign.displayMode,
+      displayPath: campaign.displayPath,
       eyebrow: { ...campaign.eyebrow },
       title: { ...campaign.title },
       body: { ...campaign.body },
@@ -151,6 +153,32 @@ async function save() {
             min="1"
             max="365"
             help="A dismissed campaign stays hidden for this visitor."
+            required
+          />
+        </div>
+      </AdminSection>
+
+      <AdminSection
+        title="Display placement"
+        description="Show the prompt on the homepage or on one exact public store page."
+      >
+        <div class="admin-campaign-fields">
+          <AdminSelect
+            v-model="form.displayMode"
+            label="Show on"
+            help="The prompt appears only on the selected page after the configured delay."
+            required
+          >
+            <option value="home">Homepage</option>
+            <option value="path">Specific page</option>
+          </AdminSelect>
+          <AdminInput
+            v-if="form.displayMode === 'path'"
+            v-model="form.displayPath"
+            label="Page path"
+            placeholder="/drops/001"
+            help="Use the part after kht-eg.com, for example /shop or /drops/001."
+            maxlength="200"
             required
           />
         </div>

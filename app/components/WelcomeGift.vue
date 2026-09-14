@@ -40,8 +40,19 @@ function campaignRedirect(path: string) {
   return path.replaceAll('{current}', encodeURIComponent(route.fullPath))
 }
 
+function normalizedPagePath(path: string) {
+  return path.length > 1 ? path.replace(/\/+$/, '') : '/'
+}
+
 function routeAllowsPrompt(path: string) {
-  return !/^\/(?:account|admin|cart|checkout|order-confirmation|track-order)(?:\/|$)/.test(path)
+  if (!campaign.value) return false
+  if (/^\/(?:account|admin|cart|checkout|order-confirmation|track-order)(?:\/|$)/.test(path)) {
+    return false
+  }
+  const currentPath = normalizedPagePath(path)
+  return campaign.value.displayMode === 'home'
+    ? currentPath === '/'
+    : currentPath === normalizedPagePath(campaign.value.displayPath)
 }
 
 function recentlyDismissed() {
