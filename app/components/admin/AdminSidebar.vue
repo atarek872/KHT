@@ -11,6 +11,7 @@ const navigation = [
   { label: 'Discounts', to: '/admin/discounts' },
   { label: 'Shipping', to: '/admin/shipping' },
   { label: 'Abandoned Carts', to: '/admin/abandoned-carts' },
+  { label: 'Settings', to: '/admin/settings' },
 ]
 </script>
 

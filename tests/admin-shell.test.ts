@@ -9,9 +9,10 @@ test('default layout preserves the storefront shell while app delegates layouts'
   const layout = read('../app/layouts/default.vue')
 
   assert.match(app, /<NuxtLayout><NuxtPage \/><\/NuxtLayout>/)
-  for (const component of ['<SiteHeader />', '<SiteFooter />', '<BagDrawer />']) {
+  for (const component of ['<SiteHeader />', '<SiteFooter />']) {
     assert.match(layout, new RegExp(component.replace(/[<>/]/g, '\\$&')))
   }
+  assert.match(layout, /<BagDrawer(?:\s[^>]*)?\/>/)
   assert.match(layout, /useFetch\('\/api\/catalog'\)/)
 })
 
@@ -28,6 +29,7 @@ test('admin navigation links to live admin routes and keeps campaign controls un
   assert.match(sidebar, /\{ label: 'Discounts', to: '\/admin\/discounts' \}/)
   assert.match(sidebar, /\{ label: 'Shipping', to: '\/admin\/shipping' \}/)
   assert.match(sidebar, /\{ label: 'Abandoned Carts', to: '\/admin\/abandoned-carts' \}/)
+  assert.match(sidebar, /\{ label: 'Settings', to: '\/admin\/settings' \}/)
   assert.doesNotMatch(sidebar, /Welcome Campaign/)
   assert.match(route, /layout: 'admin'/)
 })

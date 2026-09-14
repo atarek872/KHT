@@ -23,7 +23,7 @@ test('default layout preserves storefront navigation, footer, bag, language and 
   const layout = read('../app/layouts/default.vue')
   assert.match(app, /<NuxtRouteAnnouncer \/>/)
   assert.match(app, /<NuxtLayout><NuxtPage \/><\/NuxtLayout>/)
-  for (const value of ['<SiteHeader />', '<SiteFooter />', '<BagDrawer />', "useFetch('/api/catalog')", 'useLanguage()', 'useBag()']) {
+  for (const value of ['<SiteHeader />', '<SiteFooter />', '<BagDrawer', "useFetch('/api/catalog')", 'useLanguage()', 'useBag()']) {
     assert.match(layout, new RegExp(value.replace(/[<>/()]/g, '\\$&')), value)
   }
 })
