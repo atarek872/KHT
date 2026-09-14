@@ -107,14 +107,14 @@ test('the welcome gift cannot be used by guests or reused after a first order', 
         userId: null,
         requestedCode: WELCOME_DISCOUNT_CODE,
       }),
-      /signed-in first order/i,
+      /signed-in customers/i,
     )
     await assert.rejects(
       resolveCustomerDiscountCode(database, {
         userId: 'returning-user',
         requestedCode: WELCOME_DISCOUNT_CODE,
       }),
-      /signed-in first order/i,
+      /first order/i,
     )
   } finally {
     sql.close()
@@ -130,12 +130,12 @@ test('the database enforces one welcome gift per account', () => {
     assert.deepEqual({ ...offer }, { type: 'percentage', value: 5, active: 1 })
 
     const migration = readFileSync(
-      new URL('../server/db/migrations/0010_welcome_offer.sql', import.meta.url),
+      new URL('../server/db/migrations/0011_welcome_campaign_admin.sql', import.meta.url),
       'utf8',
     )
-    assert.match(migration, /CREATE TRIGGER enforce_welcome_offer_before_order/)
+    assert.match(migration, /CREATE TRIGGER enforce_customer_discount_rules_before_order/)
     assert.match(migration, /NEW\.user_id IS NULL/)
-    assert.match(migration, /orders existing WHERE existing\.user_id = NEW\.user_id/)
+    assert.match(migration, /customer_discount_redemptions/)
   } finally {
     sql.close()
   }
@@ -146,12 +146,13 @@ test('the welcome prompt stays out of checkout and preserves guest checkout', ()
   const checkout = readFileSync(new URL('../app/pages/checkout.vue', import.meta.url), 'utf8')
   const layout = readFileSync(new URL('../app/layouts/default.vue', import.meta.url), 'utf8')
 
-  assert.match(popup, /30_000/)
-  assert.match(popup, /60_000/)
-  assert.match(popup, /30 \* 24 \* 60 \* 60 \* 1000/)
-  assert.match(popup, /\/checkout/)
-  assert.match(popup, /account\/register/)
-  assert.match(popup, /account\/login/)
+  assert.match(popup, /campaign\.value\.desktopDelaySeconds/)
+  assert.match(popup, /campaign\.value\.mobileDelaySeconds/)
+  assert.match(popup, /campaign\.value\.dismissalDays \* 24 \* 60 \* 60 \* 1000/)
+  assert.match(popup, /\/api\/storefront\/welcome-campaign/)
+  assert.match(popup, /routeAllowsPrompt[\s\S]*checkout/)
+  assert.match(popup, /campaign\.primaryRedirect/)
+  assert.match(popup, /campaign\.secondaryRedirect/)
   assert.match(layout, /<WelcomeGift \/>/)
   assert.match(checkout, /welcome-offer/)
   assert.match(checkout, /No account is required/)

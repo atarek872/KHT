@@ -10,6 +10,9 @@ export interface DiscountInput {
   validFrom?: string | null
   validUntil?: string | null
   active: boolean
+  loginRequired: boolean
+  oncePerCustomer: boolean
+  firstOrderOnly: boolean
 }
 
 export interface Discount extends DiscountInput {
@@ -30,4 +33,6 @@ export interface OrderQuote {
   total: number
   couponCode?: string
   promotion?: 'welcome'
+  promotionType?: DiscountType
+  promotionValue?: number
 }

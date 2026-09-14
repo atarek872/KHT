@@ -18,6 +18,9 @@ const coupon: Discount = {
   validFrom: '2026-09-01T00:00:00.000Z',
   validUntil: '2026-09-30T23:59:59.000Z',
   active: true,
+  loginRequired: false,
+  oncePerCustomer: false,
+  firstOrderOnly: false,
   updatedAt: now.toISOString(),
 }
 
@@ -63,6 +66,10 @@ test('discount validation keeps the model deliberately simple', () => {
     /only to percentage/,
   )
   assert.throws(() => validateDiscount({ ...coupon, validFrom: 'not-a-date' }), /not a valid date/)
+  assert.throws(
+    () => validateDiscount({ ...coupon, oncePerCustomer: true }),
+    /require signed-in customers/,
+  )
 })
 
 test('admin discount APIs are protected and expose only list, create and edit', () => {
@@ -88,6 +95,9 @@ test('admin list and editor expose enforceable coupon fields', () => {
     'Valid from',
     'Valid until',
     'Coupon active',
+    'Signed-in customers only',
+    'Once per customer',
+    'First order only',
   ])
     assert.match(form, new RegExp(field))
   assert.doesNotMatch(form, /product targeting|stacking|buy one/i)

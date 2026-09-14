@@ -6,7 +6,7 @@ import { getStorefrontShippingRate } from '../../services/shipping'
 import { enforceRateLimit } from '../../utils/rateLimit'
 import { requireJsonBody, safeErrorMessage } from '../../utils/requestGuards'
 import { getCustomer } from '../../utils/customerAuth'
-import { resolveCustomerDiscountCode, WELCOME_DISCOUNT_CODE } from '../../services/welcomeOffer'
+import { isWelcomeCampaignDiscount, resolveCustomerDiscountCode } from '../../services/welcomeOffer'
 
 export default defineEventHandler(async (event) => {
   await enforceRateLimit(event, 'discount-quote', 60, 10 * 60)
@@ -27,16 +27,19 @@ export default defineEventHandler(async (event) => {
     const discountCode = await resolveCustomerDiscountCode(database, {
       userId: user?.id,
       requestedCode: typeof body?.code === 'string' ? body.code : undefined,
-      automaticWelcome: Boolean(user && !body?.code),
+      automaticWelcome: Boolean(user) && !body?.code,
     })
     const coupon = await quoteDiscount(database, priced.subtotal, discountCode)
+    const campaign = await isWelcomeCampaignDiscount(database, coupon.coupon?.id)
     return {
       subtotal: priced.subtotal,
       shipping: priced.shipping,
       discount: coupon.discount,
       total: calculateOrderTotal(priced.subtotal, coupon.discount, priced.shipping),
       couponCode: coupon.coupon?.code,
-      promotion: coupon.coupon?.code === WELCOME_DISCOUNT_CODE ? 'welcome' : undefined,
+      promotion: campaign ? 'welcome' : undefined,
+      promotionType: campaign?.discount?.type,
+      promotionValue: campaign?.discount?.value,
     }
   } catch (error) {
     throw createError({
@@ -47,7 +50,7 @@ export default defineEventHandler(async (event) => {
           /^Coupon code was not found\.$/,
           /^This coupon (?:is inactive|is not active yet|has expired|has reached its usage limit)\.$/,
           /^This coupon requires a minimum order of \d+ EGP\.$/,
-          /^The welcome gift is available on your signed-in first order only\.$/,
+          /^This coupon (?:is available to signed-in customers only|has already been used by this account|is available on your first order only)\.$/,
           /^Shipping is not available for this governorate\.$/,
         ],
         'Coupon could not be applied.',

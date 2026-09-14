@@ -3,6 +3,7 @@ import type { StorefrontOrderConfirmation } from '../../shared/storefrontOrder'
 import type { OrderQuote } from '../../shared/discount'
 import type { ShippingZone } from '../../shared/shipping'
 import type { CustomerAddress } from '../../shared/account'
+import type { PublicWelcomeCampaign } from '../../shared/welcomeCampaign'
 const { t, money, localized } = useLanguage()
 const {
   lines,
@@ -52,6 +53,7 @@ watch(addressId, (id) => {
 })
 onMounted(async () => {
   if (count.value) trackBeginCheckout(lines.value, total.value)
+  await refreshAutomaticOffer()
   if (!user.value) return
   form.value.name ||= user.value.name
   form.value.email ||= user.value.email
@@ -63,13 +65,16 @@ onMounted(async () => {
   } catch {
     /* Manual delivery details remain available. */
   }
-  await refreshAutomaticOffer()
 })
 const {
   data: shippingData,
   error: shippingError,
   status: shippingStatus,
 } = await useFetch<{ items: ShippingZone[] }>('/api/shipping/options')
+const { data: welcomeCampaignData } = await useFetch<{
+  campaign: PublicWelcomeCampaign | null
+}>('/api/storefront/welcome-campaign', { key: 'welcome-campaign' })
+const welcomeCampaign = computed(() => welcomeCampaignData.value?.campaign || null)
 const shippingOptions = computed(() => shippingData.value?.items || [])
 const selectedShipping = computed(() =>
   shippingOptions.value.find((option) => option.governorate === form.value.governorate),
@@ -114,7 +119,8 @@ async function applyCoupon() {
 }
 
 async function refreshAutomaticOffer() {
-  if (!user.value || !count.value || !selectedShipping.value || couponCode.value.trim()) return
+  if (!count.value || !selectedShipping.value || couponCode.value.trim()) return
+  if (!user.value && welcomeCampaign.value?.loginRequired) return
   welcomeBusy.value = true
   try {
     const quote = await $fetch<OrderQuote>('/api/discounts/quote', {
@@ -130,6 +136,15 @@ async function refreshAutomaticOffer() {
   } finally {
     welcomeBusy.value = false
   }
+}
+
+function campaignRedirect(path: string) {
+  return path.replaceAll('{current}', encodeURIComponent('/checkout'))
+}
+
+function promotionRule(quote: OrderQuote) {
+  if (quote.promotionType === 'percentage') return `${quote.promotionValue || 0}%`
+  return money(quote.promotionValue || 0)
 }
 
 watch(
@@ -267,32 +282,23 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
       ><div class="commerce-grid">
         <form id="checkout-form" class="checkout-form" @submit.prevent="submit">
           <aside
-            v-if="!user"
+            v-if="!user && welcomeCampaign?.loginRequired"
             class="checkout-welcome-offer"
             aria-labelledby="checkout-welcome-title"
           >
-            <p class="eyebrow">KHT / {{ t('WELCOME GIFT', 'هدية ترحيب') }}</p>
-            <h2 id="checkout-welcome-title">
-              {{ t('Take 5% off your first order', 'خصم ٥٪ على أول طلب') }}
-            </h2>
-            <p>
-              {{
-                t(
-                  'Create an account or sign in before ordering. We will apply your gift automatically.',
-                  'أنشئ حساباً أو سجل الدخول قبل الطلب، وهنطبق هديتك تلقائياً.',
-                )
-              }}
-            </p>
+            <p class="eyebrow">{{ localized(welcomeCampaign.eyebrow) }}</p>
+            <h2 id="checkout-welcome-title">{{ localized(welcomeCampaign.title) }}</h2>
+            <p>{{ localized(welcomeCampaign.body) }}</p>
             <div>
               <NuxtLink
                 class="button button-dark"
-                :to="{ path: '/account/register', query: { returnTo: '/checkout' } }"
-                >{{ t('Create account', 'إنشاء حساب') }}<KhtIcon name="arrow"
+                :to="campaignRedirect(welcomeCampaign.primaryRedirect)"
+                >{{ localized(welcomeCampaign.primaryLabel) }}<KhtIcon name="arrow"
               /></NuxtLink>
               <NuxtLink
                 class="checkout-welcome-login"
-                :to="{ path: '/account/login', query: { returnTo: '/checkout' } }"
-                >{{ t('Sign in', 'تسجيل الدخول') }}</NuxtLink
+                :to="campaignRedirect(welcomeCampaign.secondaryRedirect)"
+                >{{ localized(welcomeCampaign.secondaryLabel) }}</NuxtLink
               >
             </div>
           </aside>
@@ -304,7 +310,7 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
             class="checkout-welcome-status applied"
             role="status"
           >
-            {{ t('Your 5% welcome gift is applied.', 'تم تطبيق هدية الترحيب بخصم ٥٪.') }}
+            {{ t('Your welcome gift is applied.', 'تم تطبيق هدية الترحيب.') }}
           </p>
           <fieldset>
             <legend><span>01</span>{{ t('Your details', 'بياناتك') }}</legend>
@@ -516,7 +522,7 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
           <div v-if="couponQuote?.discount" class="summary-row">
             <span>{{
               couponQuote.promotion === 'welcome'
-                ? t('Welcome gift · 5%', 'هدية الترحيب · ٥٪')
+                ? `${t('Welcome gift', 'هدية الترحيب')} · ${promotionRule(couponQuote)}`
                 : `${t('Discount', 'الخصم')} · ${couponQuote.couponCode}`
             }}</span
             ><span>− {{ money(couponQuote.discount) }}</span>

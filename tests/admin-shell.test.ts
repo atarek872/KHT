@@ -15,7 +15,7 @@ test('default layout preserves the storefront shell while app delegates layouts'
   assert.match(layout, /useFetch\('\/api\/catalog'\)/)
 })
 
-test('admin navigation links only to the dashboard route that currently exists', () => {
+test('admin navigation links to live admin routes and exposes the welcome campaign', () => {
   const sidebar = read('../app/components/admin/AdminSidebar.vue')
   const route = read('../app/pages/admin/index.vue')
 
@@ -28,12 +28,7 @@ test('admin navigation links only to the dashboard route that currently exists',
   assert.match(sidebar, /\{ label: 'Discounts', to: '\/admin\/discounts' \}/)
   assert.match(sidebar, /\{ label: 'Shipping', to: '\/admin\/shipping' \}/)
   assert.match(sidebar, /\{ label: 'Abandoned Carts', to: '\/admin\/abandoned-carts' \}/)
-  for (const label of [
-    'Settings',
-  ]) {
-    assert.match(sidebar, new RegExp(`\\{ label: '${label}' \\}`))
-  }
-  assert.doesNotMatch(sidebar, /to: '\/admin\/settings/)
+  assert.match(sidebar, /\{ label: 'Welcome Campaign', to: '\/admin\/welcome-campaign' \}/)
   assert.match(route, /layout: 'admin'/)
 })
 

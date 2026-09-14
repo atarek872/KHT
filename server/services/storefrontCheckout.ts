@@ -87,6 +87,8 @@ export async function createStorefrontOrder(
   const { order, publicReference } = await createDurableOrder(database, orderInput, {
     cartId: input.cartId,
     actorEmail: 'storefront@kht.local',
+    userId: null,
+    automaticWelcome: false,
   })
   return {
     reference: publicReference,

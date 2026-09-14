@@ -135,6 +135,7 @@ interface DurableOrderOptions {
   userId?: string | null
   expectedTotal?: number
   actorEmail?: string
+  automaticWelcome?: boolean
 }
 
 export async function createDurableOrder(
@@ -159,7 +160,7 @@ export async function createDurableOrder(
   }
   const priced = await quoteOrder(database, input, {
     userId: options.userId,
-    automaticWelcome: Boolean(options.userId),
+    automaticWelcome: options.automaticWelcome ?? Boolean(options.userId),
   })
   if (options.expectedTotal !== undefined && options.expectedTotal !== priced.total) {
     throw new Error('Prices changed. Review your bag and total before placing your order.')

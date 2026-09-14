@@ -2631,6 +2631,125 @@
   gap: 28px;
 }
 
+.kht-admin .admin-welcome-campaign-page,
+.kht-admin .admin-welcome-campaign-form {
+  display: grid;
+  gap: 28px;
+}
+
+.kht-admin .admin-campaign-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 20px;
+}
+
+.kht-admin .admin-campaign-fields--three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.kht-admin .admin-campaign-fields--rules {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.kht-admin .admin-campaign-language-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--kht-gray-200);
+  border: 1px solid var(--kht-gray-200);
+}
+
+.kht-admin .admin-campaign-language-grid > div {
+  display: grid;
+  gap: 18px;
+  padding: 22px;
+  background: var(--kht-white);
+}
+
+.kht-admin .admin-campaign-language-grid h3 {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.kht-admin .admin-campaign-preview {
+  width: min(100%, 540px);
+  display: grid;
+  gap: 14px;
+  padding: 30px;
+  color: var(--kht-gray-800);
+  background: var(--kht-off-white);
+  border-top: 4px solid var(--kht-black);
+}
+
+.kht-admin .admin-campaign-preview > span:first-child {
+  color: #666666;
+  font-size: 0.75rem;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.kht-admin .admin-campaign-preview > strong {
+  font-family: var(--display);
+  font-size: 3rem;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.kht-admin .admin-campaign-preview h3 {
+  margin: 4px 0 0;
+  font-family: var(--display);
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.kht-admin .admin-campaign-preview p {
+  margin: 0;
+  color: #666666;
+  line-height: 1.6;
+}
+
+.kht-admin .admin-campaign-preview .admin-button {
+  width: fit-content;
+  margin-top: 6px;
+}
+
+.kht-admin .admin-campaign-eligibility {
+  display: grid;
+  gap: 20px;
+}
+
+.kht-admin .admin-campaign-eligibility dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  margin: 0;
+  background: var(--kht-gray-200);
+  border: 1px solid var(--kht-gray-200);
+}
+
+.kht-admin .admin-campaign-eligibility dl > div {
+  padding: 18px;
+  background: var(--kht-off-white);
+}
+
+.kht-admin .admin-campaign-eligibility dt {
+  color: #666666;
+  font-size: 0.6875rem;
+}
+
+.kht-admin .admin-campaign-eligibility dd {
+  margin: 6px 0 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.kht-admin .admin-campaign-eligibility .admin-button {
+  width: fit-content;
+}
+
 .kht-admin .admin-discount-list {
   display: grid;
   gap: 1px;
@@ -2973,6 +3092,25 @@
 }
 
 @media (max-width: 767px) {
+  .kht-admin .admin-campaign-fields,
+  .kht-admin .admin-campaign-fields--three,
+  .kht-admin .admin-campaign-fields--rules,
+  .kht-admin .admin-campaign-language-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .kht-admin .admin-campaign-eligibility dl {
+    grid-template-columns: 1fr;
+  }
+
+  .kht-admin .admin-campaign-language-grid > div {
+    padding: 18px;
+  }
+
+  .kht-admin .admin-campaign-preview {
+    padding: 22px;
+  }
+
   .kht-admin .admin-page-header h1 {
     font-size: 2rem;
   }
