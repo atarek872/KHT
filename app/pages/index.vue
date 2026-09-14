@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { useStoreContact } from '#shared/storeConfig'
+import { DEFAULT_SOCIAL_IMAGE, STORE_ORIGIN } from '#shared/storefrontSeo'
 
 const { t, localized } = useLanguage()
 const catalog = useCatalog()
 const contact = useStoreContact()
-const homepageUrl = 'https://kht.tknology.online/'
-const socialImageUrl = 'https://kht.tknology.online/images/campaign.png'
+const homepageUrl = `${STORE_ORIGIN}/`
+const socialImageUrl = DEFAULT_SOCIAL_IMAGE
 const socialTitle = 'KHT — Black. White. Line.'
 const socialDescription =
   'Meet Drop 001. Oversized silhouettes. Considered details. A single white line.'
@@ -18,7 +19,7 @@ const storeStructuredData = computed(() => ({
       name: 'KHT',
       alternateName: 'KHT — Black. White. Line.',
       url: homepageUrl,
-      logo: 'https://kht.tknology.online/favicon.svg',
+      logo: `${STORE_ORIGIN}/favicon.svg`,
       image: socialImageUrl,
       description: socialDescription,
       areaServed: 'EG',

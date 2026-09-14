@@ -46,6 +46,14 @@
       "preview_urls": false,
       "routes": [
         {
+          "pattern": "kht-eg.com",
+          "custom_domain": true,
+        },
+        {
+          "pattern": "www.kht-eg.com",
+          "custom_domain": true,
+        },
+        {
           "pattern": "kht.tknology.online",
           "custom_domain": true,
         },

@@ -1,7 +1,8 @@
 import type { Catalog } from './types'
 
-export const STORE_ORIGIN = 'https://kht.tknology.online'
+export const STORE_ORIGIN = 'https://kht-eg.com'
 export const DEFAULT_SOCIAL_IMAGE = `${STORE_ORIGIN}/images/campaign.png`
+export const LEGACY_STORE_HOSTS = ['kht.tknology.online', 'www.kht-eg.com'] as const
 export const PUBLIC_ROBOTS =
   'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1'
 export const PRIVATE_ROBOTS = 'noindex, nofollow'
@@ -35,6 +36,11 @@ export function absoluteStoreUrl(value = '/') {
   return new URL(value || '/', `${STORE_ORIGIN}/`).toString().replace(/\/$/, (slash) =>
     value === '/' || value === '' ? slash : '',
   )
+}
+
+export function canonicalStoreRedirect(url: URL) {
+  if (!LEGACY_STORE_HOSTS.includes(url.hostname as (typeof LEGACY_STORE_HOSTS)[number])) return
+  return new URL(`${url.pathname}${url.search}`, `${STORE_ORIGIN}/`).toString()
 }
 
 export function isPrivateSeoPath(path: string) {

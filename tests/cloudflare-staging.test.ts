@@ -45,6 +45,8 @@ test('production candidate uses isolated public Cloudflare resources and real co
   assert.equal(production.workers_dev, false)
   assert.equal(production.preview_urls, false)
   assert.deepEqual(production.routes, [
+    { pattern: 'kht-eg.com', custom_domain: true },
+    { pattern: 'www.kht-eg.com', custom_domain: true },
     { pattern: 'kht.tknology.online', custom_domain: true },
   ])
   assert.notEqual(

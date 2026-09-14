@@ -92,8 +92,8 @@ test('product imagery stays clean and product codes appear below product names',
 
 test('homepage exposes an absolute hero image for social sharing', () => {
   const homepage = read('../app/pages/index.vue')
-  assert.match(homepage, /const homepageUrl = 'https:\/\/kht\.tknology\.online\/'/)
-  assert.match(homepage, /const socialImageUrl = 'https:\/\/kht\.tknology\.online\/images\/campaign\.png'/)
+  assert.match(homepage, /const homepageUrl = `\$\{STORE_ORIGIN\}\/`/)
+  assert.match(homepage, /const socialImageUrl = DEFAULT_SOCIAL_IMAGE/)
   assert.match(homepage, /useStoreSeo\(/)
   assert.match(homepage, /path:\s*homepageUrl/)
   assert.match(homepage, /image:\s*socialImageUrl/)

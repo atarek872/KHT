@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { absoluteStoreUrl, breadcrumbList } from '#shared/storefrontSeo'
+import { STORE_ORIGIN, absoluteStoreUrl, breadcrumbList } from '#shared/storefrontSeo'
 
 const route = useRoute()
 const { t, localized } = useLanguage()
@@ -104,7 +104,7 @@ const structuredData = computed(() => {
             ? 'https://schema.org/InStock'
             : 'https://schema.org/OutOfStock',
           itemCondition: 'https://schema.org/NewCondition',
-          seller: { '@id': 'https://kht.tknology.online/#store' },
+          seller: { '@id': `${STORE_ORIGIN}/#store` },
         },
       },
       breadcrumbList([

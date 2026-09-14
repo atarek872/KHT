@@ -7,6 +7,7 @@ import {
   absoluteStoreUrl,
   buildRobotsText,
   buildSitemapXml,
+  canonicalStoreRedirect,
   serializeJsonLd,
 } from '../shared/storefrontSeo.ts'
 
@@ -36,7 +37,7 @@ const catalog: Catalog = {
 }
 
 test('SEO URL and JSON-LD helpers keep the custom domain canonical and output safe', () => {
-  assert.equal(STORE_ORIGIN, 'https://kht.tknology.online')
+  assert.equal(STORE_ORIGIN, 'https://kht-eg.com')
   assert.equal(absoluteStoreUrl('/products/line-hoodie'), `${STORE_ORIGIN}/products/line-hoodie`)
   assert.equal(absoluteStoreUrl('https://cdn.example/image.jpg'), 'https://cdn.example/image.jpg')
   assert.equal(serializeJsonLd({ name: '</script><script>alert(1)</script>' }).includes('</script>'), false)
@@ -46,8 +47,20 @@ test('robots allows production discovery, blocks staging, and advertises the sit
   const production = buildRobotsText(true)
   assert.match(production, /User-agent: \*/)
   assert.match(production, /Allow: \//)
-  assert.match(production, /Sitemap: https:\/\/kht\.tknology\.online\/sitemap\.xml/)
+  assert.match(production, /Sitemap: https:\/\/kht-eg\.com\/sitemap\.xml/)
   assert.match(buildRobotsText(false), /Disallow: \//)
+})
+
+test('legacy and www storefront requests redirect to the new canonical host', () => {
+  assert.equal(
+    canonicalStoreRedirect(new URL('https://kht.tknology.online/products/line-hoodie?size=M')),
+    'https://kht-eg.com/products/line-hoodie?size=M',
+  )
+  assert.equal(
+    canonicalStoreRedirect(new URL('https://www.kht-eg.com/shop')),
+    'https://kht-eg.com/shop',
+  )
+  assert.equal(canonicalStoreRedirect(new URL('https://kht-eg.com/shop')), undefined)
 })
 
 test('sitemap contains only absolute canonical public catalog URLs', () => {
