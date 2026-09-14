@@ -2,6 +2,8 @@
 import type { Discount, DiscountInput } from '../../../../shared/discount'
 definePageMeta({ layout: 'admin' })
 useSeoMeta({ title: 'Discounts — KHT Admin', robots: 'noindex, nofollow' })
+const route = useRoute()
+const view = computed(() => (route.query.view === 'welcome' ? 'welcome' : 'coupons'))
 const { data, error, status, refresh } = await useFetch<Discount[]>('/api/admin/discounts')
 const saving = ref('')
 const message = ref('')
@@ -56,69 +58,90 @@ async function toggle(discount: Discount) {
       title="Discounts"
       description="Coupon values, dates and customer eligibility."
     >
-      <template #actions
+      <template v-if="view === 'coupons'" #actions
         ><NuxtLink to="/admin/discounts/new" class="admin-button admin-button--primary"
           >New coupon <KhtIcon name="arrow" /></NuxtLink></template
     ></AdminPageHeader>
-    <p
-      v-if="message"
-      :class="messageError ? 'admin-create-order__error' : 'admin-state-notice'"
-      :role="messageError ? 'alert' : 'status'"
-    >
-      {{ message }}
-    </p>
-    <div v-if="status === 'pending' && !data" class="admin-orders-loading" role="status">
-      <AdminLoader label="Loading discounts" /><span />
-    </div>
-    <AdminEmptyState
-      v-else-if="error"
-      title="Discounts unavailable"
-      description="Coupon rules could not be loaded."
-      ><template #actions
-        ><AdminButton @click="refresh()">Retry</AdminButton></template
-      ></AdminEmptyState
-    >
-    <AdminEmptyState
-      v-else-if="!data?.length"
-      title="No coupons yet"
-      description="Create a coupon when a simple order discount is needed."
-    />
-    <div v-else class="admin-discount-list">
-      <article v-for="discount in data" :key="discount.id" class="admin-discount-row">
-        <div>
-          <strong>{{ discount.code }}</strong
-          ><span>{{ rule(discount) }}</span>
-        </div>
-        <dl>
+    <nav class="admin-discounts-tabs" aria-label="Discount management">
+      <NuxtLink
+        to="/admin/discounts"
+        class="admin-discounts-tabs__item"
+        :class="{ 'admin-discounts-tabs__item--active': view === 'coupons' }"
+      >
+        Coupon codes
+      </NuxtLink>
+      <NuxtLink
+        to="/admin/discounts?view=welcome"
+        class="admin-discounts-tabs__item"
+        :class="{ 'admin-discounts-tabs__item--active': view === 'welcome' }"
+      >
+        Welcome popup
+      </NuxtLink>
+    </nav>
+    <template v-if="view === 'coupons'">
+      <p
+        v-if="message"
+        :class="messageError ? 'admin-create-order__error' : 'admin-state-notice'"
+        :role="messageError ? 'alert' : 'status'"
+      >
+        {{ message }}
+      </p>
+      <div v-if="status === 'pending' && !data" class="admin-orders-loading" role="status">
+        <AdminLoader label="Loading discounts" /><span />
+      </div>
+      <AdminEmptyState
+        v-else-if="error"
+        title="Discounts unavailable"
+        description="Coupon rules could not be loaded."
+        ><template #actions
+          ><AdminButton @click="refresh()">Retry</AdminButton></template
+        ></AdminEmptyState
+      >
+      <AdminEmptyState
+        v-else-if="!data?.length"
+        title="No coupons yet"
+        description="Create a coupon when a simple order discount is needed."
+      />
+      <div v-else class="admin-discount-list">
+        <article v-for="discount in data" :key="discount.id" class="admin-discount-row">
           <div>
-            <dt>Usage</dt>
-            <dd>{{ discount.currentUsage }} / {{ discount.usageLimit ?? 'Unlimited' }} used</dd>
+            <strong>{{ discount.code }}</strong
+            ><span>{{ rule(discount) }}</span>
           </div>
-          <div>
-            <dt>Minimum</dt>
-            <dd>{{ discount.minimumOrder ? money(discount.minimumOrder) : 'None' }}</dd>
+          <dl>
+            <div>
+              <dt>Usage</dt>
+              <dd>{{ discount.currentUsage }} / {{ discount.usageLimit ?? 'Unlimited' }} used</dd>
+            </div>
+            <div>
+              <dt>Minimum</dt>
+              <dd>{{ discount.minimumOrder ? money(discount.minimumOrder) : 'None' }}</dd>
+            </div>
+            <div>
+              <dt>Valid until</dt>
+              <dd>{{ date(discount.validUntil) }}</dd>
+            </div>
+          </dl>
+          <AdminBadge :tone="discount.active ? 'strong' : 'neutral'">{{
+            discount.active ? 'Active' : 'Inactive'
+          }}</AdminBadge>
+          <div class="admin-discount-row__actions">
+            <NuxtLink
+              :to="`/admin/discounts/${discount.id}`"
+              class="admin-button admin-button--quiet"
+              >Edit</NuxtLink
+            >
+            <AdminButton
+              variant="secondary"
+              :loading="saving === discount.id"
+              loading-label="Saving"
+              @click="toggle(discount)"
+              >{{ discount.active ? 'Disable' : 'Enable' }}</AdminButton
+            >
           </div>
-          <div>
-            <dt>Valid until</dt>
-            <dd>{{ date(discount.validUntil) }}</dd>
-          </div>
-        </dl>
-        <AdminBadge :tone="discount.active ? 'strong' : 'neutral'">{{
-          discount.active ? 'Active' : 'Inactive'
-        }}</AdminBadge>
-        <div class="admin-discount-row__actions">
-          <NuxtLink :to="`/admin/discounts/${discount.id}`" class="admin-button admin-button--quiet"
-            >Edit</NuxtLink
-          >
-          <AdminButton
-            variant="secondary"
-            :loading="saving === discount.id"
-            loading-label="Saving"
-            @click="toggle(discount)"
-            >{{ discount.active ? 'Disable' : 'Enable' }}</AdminButton
-          >
-        </div>
-      </article>
-    </div>
+        </article>
+      </div>
+    </template>
+    <AdminDiscountsWelcomeCampaignPanel v-else />
   </div>
 </template>

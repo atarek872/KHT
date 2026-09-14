@@ -2637,6 +2637,59 @@
   gap: 28px;
 }
 
+.kht-admin .admin-discounts-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--kht-gray-200);
+}
+
+.kht-admin .admin-discounts-tabs__item {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 20px;
+  color: #666666;
+  border-bottom: 2px solid transparent;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.kht-admin .admin-discounts-tabs__item:hover {
+  color: var(--kht-black);
+  background: var(--kht-off-white);
+}
+
+.kht-admin .admin-discounts-tabs__item--active {
+  color: var(--kht-black);
+  border-bottom-color: var(--kht-black);
+}
+
+.kht-admin .admin-campaign-panel__header {
+  display: grid;
+  gap: 8px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--kht-gray-200);
+}
+
+.kht-admin .admin-campaign-panel__header h2,
+.kht-admin .admin-campaign-panel__header p {
+  margin: 0;
+}
+
+.kht-admin .admin-campaign-panel__header h2 {
+  font-family: var(--display);
+  font-size: 2rem;
+  font-weight: 600;
+}
+
+.kht-admin .admin-campaign-panel__header > p:last-child {
+  max-width: 680px;
+  color: #666666;
+  line-height: 1.6;
+}
+
 .kht-admin .admin-campaign-fields {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3092,6 +3145,11 @@
 }
 
 @media (max-width: 767px) {
+  .kht-admin .admin-discounts-tabs__item {
+    flex: 1;
+    padding-inline: 12px;
+  }
+
   .kht-admin .admin-campaign-fields,
   .kht-admin .admin-campaign-fields--three,
   .kht-admin .admin-campaign-fields--rules,

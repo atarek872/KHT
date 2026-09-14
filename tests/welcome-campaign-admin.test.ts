@@ -166,6 +166,8 @@ test('a campaign coupon can be used once per signed-in customer even after an ea
 
 test('admin and storefront routes expose only their intended campaign controls', () => {
   const adminPage = read('../app/pages/admin/welcome-campaign.vue')
+  const discountsPage = read('../app/pages/admin/discounts/index.vue')
+  const campaignPanel = read('../app/components/admin/discounts/WelcomeCampaignPanel.vue')
   const sidebar = read('../app/components/admin/AdminSidebar.vue')
   const popup = read('../app/components/WelcomeGift.vue')
   const adminGet = read('../server/api/admin/welcome-campaign.get.ts')
@@ -174,7 +176,11 @@ test('admin and storefront routes expose only their intended campaign controls',
 
   for (const route of [adminGet, adminPut]) assert.match(route, /requireAdmin\(event\)/)
   assert.doesNotMatch(publicGet, /requireAdmin|updatedBy/)
-  assert.match(sidebar, /Welcome Campaign.*\/admin\/welcome-campaign/s)
+  assert.doesNotMatch(sidebar, /Welcome Campaign/)
+  assert.match(discountsPage, /Coupon codes/)
+  assert.match(discountsPage, /Welcome popup/)
+  assert.match(discountsPage, /AdminDiscountsWelcomeCampaignPanel/)
+  assert.match(adminPage, /\/admin\/discounts\?view=welcome/)
   for (const field of [
     'Desktop delay',
     'Mobile delay',
@@ -189,7 +195,7 @@ test('admin and storefront routes expose only their intended campaign controls',
     'Coupon eligibility',
     'Edit coupon eligibility',
   ])
-    assert.match(adminPage, new RegExp(field))
+    assert.match(campaignPanel, new RegExp(field))
   const discountForm = read('../app/components/admin/discounts/DiscountForm.vue')
   assert.match(discountForm, /Signed-in customers only/)
   assert.match(discountForm, /Once per customer/)
