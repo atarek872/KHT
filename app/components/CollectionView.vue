@@ -28,6 +28,9 @@ function updateQuery(key: string, value: string) {
 const categoryData = computed(() => catalog.value.categories.find((c) => c.slug === props.category))
 const pageKey = computed(() => (props.drop ? 'drop' : props.category ? 'category' : 'shop'))
 const page = computed(() => storeContent.value.pages[pageKey.value])
+const dropBanner = computed(() =>
+  page.value.sections.find((section) => section.id === 'feature-banner'),
+)
 if (props.category && !categoryData.value)
   throw createError({ statusCode: 404, statusMessage: 'Collection not found' })
 const title = computed(() =>
@@ -132,13 +135,23 @@ useStoreSeo({
       </div>
     </header>
     <div v-if="drop" class="drop-banner">
-      <StoreImage
-        :src="page.hero.imageUrl || '/images/drop-001-banner.jpg'"
-        :alt="t(page.hero.imageAlt.en, page.hero.imageAlt.ar)"
-        sizes="(max-width: 767px) 45vw, 38vw"
-        width="1024"
-        height="1280"
-      /><span>{{ t('THE FIRST CHAPTER.', 'الفصل الأول.') }}</span>
+      <picture>
+        <source
+          v-if="page.hero.mobileImageUrl"
+          media="(max-width: 767px)"
+          :srcset="page.hero.mobileImageUrl"
+        />
+        <StoreImage
+          :src="page.hero.imageUrl || '/images/drop-001-banner.jpg'"
+          :alt="t(page.hero.imageAlt.en, page.hero.imageAlt.ar)"
+          sizes="(max-width: 767px) 45vw, 38vw"
+          width="1024"
+          height="1280"
+        />
+      </picture>
+      <span>{{
+        t(dropBanner?.heading.en || 'THE FIRST CHAPTER.', dropBanner?.heading.ar || 'الفصل الأول.')
+      }}</span>
     </div>
     <form v-if="search" class="collection-search" @submit.prevent="updateQuery('q', searchText)">
       <label for="collection-query" class="sr-only">{{

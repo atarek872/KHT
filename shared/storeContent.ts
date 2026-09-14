@@ -349,7 +349,9 @@ export const DEFAULT_STORE_CONTENT: StorefrontContent = {
         ),
         '/images/drop-001-banner.jpg',
       ),
-      sections: [],
+      sections: [
+        section('feature-banner', text('THE FIRST CHAPTER.', 'الفصل الأول.'), text('', '')),
+      ],
     },
     category: {
       label: 'Category template',

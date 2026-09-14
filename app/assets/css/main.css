@@ -1285,9 +1285,16 @@ summary:focus-visible {
   align-items: center;
   background: var(--black);
 }
-.drop-banner img {
+.drop-banner picture {
   width: 50%;
   height: 100%;
+  display: block;
+  background: var(--drop-banner-image);
+}
+.drop-banner img {
+  width: 100%;
+  height: 100%;
+  display: block;
   object-fit: contain;
   background: var(--drop-banner-image);
 }
@@ -2751,6 +2758,7 @@ thead {
     height: 320px;
     margin-bottom: 30px;
   }
+  .drop-banner picture,
   .drop-banner img {
     object-position: 72% center;
   }

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
   cloneStoreContent,
+  DEFAULT_STORE_CONTENT,
   type AdminStoreContentState,
   type StoreNavigationItem,
   type StorePageKey,
@@ -38,12 +39,29 @@ const pageKeys: StorePageKey[] = [
 watch(
   data,
   (value) => {
-    if (value) form.value = cloneStoreContent(value.draft)
+    if (value) {
+      const draft = cloneStoreContent(value.draft)
+      if (!draft.pages.drop.sections.some((section) => section.id === 'feature-banner')) {
+        const featureBanner = DEFAULT_STORE_CONTENT.pages.drop.sections.find(
+          (section) => section.id === 'feature-banner',
+        )
+        if (featureBanner) draft.pages.drop.sections.unshift(structuredClone(featureBanner))
+      }
+      form.value = draft
+    }
   },
   { immediate: true },
 )
 
 const page = computed(() => form.value?.pages[selectedPageKey.value])
+const dropBanner = computed(() =>
+  page.value?.sections.find((section) => section.id === 'feature-banner'),
+)
+const pageSections = computed(() =>
+  (page.value?.sections || []).filter(
+    (section) => selectedPageKey.value !== 'drop' || section.id !== 'feature-banner',
+  ),
+)
 const local = (value: { en: string; ar: string } | undefined) =>
   value?.[previewLanguage.value] || ''
 
@@ -180,6 +198,12 @@ function addSection() {
     ctaLabel: { en: '', ar: '' },
     ctaUrl: '/',
   })
+}
+
+function removeSection(id: string) {
+  if (!page.value) return
+  const index = page.value.sections.findIndex((section) => section.id === id)
+  if (index !== -1) page.value.sections.splice(index, 1)
 }
 
 onBeforeUnmount(() => {
@@ -446,16 +470,18 @@ onBeforeUnmount(() => {
                 required
                 dir="rtl"
               />
-              <AdminInput
-                v-model="page.hero.imageAlt.en"
-                label="English image description"
-                required
-              /><AdminInput
-                v-model="page.hero.imageAlt.ar"
-                label="Arabic image description"
-                required
-                dir="rtl"
-              />
+              <template v-if="selectedPageKey !== 'drop'">
+                <AdminInput
+                  v-model="page.hero.imageAlt.en"
+                  label="English image description"
+                  required
+                /><AdminInput
+                  v-model="page.hero.imageAlt.ar"
+                  label="Arabic image description"
+                  required
+                  dir="rtl"
+                />
+              </template>
               <template v-if="page.hero.ctaEnabled"
                 ><AdminInput
                   v-model="page.hero.ctaLabel.en"
@@ -470,7 +496,7 @@ onBeforeUnmount(() => {
                   required
               /></template>
             </div>
-            <div class="admin-content-editor__media-grid">
+            <div v-if="selectedPageKey !== 'drop'" class="admin-content-editor__media-grid">
               <div class="admin-content-editor__media">
                 <span>Desktop hero image</span
                 ><img
@@ -512,17 +538,86 @@ onBeforeUnmount(() => {
             </div>
           </AdminSection>
           <AdminSection
+            v-if="selectedPageKey === 'drop' && dropBanner"
+            title="Drop 001 feature banner"
+            description="Controls the product image and the black text panel shown above the Drop 001 products."
+          >
+            <div class="admin-content-editor__grid">
+              <AdminInput
+                v-model="dropBanner.heading.en"
+                label="English banner text"
+                required
+              /><AdminInput
+                v-model="dropBanner.heading.ar"
+                label="Arabic banner text"
+                required
+                dir="rtl"
+              /><AdminInput
+                v-model="page.hero.imageAlt.en"
+                label="English image description"
+                required
+              /><AdminInput
+                v-model="page.hero.imageAlt.ar"
+                label="Arabic image description"
+                required
+                dir="rtl"
+              />
+            </div>
+            <div class="admin-content-editor__media-grid">
+              <div class="admin-content-editor__media">
+                <span>Desktop banner image</span
+                ><img
+                  v-if="page.hero.imageUrl"
+                  :src="page.hero.imageUrl"
+                  :alt="page.hero.imageAlt.en"
+                /><label class="admin-product-media__upload"
+                  ><span>Upload desktop banner</span
+                  ><input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    @change="uploadImage($event, 'hero')" /></label
+                ><AdminButton
+                  v-if="page.hero.imageUrl"
+                  type="button"
+                  variant="quiet"
+                  @click="page.hero.imageUrl = null"
+                  >Remove</AdminButton
+                >
+              </div>
+              <div class="admin-content-editor__media">
+                <span>Mobile banner image</span
+                ><img
+                  v-if="page.hero.mobileImageUrl"
+                  :src="page.hero.mobileImageUrl"
+                  :alt="page.hero.imageAlt.en"
+                /><label class="admin-product-media__upload"
+                  ><span>Upload mobile banner</span
+                  ><input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    @change="uploadImage($event, 'mobileHero')" /></label
+                ><AdminButton
+                  v-if="page.hero.mobileImageUrl"
+                  type="button"
+                  variant="quiet"
+                  @click="page.hero.mobileImageUrl = null"
+                  >Use desktop image</AdminButton
+                >
+              </div>
+            </div>
+          </AdminSection>
+          <AdminSection
             title="Page sections"
             description="Reorder by dragging is intentionally avoided; use clear section controls."
           >
             <article
-              v-for="(section, index) in page.sections"
+              v-for="(section, index) in pageSections"
               :key="section.id"
               class="admin-content-editor__card"
             >
               <header>
                 <strong>{{ index + 1 }} · {{ section.heading.en }}</strong
-                ><button type="button" @click="page.sections.splice(index, 1)">Remove</button>
+                ><button type="button" @click="removeSection(section.id)">Remove</button>
               </header>
               <div class="admin-content-editor__grid">
                 <AdminInput

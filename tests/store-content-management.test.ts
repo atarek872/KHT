@@ -108,6 +108,24 @@ test('Settings exposes focused content management tabs and complete controls', (
   assert.match(editor, /\/api\/admin\/media/)
 })
 
+test('Drop 001 feature banner has dedicated editable image and bilingual copy controls', () => {
+  const editor = read('../app/components/admin/settings/StoreContentEditor.vue')
+  const collection = read('../app/components/CollectionView.vue')
+  const featureBanner = DEFAULT_STORE_CONTENT.pages.drop.sections.find(
+    (section) => section.id === 'feature-banner',
+  )
+
+  assert.equal(featureBanner?.heading.en, 'THE FIRST CHAPTER.')
+  assert.equal(featureBanner?.heading.ar, 'الفصل الأول.')
+  assert.match(editor, /Drop 001 feature banner/)
+  assert.match(editor, /Desktop banner image/)
+  assert.match(editor, /Mobile banner image/)
+  assert.match(editor, /English banner text/)
+  assert.match(editor, /Arabic banner text/)
+  assert.match(collection, /dropBanner/)
+  assert.match(collection, /page\.hero\.mobileImageUrl/)
+})
+
 test('published content loads before storefront rendering and drives global and page content', () => {
   const plugin = read('../app/plugins/store-content.ts')
   const header = read('../app/components/SiteHeader.vue')
