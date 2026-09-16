@@ -1,5 +1,9 @@
 export type StoreCurtainMode = 'coming_soon' | 'under_construction' | 'custom'
 
+export function storeCurtainHttpStatus(mode: StoreCurtainMode) {
+  return mode === 'under_construction' ? 503 : 200
+}
+
 export type StoreCurtainText = { en: string; ar: string }
 
 export type StoreCurtainInput = {

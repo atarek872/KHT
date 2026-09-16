@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { setResponseHeader } from 'h3'
 import { PRIVATE_ROBOTS, PUBLIC_ROBOTS, isPrivateSeoPath } from '#shared/storefrontSeo'
-import type { PublicStoreCurtainPayload } from '../../shared/storeCurtain'
+import { storeCurtainHttpStatus, type PublicStoreCurtainPayload } from '#shared/storeCurtain'
 
 const { locale } = useLanguage()
 const catalog = useCatalog()
@@ -42,7 +42,12 @@ gtag('config', '${googleTagId}');`,
     : [],
 }))
 useSeoMeta({ robots: () => robots.value })
-if (import.meta.server && curtainActive.value) {
+if (
+  import.meta.server &&
+  curtainActive.value &&
+  curtain.value &&
+  storeCurtainHttpStatus(curtain.value.mode) === 503
+) {
   const event = useRequestEvent()
   if (event) {
     setResponseStatus(event, 503)

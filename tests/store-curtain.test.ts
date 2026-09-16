@@ -8,7 +8,7 @@ import {
   saveStoreCurtain,
   validateStoreCurtain,
 } from '../server/services/storeCurtain.ts'
-import type { StoreCurtainInput } from '../shared/storeCurtain.ts'
+import { storeCurtainHttpStatus, type StoreCurtainInput } from '../shared/storeCurtain.ts'
 
 const read = (path: string) => readFileSync(new URL(path, import.meta.url), 'utf8')
 
@@ -46,22 +46,22 @@ test('public curtain omits audit data and automatically expires at launch', asyn
     database,
     input({
       countdownEnabled: true,
-      launchAt: '2026-09-15T12:00:00.000Z',
+      launchAt: '2099-09-15T12:00:00.000Z',
       autoDisableAtLaunch: true,
       imageUrl: '/api/media/11111111-1111-4111-8111-111111111111.webp',
     }),
     'admin@kht-eg.com',
   )
 
-  const active = await getPublicStoreCurtain(database, new Date('2026-09-15T11:59:00.000Z'))
+  const active = await getPublicStoreCurtain(database, new Date('2099-09-15T11:59:00.000Z'))
   assert.equal(active?.enabled, true)
   assert.equal(active?.imageUrl, '/api/media/11111111-1111-4111-8111-111111111111.webp')
   assert.equal('updatedBy' in (active || {}), false)
   assert.equal('updatedAt' in (active || {}), false)
 
-  const expired = await getPublicStoreCurtain(database, new Date('2026-09-15T12:00:01.000Z'))
+  const expired = await getPublicStoreCurtain(database, new Date('2099-09-15T12:00:01.000Z'))
   assert.equal(expired, null)
-  const automaticallyOpened = await getStoreCurtain(database, new Date('2026-09-15T12:00:01.000Z'))
+  const automaticallyOpened = await getStoreCurtain(database, new Date('2099-09-15T12:00:01.000Z'))
   assert.equal(automaticallyOpened.enabled, false)
   assert.equal(automaticallyOpened.updatedBy, 'system:auto-launch')
 
@@ -69,12 +69,12 @@ test('public curtain omits audit data and automatically expires at launch', asyn
     database,
     input({
       countdownEnabled: true,
-      launchAt: '2026-09-15T12:00:00.000Z',
+      launchAt: '2099-09-15T12:00:00.000Z',
       autoDisableAtLaunch: false,
     }),
     'admin@kht-eg.com',
   )
-  assert.ok(await getPublicStoreCurtain(database, new Date('2026-09-15T12:00:01.000Z')))
+  assert.ok(await getPublicStoreCurtain(database, new Date('2099-09-15T12:00:01.000Z')))
 })
 
 test('store curtain validation rejects unsafe or incomplete configuration', () => {
@@ -94,6 +94,12 @@ test('store curtain validation rejects unsafe or incomplete configuration', () =
     () => validateStoreCurtain(input({ ctaEnabled: true, ctaUrl: 'javascript:alert(1)' })),
     /safe store path or HTTPS URL/,
   )
+})
+
+test('coming-soon and custom launch pages remain shareable while maintenance stays temporary', () => {
+  assert.equal(storeCurtainHttpStatus('coming_soon'), 200)
+  assert.equal(storeCurtainHttpStatus('custom'), 200)
+  assert.equal(storeCurtainHttpStatus('under_construction'), 503)
 })
 
 test('store curtain APIs use the existing authentication and public projection', () => {
@@ -139,6 +145,7 @@ test('storefront curtain blocks interaction, suppresses competing popup and uses
   assert.match(layout, /:aria-hidden="curtainActive/)
   assert.match(layout, /<WelcomeGift v-if="!curtainActive"/)
   assert.match(layout, /setResponseStatus\([^,]+, 503\)/)
+  assert.match(layout, /storeCurtainHttpStatus/)
   assert.match(layout, /import \{ setResponseHeader \} from 'h3'/)
   assert.match(layout, /noindex, nofollow/)
   assert.match(curtain, /preview \? 'region' : 'dialog'/)
