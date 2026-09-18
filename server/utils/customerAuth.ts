@@ -2,12 +2,12 @@ import type { H3Event } from 'h3'
 import type { CustomerUser } from '../../shared/account'
 import { requireDatabase } from './d1'
 import { digest } from './password'
-import { isSecureRequest } from './requestSecurity'
+import { isSecureRequest, isTrustedRequestOrigin } from './requestSecurity'
 
 const cookie = 'kht-customer-session'
 export function requireCustomerOrigin(event: H3Event) {
   const origin = getHeader(event, 'origin')
-  if (!origin || origin !== getRequestURL(event).origin)
+  if (!isTrustedRequestOrigin(origin, getRequestURL(event)))
     throw createError({ statusCode: 403, statusMessage: 'Request origin is not allowed.' })
 }
 export async function accountBody(event: H3Event): Promise<Record<string, unknown>> {

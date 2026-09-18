@@ -13,3 +13,16 @@ test('admin session cookies stay secure on HTTPS and work on local HTTP', async 
   assert.equal(security.isSecureRequest(new URL('http://127.0.0.1:8787/admin/login')), false)
   assert.equal(security.isSecureRequest(new URL('http://localhost:8787/admin/login')), false)
 })
+
+test('privileged mutations require an exact request origin', async () => {
+  const security = await import('../server/utils/requestSecurity.ts')
+  const requestUrl = new URL('https://shop.example.com/api/admin/products')
+
+  assert.equal(security.isTrustedRequestOrigin(undefined, requestUrl), false)
+  assert.equal(security.isTrustedRequestOrigin('https://evil.example', requestUrl), false)
+  assert.equal(
+    security.isTrustedRequestOrigin('https://shop.example.com.evil.test', requestUrl),
+    false,
+  )
+  assert.equal(security.isTrustedRequestOrigin('https://shop.example.com', requestUrl), true)
+})

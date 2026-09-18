@@ -1,26 +1,35 @@
+import type { H3Event } from 'h3'
 import { digest, verifyPassword } from './password'
 import type { D1Database } from './d1'
 import { requireDatabase } from './d1'
-import { isSecureRequest } from './requestSecurity'
+import { isSecureRequest, isTrustedRequestOrigin } from './requestSecurity'
 
 const sessionCookie = 'kht-admin-session'
 
-function adminConfig(event: { context: Record<string, unknown> }) {
+function adminConfig(event: H3Event) {
   const cloudflare = event.context.cloudflare as {
     env?: { ADMIN_EMAIL?: string; ADMIN_PASSWORD_HASH?: string }
   }
   return cloudflare?.env || {}
 }
 
-export async function createAdminSession(
-  event: Parameters<typeof setCookie>[0] & { context: Record<string, unknown> },
-  email: string,
-  password: string,
-) {
+function protectAdminResponse(event: H3Event) {
+  setHeader(event, 'Cache-Control', 'private, no-store')
+}
+
+function requireAdminOrigin(event: H3Event) {
+  if (!isTrustedRequestOrigin(getHeader(event, 'origin'), getRequestURL(event)))
+    throw createError({ statusCode: 403, statusMessage: 'Admin request origin is not allowed.' })
+}
+
+export async function createAdminSession(event: H3Event, email: string, password: string) {
+  protectAdminResponse(event)
+  requireAdminOrigin(event)
   const config = adminConfig(event)
   if (!config.ADMIN_EMAIL || !config.ADMIN_PASSWORD_HASH) return false
-  if (email.trim().toLowerCase() !== config.ADMIN_EMAIL.trim().toLowerCase()) return false
-  if (!(await verifyPassword(password, config.ADMIN_PASSWORD_HASH))) return false
+  const emailMatches = email.trim().toLowerCase() === config.ADMIN_EMAIL.trim().toLowerCase()
+  const passwordMatches = await verifyPassword(password, config.ADMIN_PASSWORD_HASH)
+  if (!emailMatches || !passwordMatches) return false
 
   const database = requireDatabase(event)
   const token = crypto.randomUUID() + crypto.randomUUID()
@@ -39,9 +48,9 @@ export async function createAdminSession(
   return true
 }
 
-export async function requireAdmin(
-  event: Parameters<typeof getCookie>[0] & { context: Record<string, unknown> },
-) {
+export async function requireAdmin(event: H3Event) {
+  protectAdminResponse(event)
+  if (!['GET', 'HEAD', 'OPTIONS'].includes(event.method)) requireAdminOrigin(event)
   const token = getCookie(event, sessionCookie)
   if (!token)
     throw createError({ statusCode: 401, statusMessage: 'Admin authentication required.' })
@@ -54,9 +63,9 @@ export async function requireAdmin(
   return { database, email: session.email }
 }
 
-export async function destroyAdminSession(
-  event: Parameters<typeof getCookie>[0] & { context: Record<string, unknown> },
-) {
+export async function destroyAdminSession(event: H3Event) {
+  protectAdminResponse(event)
+  requireAdminOrigin(event)
   const token = getCookie(event, sessionCookie)
   if (token) {
     const database = requireDatabase(event)

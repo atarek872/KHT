@@ -5,7 +5,7 @@ import {
   invalidAccount,
 } from '../../utils/customerAuth'
 import { normalizeEmail } from '../../services/customerAccounts'
-import { hashPassword, verifyPassword } from '../../utils/password'
+import { DUMMY_PASSWORD_HASH, verifyPassword } from '../../utils/password'
 import { requireDatabase } from '../../utils/d1'
 import type { CustomerUser } from '../../../shared/account'
 export default defineEventHandler(async (event) => {
@@ -26,10 +26,7 @@ export default defineEventHandler(async (event) => {
     .prepare('SELECT id,name,email,phone,password_hash FROM customer_users WHERE email = ?')
     .bind(email)
     .first<CustomerUser & { password_hash: string }>()
-  const valid = await verifyPassword(
-    password,
-    row?.password_hash || (await hashPassword('unmatched dummy account password')),
-  )
+  const valid = await verifyPassword(password, row?.password_hash || DUMMY_PASSWORD_HASH)
   if (!row || !valid)
     throw createError({ statusCode: 401, statusMessage: 'Email or password is incorrect.' })
   await createCustomerSession(event, row.id)

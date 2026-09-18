@@ -2,6 +2,11 @@ export async function digest(value: string) {
   const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value))
   return [...new Uint8Array(hash)].map((b) => b.toString(16).padStart(2, '0')).join('')
 }
+
+// A public, fixed dummy value keeps unknown-account login checks on the same PBKDF2 path.
+export const DUMMY_PASSWORD_HASH =
+  '100000:PZka85HPpJNJlsriRk+UMg==:tel5ygCXliMrm/M9wINE/tMWC5fvRPR0aqpgE8y0eg4='
+
 const encode = (value: Uint8Array) => btoa(String.fromCharCode(...value))
 export async function hashPassword(password: string) {
   const iterations = 100000

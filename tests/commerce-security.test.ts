@@ -89,3 +89,17 @@ test('security middleware sets a request id and restrictive browser headers', ()
     assert.match(middleware, new RegExp(value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), value)
   }
 })
+
+test('authentication avoids identity timing leaks and protects admin mutations', () => {
+  const password = read('../server/utils/password.ts')
+  const customerLogin = read('../server/api/account/login.post.ts')
+  const adminAuth = read('../server/utils/adminAuth.ts')
+
+  assert.match(password, /DUMMY_PASSWORD_HASH/)
+  assert.match(customerLogin, /DUMMY_PASSWORD_HASH/)
+  assert.doesNotMatch(customerLogin, /hashPassword/)
+  assert.match(adminAuth, /const passwordMatches = await verifyPassword/)
+  assert.match(adminAuth, /!emailMatches \|\| !passwordMatches/)
+  assert.match(adminAuth, /requireAdminOrigin\(event\)/)
+  assert.match(adminAuth, /private, no-store/)
+})
