@@ -119,10 +119,16 @@ test('every order has a protected 10 by 15 centimetre shipping label', () => {
     'discount',
     'total',
     'paymentMethod',
-    'paymentStatus',
-    'fulfillmentStatus',
   ]) {
     assert.match(label, new RegExp(field), field)
   }
   assert.match(label, /brand\.logoUrl/)
+  assert.match(label, /Black\. White\. Line\./)
+  assert.match(label, /shipping-label__brand-mark/)
+  assert.match(label, /shipping-label__dispatch-strip/)
+  assert.match(label, /font-size:\s*14pt/)
+  assert.match(label, /font-size:\s*12pt/)
+  assert.match(label, /font-size:\s*8\.2pt/)
+  assert.doesNotMatch(label, />Payment status</)
+  assert.doesNotMatch(label, />Order status</)
 })

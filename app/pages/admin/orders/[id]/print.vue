@@ -26,12 +26,6 @@ const date = (value: string) =>
     timeStyle: 'short',
   }).format(new Date(value))
 
-const statusLabel = (value: string) =>
-  value
-    .split('-')
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ')
-
 const paymentMethod = computed(() =>
   order.value?.paymentMethod === 'cod' ? 'Cash on delivery' : order.value?.paymentMethod || '',
 )
@@ -106,9 +100,11 @@ useSeoMeta({
       >
         <header class="shipping-label__header">
           <div class="shipping-label__brand">
-            <img v-if="brand.logoUrl" :src="brand.logoUrl" :alt="brand.name" />
-            <strong v-else>{{ brand.name }}</strong>
-            <span>SHIPPING LABEL</span>
+            <div class="shipping-label__brand-mark">
+              <img v-if="brand.logoUrl" :src="brand.logoUrl" :alt="brand.name" />
+              <strong v-else>{{ brand.name }}</strong>
+            </div>
+            <span>Black. White. Line.</span>
           </div>
           <div class="shipping-label__reference">
             <span>ORDER</span>
@@ -172,20 +168,25 @@ useSeoMeta({
               <dd>{{ money(order.total) }}</dd>
             </div>
           </dl>
-          <dl>
-            <div>
-              <dt>Payment</dt>
-              <dd>{{ paymentMethod }}</dd>
-            </div>
-            <div>
-              <dt>Payment status</dt>
-              <dd>{{ statusLabel(order.paymentStatus) }}</dd>
-            </div>
-            <div>
-              <dt>Order status</dt>
-              <dd>{{ statusLabel(order.fulfillmentStatus) }}</dd>
-            </div>
-        </dl>
+          <div class="shipping-label__payment-method">
+            <span>PAYMENT</span>
+            <strong>{{ paymentMethod }}</strong>
+          </div>
+        </section>
+
+        <section class="shipping-label__dispatch-strip" aria-label="Dispatch essentials">
+          <div>
+            <span>METHOD</span>
+            <strong>{{ order.paymentMethod.toUpperCase() }}</strong>
+          </div>
+          <div>
+            <span>COLLECT</span>
+            <strong>{{ money(order.total) }}</strong>
+          </div>
+          <div>
+            <span>PIECES</span>
+            <strong>{{ itemCount }}</strong>
+          </div>
         </section>
 
         <footer class="shipping-label__footer">
@@ -296,7 +297,7 @@ useSeoMeta({
   width: 100mm;
   height: 150mm;
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+  grid-template-rows: auto auto minmax(0, 1fr) auto auto auto;
   gap: 3mm;
   padding: 5mm;
   overflow: hidden;
@@ -304,7 +305,7 @@ useSeoMeta({
   background: #fff;
   border: 0.35mm solid #0a0a0a;
   box-shadow: 0 12px 36px rgba(10, 10, 10, 0.16);
-  font-size: 9pt;
+  font-size: 10pt;
   line-height: 1.25;
 }
 
@@ -333,19 +334,28 @@ useSeoMeta({
   gap: 1mm;
 }
 
-.shipping-label__brand img {
+.shipping-label__brand-mark {
+  display: inline-flex;
+  align-items: flex-end;
+  width: fit-content;
+  min-width: 18mm;
+  padding-bottom: 1.2mm;
+  border-bottom: 0.8mm solid #0a0a0a;
+}
+
+.shipping-label__brand-mark img {
   display: block;
   width: auto;
   max-width: 28mm;
-  height: 9mm;
+  height: 10mm;
   object-fit: contain;
   object-position: left center;
   filter: grayscale(1) contrast(1.2);
 }
 
-.shipping-label__brand > strong {
+.shipping-label__brand-mark > strong {
   font-family: 'Barlow Condensed', Impact, 'Arial Narrow', sans-serif;
-  font-size: 26pt;
+  font-size: 30pt;
   line-height: 0.82;
   letter-spacing: -0.5mm;
 }
@@ -354,7 +364,7 @@ useSeoMeta({
 .shipping-label__reference span,
 .shipping-label__section-title h2,
 .shipping-label__recipient h1 {
-  font-size: 6.5pt;
+  font-size: 7.5pt;
   font-weight: 700;
   letter-spacing: 0.08em;
 }
@@ -369,13 +379,15 @@ useSeoMeta({
 
 .shipping-label__reference strong {
   font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif;
-  font-size: 18pt;
+  padding: 1.5mm 2mm;
+  border: 0.35mm solid #0a0a0a;
+  font-size: 20pt;
   line-height: 1;
 }
 
 .shipping-label__reference time {
   color: #4a4a4a;
-  font-size: 6.5pt;
+  font-size: 7.5pt;
 }
 
 .shipping-label__recipient {
@@ -393,27 +405,27 @@ useSeoMeta({
 }
 
 .shipping-label__recipient > strong {
-  font-size: 12pt;
+  font-size: 14pt;
   line-height: 1.05;
   overflow-wrap: anywhere;
 }
 
 .shipping-label__recipient a {
   color: #0a0a0a;
-  font-size: 10pt;
+  font-size: 12pt;
   font-weight: 700;
   text-decoration: none;
 }
 
 .shipping-label__recipient p {
-  font-size: 8.2pt;
+  font-size: 9.5pt;
   line-height: 1.35;
   overflow-wrap: anywhere;
 }
 
 .shipping-label__recipient small {
   color: #4a4a4a;
-  font-size: 6.5pt;
+  font-size: 7.5pt;
   overflow-wrap: anywhere;
 }
 
@@ -431,7 +443,7 @@ useSeoMeta({
 }
 
 .shipping-label__section-title span {
-  font-size: 6.5pt;
+  font-size: 7.5pt;
   font-weight: 700;
 }
 
@@ -450,7 +462,7 @@ useSeoMeta({
 }
 
 .shipping-label__items th {
-  font-size: 6pt;
+  font-size: 7pt;
   text-transform: uppercase;
 }
 
@@ -465,7 +477,7 @@ useSeoMeta({
 }
 
 .shipping-label__items td {
-  font-size: 7pt;
+  font-size: 8.2pt;
 }
 
 .shipping-label__items td strong,
@@ -477,7 +489,7 @@ useSeoMeta({
 .shipping-label__items td span {
   margin-top: 0.5mm;
   color: #4a4a4a;
-  font-size: 6.2pt;
+  font-size: 7.3pt;
 }
 
 .shipping-label__summary {
@@ -488,7 +500,8 @@ useSeoMeta({
   border-top: 0.6mm solid #0a0a0a;
 }
 
-.shipping-label__summary dl {
+.shipping-label__summary dl,
+.shipping-label__payment-method {
   display: grid;
   align-content: start;
   gap: 1mm;
@@ -507,7 +520,7 @@ useSeoMeta({
 }
 
 .shipping-label__summary :is(dt, dd) {
-  font-size: 6.5pt;
+  font-size: 7.5pt;
 }
 
 .shipping-label__summary dd {
@@ -522,7 +535,57 @@ useSeoMeta({
 }
 
 .shipping-label__summary dl:first-child div:last-child :is(dt, dd) {
-  font-size: 9pt;
+  font-size: 11pt;
+}
+
+.shipping-label__payment-method {
+  display: grid;
+  align-content: start;
+  gap: 1.5mm;
+}
+
+.shipping-label__payment-method span {
+  font-size: 7pt;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.shipping-label__payment-method strong {
+  font-size: 10pt;
+  line-height: 1.15;
+}
+
+.shipping-label__dispatch-strip {
+  display: grid;
+  grid-template-columns: 0.8fr 1.5fr 0.7fr;
+  border: 0.6mm solid #0a0a0a;
+}
+
+.shipping-label__dispatch-strip > div {
+  display: grid;
+  place-items: center;
+  gap: 0.7mm;
+  min-width: 0;
+  padding: 1.5mm 1mm;
+  text-align: center;
+}
+
+.shipping-label__dispatch-strip > div + div {
+  border-left: 0.35mm solid #0a0a0a;
+}
+
+.shipping-label__dispatch-strip span {
+  font-size: 6.8pt;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.shipping-label__dispatch-strip strong {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font-family: 'Barlow Condensed', Impact, 'Arial Narrow', sans-serif;
+  font-size: 13pt;
+  line-height: 1;
 }
 
 .shipping-label__footer {
@@ -535,14 +598,14 @@ useSeoMeta({
 .shipping-label__footer p {
   max-height: 8mm;
   overflow: hidden;
-  font-size: 6.2pt;
+  font-size: 7pt;
 }
 
 .shipping-label__footer > div {
   display: flex;
   justify-content: space-between;
   gap: 3mm;
-  font-size: 6pt;
+  font-size: 7pt;
   font-weight: 700;
 }
 
@@ -555,8 +618,17 @@ useSeoMeta({
   padding-block: 0.8mm;
 }
 
+.shipping-label--dense .shipping-label__items td {
+  font-size: 7.6pt;
+}
+
+.shipping-label--dense .shipping-label__items td span {
+  font-size: 6.8pt;
+}
+
 .shipping-label--extra-dense {
-  font-size: 8pt;
+  gap: 1.5mm;
+  font-size: 8.5pt;
 }
 
 .shipping-label--extra-dense .shipping-label__recipient {
