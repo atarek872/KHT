@@ -213,7 +213,7 @@ test('order workflow endpoints require Admin authentication and the detail UI op
     new URL('../server/api/admin/orders/[id]/restock.post.ts', import.meta.url),
     'utf8',
   )
-  const page = readFileSync(new URL('../app/pages/admin/orders/[id].vue', import.meta.url), 'utf8')
+  const page = readFileSync(new URL('../app/pages/admin/orders/[id]/index.vue', import.meta.url), 'utf8')
 
   assert.match(patchRoute, /requireAdmin\(event\)/)
   assert.match(restockRoute, /requireAdmin\(event\)/)

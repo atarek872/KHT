@@ -60,7 +60,7 @@ test('nested admin components used with short names are imported explicitly', ()
     ],
     'OrderStatus.vue': [
       '../app/pages/admin/orders/index.vue',
-      '../app/pages/admin/orders/[id].vue',
+      '../app/pages/admin/orders/[id]/index.vue',
       '../app/pages/admin/customers/[id].vue',
     ],
     'ProductForm.vue': [

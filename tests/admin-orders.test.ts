@@ -47,7 +47,7 @@ test('orders list includes required columns and separate desktop and mobile pres
 })
 
 test('order details expose required commerce fields and server-controlled status actions', () => {
-  const page = read('../app/pages/admin/orders/[id].vue')
+  const page = read('../app/pages/admin/orders/[id]/index.vue')
 
   for (const field of [
     'Payment status',
@@ -90,4 +90,39 @@ test('orders CSS switches from table to structured cards below desktop width', (
     css,
     /@media \(max-width: 767px\)[\s\S]*\.admin-order-detail__status\s*\{\s*grid-template-columns:\s*1fr/,
   )
+})
+
+test('every order has a protected 10 by 15 centimetre shipping label', () => {
+  const list = read('../app/pages/admin/orders/index.vue')
+  const detail = read('../app/pages/admin/orders/[id]/index.vue')
+  const label = read('../app/pages/admin/orders/[id]/print.vue')
+
+  assert.match(list, /`\/admin\/orders\/\$\{order\.id\}\/print`/)
+  assert.match(detail, /`\/admin\/orders\/\$\{order\.id\}\/print`/)
+  assert.match(label, /definePageMeta\(\{ layout: false \}\)/)
+  assert.match(label, /\/api\/admin\/orders\//)
+  assert.match(label, /@page\s*\{[\s\S]*size:\s*100mm 150mm/)
+  assert.match(label, /width:\s*100mm/)
+  assert.match(label, /height:\s*150mm/)
+  assert.match(label, /window\.print\(\)/)
+
+  for (const field of [
+    'customerName',
+    'customerPhone',
+    'customerEmail',
+    'address',
+    'productName',
+    'variant',
+    'quantity',
+    'unitPrice',
+    'shipping',
+    'discount',
+    'total',
+    'paymentMethod',
+    'paymentStatus',
+    'fulfillmentStatus',
+  ]) {
+    assert.match(label, new RegExp(field), field)
+  }
+  assert.match(label, /brand\.logoUrl/)
 })

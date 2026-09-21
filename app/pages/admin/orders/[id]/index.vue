@@ -2,9 +2,9 @@
 import type {
   AdminOrderDetailResponse,
   OrderFulfillmentStatus,
-} from '../../../../shared/adminOrder'
-import AdminConfirmDialog from '../../../components/admin/AdminConfirmDialog.vue'
-import OrderStatus from '../../../components/admin/orders/OrderStatus.vue'
+} from '../../../../../shared/adminOrder'
+import AdminConfirmDialog from '../../../../components/admin/AdminConfirmDialog.vue'
+import OrderStatus from '../../../../components/admin/orders/OrderStatus.vue'
 
 definePageMeta({ layout: 'admin' })
 const route = useRoute()
@@ -160,7 +160,18 @@ useSeoMeta({
         eyebrow="Order details"
         :title="order.number"
         :description="date(order.createdAt)"
-      />
+      >
+        <template #actions>
+          <NuxtLink
+            :to="`/admin/orders/${order.id}/print`"
+            target="_blank"
+            rel="noopener"
+            class="admin-button admin-button--secondary"
+          >
+            Print 10×15 label
+          </NuxtLink>
+        </template>
+      </AdminPageHeader>
 
       <div class="admin-order-detail__status" aria-label="Order statuses">
         <div>

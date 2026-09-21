@@ -82,11 +82,14 @@ const date = (value: string) =>
               <th scope="col">Fulfillment</th>
               <th scope="col">Source</th>
               <th scope="col">Date</th>
+              <th scope="col">Print</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="order in data.items" :key="order.id">
-              <td><NuxtLink :to="`/admin/orders/${order.id}`">{{ order.number }}</NuxtLink></td>
+              <td>
+                <NuxtLink :to="`/admin/orders/${order.id}`">{{ order.number }}</NuxtLink>
+              </td>
               <td>
                 <strong>{{ order.customerName }}</strong>
                 <span>{{ order.customerPhone }}</span>
@@ -99,20 +102,28 @@ const date = (value: string) =>
               </td>
               <td>{{ order.source }}</td>
               <td>{{ date(order.createdAt) }}</td>
+              <td>
+                <NuxtLink
+                  :to="`/admin/orders/${order.id}/print`"
+                  target="_blank"
+                  rel="noopener"
+                  class="admin-order-print-link"
+                  :aria-label="`Print 10 by 15 centimetre label for ${order.number}`"
+                >
+                  Print label
+                </NuxtLink>
+              </td>
             </tr>
           </tbody>
         </AdminTable>
       </div>
 
       <div class="admin-orders-mobile" aria-label="Orders">
-        <NuxtLink
-          v-for="order in data.items"
-          :key="order.id"
-          :to="`/admin/orders/${order.id}`"
-          class="admin-order-card"
-        >
+        <article v-for="order in data.items" :key="order.id" class="admin-order-card">
           <div class="admin-order-card__heading">
-            <strong>{{ order.number }}</strong>
+            <NuxtLink :to="`/admin/orders/${order.id}`">
+              <strong>{{ order.number }}</strong>
+            </NuxtLink>
             <span>{{ money(order.total) }}</span>
           </div>
           <div class="admin-order-card__customer">
@@ -120,13 +131,39 @@ const date = (value: string) =>
             <span>{{ order.customerPhone }}</span>
           </div>
           <dl>
-            <div><dt>Payment</dt><dd>{{ order.paymentMethod.toUpperCase() }}</dd></div>
-            <div><dt>Payment status</dt><dd>{{ order.paymentStatus }}</dd></div>
-            <div><dt>Fulfillment</dt><dd>{{ order.fulfillmentStatus }}</dd></div>
-            <div><dt>Source</dt><dd>{{ order.source }}</dd></div>
+            <div>
+              <dt>Payment</dt>
+              <dd>{{ order.paymentMethod.toUpperCase() }}</dd>
+            </div>
+            <div>
+              <dt>Payment status</dt>
+              <dd>{{ order.paymentStatus }}</dd>
+            </div>
+            <div>
+              <dt>Fulfillment</dt>
+              <dd>{{ order.fulfillmentStatus }}</dd>
+            </div>
+            <div>
+              <dt>Source</dt>
+              <dd>{{ order.source }}</dd>
+            </div>
           </dl>
           <time :datetime="order.createdAt">{{ date(order.createdAt) }}</time>
-        </NuxtLink>
+          <div class="admin-order-card__actions">
+            <NuxtLink :to="`/admin/orders/${order.id}`" class="admin-button admin-button--quiet">
+              View order
+            </NuxtLink>
+            <NuxtLink
+              :to="`/admin/orders/${order.id}/print`"
+              target="_blank"
+              rel="noopener"
+              class="admin-button admin-button--secondary"
+              :aria-label="`Print 10 by 15 centimetre label for ${order.number}`"
+            >
+              Print label
+            </NuxtLink>
+          </div>
+        </article>
       </div>
     </template>
   </div>

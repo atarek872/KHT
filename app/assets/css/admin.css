@@ -1552,7 +1552,7 @@
 }
 
 .kht-admin .admin-orders-desktop .admin-table {
-  min-width: 940px;
+  min-width: 1040px;
 }
 
 .kht-admin .admin-orders-desktop .admin-table td {
@@ -1578,6 +1578,18 @@
   margin-top: 4px;
   color: #666666;
   font-size: 0.75rem;
+}
+
+.kht-admin .admin-order-print-link {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--kht-gray-800);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  white-space: nowrap;
 }
 
 .kht-admin .admin-order-status {
@@ -1663,6 +1675,14 @@
   font-weight: 600;
   line-height: 1.4;
   text-transform: capitalize;
+}
+
+.kht-admin .admin-order-card__actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--kht-gray-200);
 }
 
 .kht-admin .admin-order-back {

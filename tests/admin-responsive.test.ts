@@ -30,7 +30,7 @@ test('every large admin table has a structured card alternative below 1280px', (
   }
   assert.match(css, /@media \(max-width: 1279px\)[\s\S]*admin-orders-desktop[\s\S]*display:\s*none/)
   assert.match(css, /@media \(max-width: 1279px\)[\s\S]*admin-orders-mobile[\s\S]*display:\s*grid/)
-  assert.match(css, /admin-orders-desktop \.admin-table\s*\{\s*min-width:\s*940px/)
+  assert.match(css, /admin-orders-desktop \.admin-table\s*\{\s*min-width:\s*1040px/)
 })
 
 test('dialogs, drawers, sticky actions and tap targets remain viewport constrained', () => {
