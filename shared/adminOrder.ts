@@ -32,6 +32,8 @@ export interface AdminOrderSummary {
   fulfillmentStatus: OrderFulfillmentStatus
   source: OrderSource
   createdAt: string
+  canDelete: boolean
+  deleteBlockReason: string
 }
 
 export interface AdminOrderLine {

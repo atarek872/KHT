@@ -370,6 +370,8 @@ export async function createDurableOrder(
     ],
     allowedFulfillmentTransitions: ['confirmed', 'cancelled'],
     canRestockReturned: false,
+    canDelete: false,
+    deleteBlockReason: 'Cancel this order before deleting it.',
   }
   return { order, publicReference }
 }

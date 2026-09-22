@@ -103,3 +103,11 @@ test('authentication avoids identity timing leaks and protects admin mutations',
   assert.match(adminAuth, /requireAdminOrigin\(event\)/)
   assert.match(adminAuth, /private, no-store/)
 })
+
+test('permanent order deletion requires admin authentication, same origin, and exact confirmation', () => {
+  const route = read('../server/api/admin/orders/[id].delete.ts')
+  assert.match(route, /requireAdmin\(event\)/)
+  assert.match(route, /requireSameOrigin\(event\)/)
+  assert.match(route, /requireJsonBody/)
+  assert.match(route, /orderNumber/)
+})
