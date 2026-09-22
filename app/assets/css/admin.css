@@ -353,6 +353,53 @@
   width: 100%;
 }
 
+.kht-admin .admin-delete-action {
+  min-width: 44px;
+  min-height: 44px;
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: var(--kht-gray-800);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--kht-admin-radius);
+}
+
+.kht-admin .admin-delete-action:hover:not(:disabled),
+.kht-admin .admin-delete-action:focus-visible {
+  color: var(--kht-black);
+  background: var(--kht-off-white);
+  border-color: var(--kht-black);
+}
+
+.kht-admin .admin-delete-action:disabled {
+  color: var(--kht-gray-500);
+  cursor: not-allowed;
+}
+
+.kht-admin .admin-confirm-dialog__field {
+  display: grid;
+  gap: 8px;
+  margin-top: 20px;
+  color: var(--kht-gray-800);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.kht-admin .admin-confirm-dialog__input {
+  width: 100%;
+  min-height: var(--kht-admin-control-height);
+  padding: 10px 12px;
+  color: var(--kht-black);
+  background: var(--kht-white);
+  border: 1px solid var(--kht-gray-300);
+  border-radius: var(--kht-admin-radius);
+  font: inherit;
+}
+
 .kht-admin .admin-button__loader {
   width: 24px;
   height: 2px;

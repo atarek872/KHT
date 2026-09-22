@@ -125,3 +125,17 @@ test('product gallery controls expose state and stable accessible names', () => 
   assert.match(productForm, /:aria-label="`Remove image \$\{index \+ 1\}`"/)
   assert.match(productForm, /:aria-busy="uploading \|\| undefined"/)
 })
+
+test('permanent deletion controls are accessible and support exact confirmation', () => {
+  const icon = read('../app/components/KhtIcon.vue')
+  const confirm = read('../app/components/admin/AdminConfirmDialog.vue')
+  const css = read('../app/assets/css/admin.css')
+
+  assert.match(icon, /'trash'/)
+  assert.match(confirm, /requiredConfirmation\?: string/)
+  assert.match(confirm, /confirmationPrompt\?: string/)
+  assert.match(confirm, /typedConfirmation/)
+  assert.match(confirm, /:disabled="busy \|\| !confirmationMatches"/)
+  assert.match(css, /\.admin-delete-action[\s\S]*min-width:\s*44px/)
+  assert.match(css, /\.admin-delete-action[\s\S]*min-height:\s*44px/)
+})
