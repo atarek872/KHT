@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import { setResponseHeader } from 'h3'
-import { PRIVATE_ROBOTS, PUBLIC_ROBOTS, isPrivateSeoPath } from '#shared/storefrontSeo'
+import {
+  PRIVATE_ROBOTS,
+  PUBLIC_ROBOTS,
+  isPrivateSeoPath,
+  resolveStoreIndexingEnabled,
+} from '#shared/storefrontSeo'
 import { storeCurtainHttpStatus, type PublicStoreCurtainPayload } from '#shared/storeCurtain'
 
 const { locale } = useLanguage()
@@ -9,7 +14,15 @@ const route = useRoute()
 const runtimeConfig = useRuntimeConfig()
 const configuredGoogleTagId = String(runtimeConfig.public.googleTagId || '')
 const googleTagId = /^G-[A-Z0-9]+$/.test(configuredGoogleTagId) ? configuredGoogleTagId : ''
-const indexingEnabled = computed(() => String(runtimeConfig.public.storeIndexingEnabled) === 'true')
+const requestEvent = import.meta.server ? useRequestEvent() : undefined
+const cloudflareIndexingValue = (
+  requestEvent?.context.cloudflare as
+    | { env?: { NUXT_PUBLIC_STORE_INDEXING_ENABLED?: string } }
+    | undefined
+)?.env?.NUXT_PUBLIC_STORE_INDEXING_ENABLED
+const indexingEnabled = useState('store-indexing-enabled', () =>
+  resolveStoreIndexingEnabled(runtimeConfig.public.storeIndexingEnabled, cloudflareIndexingValue),
+)
 const { data: curtainPayload, refresh: refreshCurtain } = await useFetch<PublicStoreCurtainPayload>(
   '/api/storefront/store-curtain',
 )

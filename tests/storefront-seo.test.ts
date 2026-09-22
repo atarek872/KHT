@@ -8,6 +8,7 @@ import {
   buildRobotsText,
   buildSitemapXml,
   canonicalStoreRedirect,
+  resolveStoreIndexingEnabled,
   serializeJsonLd,
 } from '../shared/storefrontSeo.ts'
 
@@ -51,6 +52,12 @@ test('robots allows production discovery, blocks staging, and advertises the sit
   assert.match(buildRobotsText(false), /Disallow: \//)
 })
 
+test('Cloudflare runtime indexing setting overrides the build-time fallback', () => {
+  assert.equal(resolveStoreIndexingEnabled(false, 'true'), true)
+  assert.equal(resolveStoreIndexingEnabled(true, 'false'), false)
+  assert.equal(resolveStoreIndexingEnabled(true, undefined), true)
+})
+
 test('legacy and www storefront requests redirect to the new canonical host', () => {
   assert.equal(
     canonicalStoreRedirect(new URL('https://kht.tknology.online/products/line-hoodie?size=M')),
@@ -92,6 +99,7 @@ test('Nuxt renders environment-aware robots defaults and reusable canonical meta
   const helpers = read('../shared/storefrontSeo.ts')
   assert.doesNotMatch(nuxt, /name:\s*'robots'/)
   assert.match(layout, /storeIndexingEnabled/)
+  assert.match(layout, /context\.cloudflare/)
   assert.match(helpers, /max-image-preview:large/)
   for (const path of ['/account', '/cart', '/checkout', '/orders', '/order-confirmation', '/track-order', '/search']) {
     assert.match(helpers, new RegExp(path.replace('/', '\\/')))

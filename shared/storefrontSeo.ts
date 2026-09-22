@@ -7,6 +7,13 @@ export const PUBLIC_ROBOTS =
   'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1'
 export const PRIVATE_ROBOTS = 'noindex, nofollow'
 
+export function resolveStoreIndexingEnabled(
+  buildTimeValue: boolean | string,
+  cloudflareValue?: string,
+) {
+  return String(cloudflareValue ?? buildTimeValue) === 'true'
+}
+
 export const INDEXABLE_STATIC_PATHS = [
   '/',
   '/shop',
