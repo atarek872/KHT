@@ -1,11 +1,54 @@
 <script setup lang="ts">
-import type { AdminOrderListResponse } from '../../../../shared/adminOrder'
+import type { AdminOrderListResponse, AdminOrderSummary } from '../../../../shared/adminOrder'
 import OrderStatus from '../../../components/admin/orders/OrderStatus.vue'
 
 definePageMeta({ layout: 'admin' })
 useSeoMeta({ title: 'Orders — KHT Admin', robots: 'noindex, nofollow' })
 
 const { data, error, status, refresh } = await useFetch<AdminOrderListResponse>('/api/admin/orders')
+const route = useRoute()
+const pendingDeleteOrder = ref<AdminOrderSummary | null>(null)
+const deleteBusy = ref(false)
+const deleteError = ref('')
+const deletedQuery = Array.isArray(route.query.deleted) ? route.query.deleted[0] : route.query.deleted
+const deleteSuccess = ref(
+  typeof deletedQuery === 'string' && deletedQuery
+    ? `${deletedQuery} was permanently deleted.`
+    : '',
+)
+
+function requestOrderDelete(order: AdminOrderSummary) {
+  deleteError.value = ''
+  deleteSuccess.value = ''
+  pendingDeleteOrder.value = order
+}
+
+function closeDeleteDialog() {
+  if (!deleteBusy.value) pendingDeleteOrder.value = null
+}
+
+async function deleteSelectedOrder() {
+  const target = pendingDeleteOrder.value
+  if (!target || deleteBusy.value) return
+  deleteBusy.value = true
+  deleteError.value = ''
+  deleteSuccess.value = ''
+  try {
+    await $fetch(`/api/admin/orders/${encodeURIComponent(target.id)}`, {
+      method: 'DELETE',
+      body: { orderNumber: target.number },
+    })
+    pendingDeleteOrder.value = null
+    await refresh()
+    deleteSuccess.value = `${target.number} was permanently deleted.`
+  } catch (cause: unknown) {
+    const failure = cause as { data?: { statusMessage?: string } }
+    deleteError.value =
+      failure.data?.statusMessage || 'The order could not be deleted. Refresh and try again.'
+  } finally {
+    deleteBusy.value = false
+  }
+}
 const money = (value: number) =>
   new Intl.NumberFormat('en-EG', {
     style: 'currency',
@@ -31,6 +74,13 @@ const date = (value: string) =>
         </NuxtLink>
       </template>
     </AdminPageHeader>
+
+    <p v-if="deleteError" class="admin-create-order__error" role="alert">
+      {{ deleteError }}
+    </p>
+    <p v-if="deleteSuccess" class="admin-order-action__success" role="status">
+      {{ deleteSuccess }}
+    </p>
 
     <div v-if="status === 'pending' && !data" class="admin-orders-loading" role="status">
       <AdminLoader label="Loading orders" />
@@ -82,7 +132,7 @@ const date = (value: string) =>
               <th scope="col">Fulfillment</th>
               <th scope="col">Source</th>
               <th scope="col">Date</th>
-              <th scope="col">Print</th>
+              <th scope="col">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -102,7 +152,7 @@ const date = (value: string) =>
               </td>
               <td>{{ order.source }}</td>
               <td>{{ date(order.createdAt) }}</td>
-              <td>
+              <td><div class="admin-order-row__actions">
                 <NuxtLink
                   :to="`/admin/orders/${order.id}/print`"
                   target="_blank"
@@ -112,7 +162,17 @@ const date = (value: string) =>
                 >
                   Print label
                 </NuxtLink>
-              </td>
+                <button
+                  v-if="order.canDelete"
+                  type="button"
+                  class="admin-delete-action"
+                  :aria-label="`Delete ${order.number} permanently`"
+                  :disabled="deleteBusy"
+                  @click="requestOrderDelete(order)"
+                >
+                  <KhtIcon name="trash" />
+                </button>
+              </div></td>
             </tr>
           </tbody>
         </AdminTable>
@@ -162,9 +222,32 @@ const date = (value: string) =>
             >
               Print label
             </NuxtLink>
+            <button
+              v-if="order.canDelete"
+              type="button"
+              class="admin-delete-action"
+              :aria-label="`Delete ${order.number} permanently`"
+              :disabled="deleteBusy"
+              @click="requestOrderDelete(order)"
+            >
+              <KhtIcon name="trash" />
+            </button>
           </div>
         </article>
       </div>
     </template>
+
+    <AdminConfirmDialog
+      :open="!!pendingDeleteOrder"
+      title="Delete this order permanently?"
+      :description="`This removes ${pendingDeleteOrder?.number}, its history, and its discount redemption. This cannot be undone.`"
+      confirm-label="Delete permanently"
+      :required-confirmation="pendingDeleteOrder?.number || ''"
+      :confirmation-prompt="`Type ${pendingDeleteOrder?.number || ''} to confirm.`"
+      danger
+      :busy="deleteBusy"
+      @close="closeDeleteDialog"
+      @confirm="deleteSelectedOrder"
+    />
   </div>
 </template>

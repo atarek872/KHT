@@ -1639,6 +1639,12 @@
   white-space: nowrap;
 }
 
+.kht-admin .admin-order-row__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .kht-admin .admin-order-status {
   display: inline-flex;
   align-items: center;
@@ -1725,11 +1731,16 @@
 }
 
 .kht-admin .admin-order-card__actions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  display: flex;
+  align-items: center;
   gap: 8px;
   padding-top: 16px;
   border-top: 1px solid var(--kht-gray-200);
+}
+
+.kht-admin .admin-order-card__actions .admin-button {
+  min-width: 0;
+  flex: 1 1 0;
 }
 
 .kht-admin .admin-order-back {

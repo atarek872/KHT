@@ -132,3 +132,19 @@ test('every order has a protected 10 by 15 centimetre shipping label', () => {
   assert.doesNotMatch(label, />Payment status</)
   assert.doesNotMatch(label, />Order status</)
 })
+
+test('eligible orders expose exact-confirmation deletion on list and detail', () => {
+  const list = read('../app/pages/admin/orders/index.vue')
+  const detail = read('../app/pages/admin/orders/[id]/index.vue')
+  for (const page of [list, detail]) {
+    assert.match(page, /method:\s*'DELETE'/)
+    assert.match(page, /AdminConfirmDialog/)
+    assert.match(page, /required-confirmation/)
+    assert.match(page, /orderNumber/)
+  }
+  assert.match(list, /order\.canDelete/)
+  assert.match(list, /admin-orders-desktop[\s\S]*admin-delete-action/)
+  assert.match(list, /admin-orders-mobile[\s\S]*admin-delete-action/)
+  assert.match(detail, /order\.deleteBlockReason/)
+  assert.match(detail, /navigateTo\(`\/admin\/orders/)
+})

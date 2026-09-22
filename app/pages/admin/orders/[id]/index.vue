@@ -17,6 +17,9 @@ const mutationBusy = ref(false)
 const activeMutation = ref<OrderFulfillmentStatus | 'restock' | null>(null)
 const mutationError = ref('')
 const mutationSuccess = ref('')
+const deleteDialogOpen = ref(false)
+const deleteBusy = ref(false)
+const deleteError = ref('')
 const pendingAction = ref<
   { kind: 'transition'; status: OrderFulfillmentStatus } | { kind: 'restock' } | null
 >(null)
@@ -35,6 +38,35 @@ function requestTransition(nextStatus: OrderFulfillmentStatus) {
     return
   }
   void updateStatus(nextStatus)
+}
+
+function requestDelete() {
+  deleteError.value = ''
+  deleteDialogOpen.value = true
+}
+
+function closeDeleteDialog() {
+  if (!deleteBusy.value) deleteDialogOpen.value = false
+}
+
+async function deleteOrder() {
+  const target = order.value
+  if (!target || deleteBusy.value) return
+  deleteBusy.value = true
+  deleteError.value = ''
+  try {
+    await $fetch(`/api/admin/orders/${encodeURIComponent(target.id)}`, {
+      method: 'DELETE',
+      body: { orderNumber: target.number },
+    })
+    await navigateTo(`/admin/orders?deleted=${encodeURIComponent(target.number)}`)
+  } catch (cause: unknown) {
+    const failure = cause as { data?: { statusMessage?: string } }
+    deleteError.value =
+      failure.data?.statusMessage || 'The order could not be deleted. Refresh and try again.'
+  } finally {
+    deleteBusy.value = false
+  }
 }
 
 async function updateStatus(nextStatus: OrderFulfillmentStatus) {
@@ -170,8 +202,22 @@ useSeoMeta({
           >
             Print 10×15 label
           </NuxtLink>
+          <button
+            v-if="order.canDelete"
+            type="button"
+            class="admin-delete-action"
+            :aria-label="`Delete ${order.number} permanently`"
+            :disabled="mutationBusy || deleteBusy"
+            @click="requestDelete"
+          >
+            <KhtIcon name="trash" />
+          </button>
         </template>
       </AdminPageHeader>
+
+      <p v-if="deleteError" class="admin-create-order__error" role="alert">
+        {{ deleteError }}
+      </p>
 
       <div class="admin-order-detail__status" aria-label="Order statuses">
         <div>
@@ -260,6 +306,9 @@ useSeoMeta({
             <p v-else class="admin-order-action__terminal">
               No further fulfillment actions are available for this order.
             </p>
+            <p v-if="!order.canDelete" class="admin-order-action__terminal">
+              {{ order.deleteBlockReason }}
+            </p>
           </AdminSection>
 
           <AdminSection
@@ -344,6 +393,18 @@ useSeoMeta({
       :busy="mutationBusy"
       @close="pendingAction = null"
       @confirm="confirmPendingAction"
+    />
+    <AdminConfirmDialog
+      :open="deleteDialogOpen"
+      title="Delete this order permanently?"
+      :description="`This removes ${order?.number || 'this order'}, its history, and its discount redemption. This cannot be undone.`"
+      confirm-label="Delete permanently"
+      :required-confirmation="order?.number || ''"
+      :confirmation-prompt="`Type ${order?.number || ''} to confirm.`"
+      danger
+      :busy="deleteBusy"
+      @close="closeDeleteDialog"
+      @confirm="deleteOrder"
     />
   </div>
 </template>
