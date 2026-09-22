@@ -90,7 +90,10 @@ export async function deleteInventoryVariant(database: D1Database, id: string) {
         AND id IN (SELECT cart_id FROM abandoned_cart_items WHERE variant_id = ?)
         AND ${safeVariant}`)
       .bind(cleanId, cleanId, cleanId, updatedAt, cleanId, cleanId),
-    database.prepare(`DELETE FROM abandoned_cart_items WHERE variant_id = ? AND ${safeVariant}`)
+    database.prepare(`DELETE FROM abandoned_cart_items
+      WHERE variant_id = ?
+        AND cart_id IN (SELECT id FROM abandoned_carts WHERE state IN ('active', 'cleared'))
+        AND ${safeVariant}`)
       .bind(cleanId, cleanId),
     database.prepare(`DELETE FROM inventory_variants WHERE id = ?
       AND NOT EXISTS (SELECT 1 FROM order_items WHERE variant_id = ?)`)

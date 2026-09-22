@@ -82,13 +82,15 @@ function insertSingleVariantProductAndTwoCarts(
       WHERE product_id = 'kht-003';
     INSERT INTO abandoned_carts(id, subtotal, items_count, state)
       VALUES ('empty-after-delete', 1290, 1, 'active'),
-             ('mixed-after-delete', 2180, 2, 'active');
+             ('mixed-after-delete', 2180, 2, 'active'),
+             ('converted-history', 1290, 1, 'converted');
     INSERT INTO abandoned_cart_items
       (id, cart_id, product_id, variant_id, product_name, variant, image, quantity, unit_price, total)
       VALUES
       ('delete-only', 'empty-after-delete', 'kht-003', '${variantId}', 'The Line Trouser', 'Black / S', '/images/kht-003.webp', 1, 1290, 1290),
       ('delete-mixed', 'mixed-after-delete', 'kht-003', '${variantId}', 'The Line Trouser', 'Black / S', '/images/kht-003.webp', 1, 1290, 1290),
-      ('keep-mixed', 'mixed-after-delete', 'kht-001', 'kht-001-m', 'The Line Tee', 'Black / M', '/images/kht-001.webp', 1, 890, 890);
+      ('keep-mixed', 'mixed-after-delete', 'kht-001', 'kht-001-m', 'The Line Tee', 'Black / M', '/images/kht-001.webp', 1, 890, 890),
+      ('keep-converted-history', 'converted-history', 'kht-003', '${variantId}', 'The Line Trouser', 'Black / S', '/images/kht-003.webp', 1, 1290, 1290);
   `)
   return variantId
 }
@@ -319,7 +321,7 @@ test('unused variant deletion repairs carts and archives a product with no activ
     assert.equal(result.removedFromCarts, 2)
     assert.equal(result.productArchived, true)
     assert.equal(count(sqlite, 'inventory_variants', 'id', variantId), 0)
-    assert.equal(count(sqlite, 'abandoned_cart_items', 'variant_id', variantId), 0)
+    assert.equal(count(sqlite, 'abandoned_cart_items', 'variant_id', variantId), 1)
     assert.deepEqual(cartTotals(sqlite, 'empty-after-delete'), {
       subtotal: 0,
       itemsCount: 0,
@@ -329,6 +331,12 @@ test('unused variant deletion repairs carts and archives a product with no activ
       subtotal: 890,
       itemsCount: 1,
       state: 'active',
+    })
+    assert.equal(count(sqlite, 'abandoned_cart_items', 'id', 'keep-converted-history'), 1)
+    assert.deepEqual(cartTotals(sqlite, 'converted-history'), {
+      subtotal: 1290,
+      itemsCount: 1,
+      state: 'converted',
     })
     assert.equal(productActive(sqlite, 'kht-003'), 0)
   } finally {
