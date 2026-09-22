@@ -10,6 +10,7 @@ import {
   restockReturnedOrder,
   transitionOrder,
 } from '../server/services/orderTransitions.ts'
+import { deleteAbandonedCart } from '../server/services/abandonedCarts.ts'
 import { createStorefrontOrder } from '../server/services/storefrontCheckout.ts'
 import type { D1Database } from '../server/utils/d1.ts'
 import { createTestD1 } from './helpers/sqliteD1.ts'
@@ -204,6 +205,69 @@ test('stale order status cannot clear recovery references or partially delete', 
       ).orderId,
       target.id,
     )
+  } finally {
+    close()
+  }
+})
+
+test('abandoned cart deletion removes items, events, and merge receipts', async () => {
+  const { database, sqlite, close } = setup()
+  try {
+    sqlite.exec(`
+      INSERT INTO customer_users(id, name, email, phone, password_hash)
+        VALUES ('delete-cart-user', 'Cart User', 'delete-cart@example.com', '201010000099', 'hash');
+      INSERT INTO abandoned_carts(id, user_id, subtotal, items_count, state, recovery_state)
+        VALUES ('delete-cart', 'delete-cart-user', 890, 1, 'active', 'contacted');
+      INSERT INTO abandoned_cart_items
+        (id, cart_id, product_id, variant_id, product_name, variant, image, quantity, unit_price, total)
+        VALUES ('delete-cart-item', 'delete-cart', 'kht-001', 'kht-001-m', 'The Line Tee', 'Black / M', '/images/kht-001.webp', 1, 890, 890);
+      INSERT INTO abandoned_cart_events(id, cart_id, from_state, to_state, actor_email)
+        VALUES ('delete-cart-event', 'delete-cart', 'active', 'contacted', 'admin@kht.local');
+      INSERT INTO cart_merge_receipts(guest_key_hash, user_id, cart_id, created_at)
+        VALUES ('delete-cart-receipt', 'delete-cart-user', 'delete-cart', CURRENT_TIMESTAMP);
+    `)
+
+    await deleteAbandonedCart(database, 'delete-cart')
+
+    assert.equal(count(sqlite, 'abandoned_carts', 'id', 'delete-cart'), 0)
+    assert.equal(count(sqlite, 'abandoned_cart_items', 'cart_id', 'delete-cart'), 0)
+    assert.equal(count(sqlite, 'abandoned_cart_events', 'cart_id', 'delete-cart'), 0)
+    assert.equal(count(sqlite, 'cart_merge_receipts', 'cart_id', 'delete-cart'), 0)
+  } finally {
+    close()
+  }
+})
+
+test('abandoned carts linked to orders are preserved and missing carts are reported', async () => {
+  const { database, sqlite, close } = setup()
+  try {
+    const linkedCartId = 'linked-order-cart'
+    sqlite.exec(`
+      INSERT INTO customer_users(id, name, email, phone, password_hash)
+        VALUES ('linked-cart-user', 'Linked Cart User', 'linked-cart@example.com', '201010000098', 'hash');
+      INSERT INTO abandoned_carts(id, user_id, subtotal, items_count, state, recovery_state)
+        VALUES ('${linkedCartId}', 'linked-cart-user', 890, 1, 'active', 'active');
+      INSERT INTO abandoned_cart_items
+        (id, cart_id, product_id, variant_id, product_name, variant, image, quantity, unit_price, total)
+        VALUES ('linked-cart-item', '${linkedCartId}', 'kht-001', 'kht-001-m', 'The Line Tee', 'Black / M', '/images/kht-001.webp', 1, 890, 890);
+      INSERT INTO cart_merge_receipts(guest_key_hash, user_id, cart_id, created_at)
+        VALUES ('linked-cart-receipt', 'linked-cart-user', '${linkedCartId}', CURRENT_TIMESTAMP);
+    `)
+    await createStorefrontOrder(database, checkoutInput())
+    const linkedOrder = order(sqlite)
+    sqlite.prepare('UPDATE orders SET cart_id = ? WHERE id = ?').run(linkedCartId, linkedOrder.id)
+
+    await assert.rejects(
+      () => deleteAbandonedCart(database, linkedCartId),
+      /CART_DELETE_CONFLICT/,
+    )
+    await assert.rejects(
+      () => deleteAbandonedCart(database, 'missing-cart'),
+      /CART_NOT_FOUND/,
+    )
+    assert.equal(count(sqlite, 'abandoned_carts', 'id', linkedCartId), 1)
+    assert.equal(count(sqlite, 'abandoned_cart_items', 'cart_id', linkedCartId), 1)
+    assert.equal(count(sqlite, 'cart_merge_receipts', 'cart_id', linkedCartId), 1)
   } finally {
     close()
   }

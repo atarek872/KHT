@@ -8,6 +8,8 @@ const { data: cart, error, status, refresh } = await useFetch<AbandonedCartDetai
   () => `/api/admin/abandoned-carts/${encodeURIComponent(id.value)}`,
 )
 const saving = ref(false)
+const deleteBusy = ref(false)
+const deleteDialogOpen = ref(false)
 const actionError = ref('')
 const actionMessage = ref('')
 const whatsappLink = computed(() => cart.value?.phone
@@ -29,6 +31,32 @@ async function changeRecoveryState(recoveryState: CartRecoveryState) {
       || 'The recovery state could not be updated.'
   } finally { saving.value = false }
 }
+function requestDelete() {
+  actionError.value = ''
+  actionMessage.value = ''
+  deleteDialogOpen.value = true
+}
+function closeDeleteDialog() {
+  if (!deleteBusy.value) deleteDialogOpen.value = false
+}
+async function deleteCart() {
+  if (deleteBusy.value) return
+  deleteBusy.value = true
+  actionError.value = ''
+  actionMessage.value = ''
+  try {
+    await $fetch(`/api/admin/abandoned-carts/${encodeURIComponent(id.value)}`, {
+      method: 'DELETE',
+    })
+    await navigateTo('/admin/abandoned-carts?deleted=1')
+  } catch (cause: unknown) {
+    actionError.value =
+      (cause as { data?: { statusMessage?: string } }).data?.statusMessage ||
+      'The abandoned cart could not be deleted.'
+  } finally {
+    deleteBusy.value = false
+  }
+}
 const money = (value: number) => new Intl.NumberFormat('en-EG', {
   style: 'currency', currency: 'EGP', maximumFractionDigits: 0,
 }).format(value)
@@ -44,7 +72,14 @@ useSeoMeta({ title: 'Abandoned Cart — KHT Admin', robots: 'noindex, nofollow' 
     <div v-if="status === 'pending' && !cart" class="admin-orders-loading" role="status"><AdminLoader label="Loading cart" /><span /></div>
     <AdminEmptyState v-else-if="error" title="Cart unavailable" description="The cart could not be loaded."><template #actions><AdminButton @click="refresh()">Retry</AdminButton></template></AdminEmptyState>
     <template v-else-if="cart">
-      <AdminPageHeader eyebrow="Abandoned cart" :title="cart.customerName || 'Anonymous cart'" :description="`Last activity ${date(cart.lastActivity)}`" />
+      <AdminPageHeader eyebrow="Abandoned cart" :title="cart.customerName || 'Anonymous cart'" :description="`Last activity ${date(cart.lastActivity)}`">
+        <template #actions>
+          <AdminButton variant="danger" :disabled="saving || deleteBusy" @click="requestDelete">
+            Delete permanently
+          </AdminButton>
+        </template>
+      </AdminPageHeader>
+      <p v-if="actionError" class="admin-create-order__error" role="alert">{{ actionError }}</p>
       <div class="admin-abandoned-detail__grid"><div class="admin-abandoned-detail__main">
         <AdminSection title="Products" :description="`${cart.itemsCount} items · ${money(cart.subtotal)}`">
           <div class="admin-abandoned-items"><div v-for="item in cart.items" :key="item.id">
@@ -56,16 +91,15 @@ useSeoMeta({ title: 'Abandoned Cart — KHT Admin', robots: 'noindex, nofollow' 
         <AdminSection title="Contact"><dl class="admin-order-facts"><div><dt>Name</dt><dd>{{ cart.customerName || 'Not captured' }}</dd></div>
           <div><dt>Phone</dt><dd>{{ cart.phone || 'Not captured' }}</dd></div><div><dt>Email</dt><dd>{{ cart.email || 'Not captured' }}</dd></div></dl></AdminSection>
         <AdminSection title="Recovery"><div class="admin-recovery-state"><AdminBadge :tone="cart.recoveryState === 'recovered' ? 'strong' : 'neutral'">{{ cart.recoveryState }}</AdminBadge>
-          <p v-if="actionError" class="admin-create-order__error" role="alert">{{ actionError }}</p>
           <p v-if="actionMessage" class="admin-state-notice" role="status">{{ actionMessage }}</p>
           <p v-if="!cart.phone && !cart.email">No contact was captured. This cart is visible for value analysis, but no contact action is available.</p>
           <div v-if="cart.phone || cart.email" class="admin-recovery-contact">
             <a v-if="cart.phone" :href="whatsappLink" target="_blank" rel="noopener">Open WhatsApp</a>
             <a v-if="cart.email" :href="emailLink">Send email</a>
             <div class="admin-recovery-actions">
-              <AdminButton v-if="cart.recoveryState === 'active'" :disabled="saving" @click="changeRecoveryState('contacted')">Mark contacted</AdminButton>
-              <AdminButton v-if="['active', 'contacted'].includes(cart.recoveryState)" variant="secondary" :disabled="saving" @click="changeRecoveryState('recovered')">Mark recovered</AdminButton>
-              <AdminButton v-if="['active', 'contacted'].includes(cart.recoveryState)" variant="quiet" :disabled="saving" @click="changeRecoveryState('dismissed')">Dismiss</AdminButton>
+              <AdminButton v-if="cart.recoveryState === 'active'" :disabled="saving || deleteBusy" @click="changeRecoveryState('contacted')">Mark contacted</AdminButton>
+              <AdminButton v-if="['active', 'contacted'].includes(cart.recoveryState)" variant="secondary" :disabled="saving || deleteBusy" @click="changeRecoveryState('recovered')">Mark recovered</AdminButton>
+              <AdminButton v-if="['active', 'contacted'].includes(cart.recoveryState)" variant="quiet" :disabled="saving || deleteBusy" @click="changeRecoveryState('dismissed')">Dismiss</AdminButton>
             </div>
           </div></div></AdminSection>
         <AdminSection title="Activity"><dl class="admin-order-facts"><div><dt>Created</dt><dd>{{ date(cart.createdAt) }}</dd></div><div><dt>Last activity</dt><dd>{{ date(cart.lastActivity) }}</dd></div></dl>
@@ -73,5 +107,15 @@ useSeoMeta({ title: 'Abandoned Cart — KHT Admin', robots: 'noindex, nofollow' 
         </AdminSection>
       </aside></div>
     </template>
+    <AdminConfirmDialog
+      :open="deleteDialogOpen"
+      title="Delete this abandoned cart?"
+      :description="`This permanently removes ${cart?.customerName || 'this anonymous cart'}, its items, and recovery history. This cannot be undone.`"
+      confirm-label="Delete permanently"
+      danger
+      :busy="deleteBusy"
+      @close="closeDeleteDialog"
+      @confirm="deleteCart"
+    />
   </div>
 </template>

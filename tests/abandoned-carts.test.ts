@@ -67,3 +67,16 @@ test('dashboard abandoned metrics and rows use the same service', () => {
   assert.match(dashboard, /metric\.key === 'recoveredRevenue'/)
   assert.match(endpoint, /buildPersistedDashboardSnapshot\(database, range\)/)
 })
+
+test('abandoned carts expose permanent deletion on desktop, mobile, and detail', () => {
+  const list = read('../app/pages/admin/abandoned-carts/index.vue')
+  const detail = read('../app/pages/admin/abandoned-carts/[id].vue')
+  for (const page of [list, detail]) {
+    assert.match(page, /method:\s*'DELETE'/)
+    assert.match(page, /AdminConfirmDialog/)
+    assert.match(page, /Delete permanently/)
+  }
+  assert.match(list, /admin-abandoned-desktop[\s\S]*admin-delete-action/)
+  assert.match(list, /admin-abandoned-mobile[\s\S]*admin-delete-action/)
+  assert.doesNotMatch(list, /<NuxtLink v-for="cart"[\s\S]*admin-delete-action/)
+})

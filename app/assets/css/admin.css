@@ -3338,6 +3338,18 @@
   text-transform: capitalize;
 }
 
+.kht-admin .admin-abandoned-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 14px;
+  border-top: 1px solid var(--kht-gray-200);
+}
+
+.kht-admin .admin-abandoned-card__actions .admin-button {
+  flex: 1 1 auto;
+}
+
 .kht-admin .admin-abandoned-detail__grid {
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr);

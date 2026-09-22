@@ -279,3 +279,35 @@ export async function getAbandonedCartMetrics(database: D1Database, since?: stri
     recoveredRevenue: Number(row?.recoveredRevenue || 0),
   }
 }
+
+export async function deleteAbandonedCart(database: D1Database, id: string) {
+  const cleanId = id.trim()
+  if (!cleanId) throw new Error('CART_DELETE_INVALID')
+  const cart = await database
+    .prepare('SELECT id FROM abandoned_carts WHERE id = ?')
+    .bind(cleanId)
+    .first<{ id: string }>()
+  if (!cart) throw new Error('CART_NOT_FOUND')
+  const linkedOrder = await database
+    .prepare('SELECT id FROM orders WHERE cart_id = ? LIMIT 1')
+    .bind(cleanId)
+    .first<{ id: string }>()
+  if (linkedOrder) throw new Error('CART_DELETE_CONFLICT')
+
+  const results = await database.batch([
+    database
+      .prepare(
+        `DELETE FROM cart_merge_receipts WHERE cart_id = ?
+        AND NOT EXISTS (SELECT 1 FROM orders WHERE cart_id = ?)`,
+      )
+      .bind(cleanId, cleanId),
+    database
+      .prepare(
+        `DELETE FROM abandoned_carts WHERE id = ?
+        AND NOT EXISTS (SELECT 1 FROM orders WHERE cart_id = ?)`,
+      )
+      .bind(cleanId, cleanId),
+  ])
+  if ((results[1]?.meta?.changes || 0) !== 1) throw new Error('CART_DELETE_CONFLICT')
+  return { deleted: true as const, id: cleanId }
+}
