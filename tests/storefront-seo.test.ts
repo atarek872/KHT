@@ -115,6 +115,15 @@ test('homepage head keeps the Google Search Console verification token', () => {
   assert.match(nuxt, /HWimPfuQlTJkgv5vxIL-JaVyRFUxfRKQ1df5NoZ2a0Y/)
 })
 
+test('every page installs the published Google Tag Manager web container', () => {
+  const nuxt = read('../nuxt.config.ts')
+  assert.match(nuxt, /googletagmanager\.com\/gtm\.js/)
+  assert.match(nuxt, /googletagmanager\.com\/ns\.html\?id=GTM-W7SK8385/)
+  assert.match(nuxt, /GTM-W7SK8385/)
+  assert.match(nuxt, /noscript:/)
+  assert.match(nuxt, /tagPosition:\s*'bodyOpen'/)
+})
+
 test('public pages emit truthful store, product, offer, and breadcrumb data', () => {
   const homepage = read('../app/pages/index.vue')
   const product = read('../app/pages/products/[slug].vue')
