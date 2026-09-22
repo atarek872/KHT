@@ -8,7 +8,11 @@ import {
   saveStoreCurtain,
   validateStoreCurtain,
 } from '../server/services/storeCurtain.ts'
-import { storeCurtainHttpStatus, type StoreCurtainInput } from '../shared/storeCurtain.ts'
+import {
+  storeCurtainAllowsIndexing,
+  storeCurtainHttpStatus,
+  type StoreCurtainInput,
+} from '../shared/storeCurtain.ts'
 
 const read = (path: string) => readFileSync(new URL(path, import.meta.url), 'utf8')
 
@@ -100,6 +104,10 @@ test('coming-soon and custom launch pages remain shareable while maintenance sta
   assert.equal(storeCurtainHttpStatus('coming_soon'), 200)
   assert.equal(storeCurtainHttpStatus('custom'), 200)
   assert.equal(storeCurtainHttpStatus('under_construction'), 503)
+  assert.equal(storeCurtainAllowsIndexing('coming_soon', '/'), true)
+  assert.equal(storeCurtainAllowsIndexing('custom', '/'), true)
+  assert.equal(storeCurtainAllowsIndexing('coming_soon', '/shop'), false)
+  assert.equal(storeCurtainAllowsIndexing('under_construction', '/'), false)
 })
 
 test('store curtain APIs use the existing authentication and public projection', () => {

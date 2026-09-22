@@ -4,6 +4,10 @@ export function storeCurtainHttpStatus(mode: StoreCurtainMode) {
   return mode === 'under_construction' ? 503 : 200
 }
 
+export function storeCurtainAllowsIndexing(mode: StoreCurtainMode, path: string) {
+  return storeCurtainHttpStatus(mode) === 200 && path === '/'
+}
+
 export type StoreCurtainText = { en: string; ar: string }
 
 export type StoreCurtainInput = {

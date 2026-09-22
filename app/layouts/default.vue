@@ -6,7 +6,11 @@ import {
   isPrivateSeoPath,
   resolveStoreIndexingEnabled,
 } from '#shared/storefrontSeo'
-import { storeCurtainHttpStatus, type PublicStoreCurtainPayload } from '#shared/storeCurtain'
+import {
+  storeCurtainAllowsIndexing,
+  storeCurtainHttpStatus,
+  type PublicStoreCurtainPayload,
+} from '#shared/storeCurtain'
 
 const { locale } = useLanguage()
 const catalog = useCatalog()
@@ -28,8 +32,11 @@ const { data: curtainPayload, refresh: refreshCurtain } = await useFetch<PublicS
 )
 const curtain = computed(() => curtainPayload.value?.curtain || null)
 const curtainActive = computed(() => Boolean(curtain.value))
+const curtainAllowsIndexing = computed(
+  () => !curtain.value || storeCurtainAllowsIndexing(curtain.value.mode, route.path),
+)
 const robots = computed(() =>
-  !curtainActive.value && indexingEnabled.value && !isPrivateSeoPath(route.path)
+  curtainAllowsIndexing.value && indexingEnabled.value && !isPrivateSeoPath(route.path)
     ? PUBLIC_ROBOTS
     : 'noindex, nofollow',
 )
