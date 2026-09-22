@@ -109,6 +109,12 @@ test('Nuxt renders environment-aware robots defaults and reusable canonical meta
   assert.match(composable, /application\/ld\+json/)
 })
 
+test('homepage head keeps the Google Search Console verification token', () => {
+  const nuxt = read('../nuxt.config.ts')
+  assert.match(nuxt, /name:\s*'google-site-verification'/)
+  assert.match(nuxt, /HWimPfuQlTJkgv5vxIL-JaVyRFUxfRKQ1df5NoZ2a0Y/)
+})
+
 test('public pages emit truthful store, product, offer, and breadcrumb data', () => {
   const homepage = read('../app/pages/index.vue')
   const product = read('../app/pages/products/[slug].vue')
