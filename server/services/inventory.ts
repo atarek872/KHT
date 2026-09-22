@@ -53,3 +53,60 @@ export async function updateInventory(
   if (!updated) throw new Error('VARIANT_NOT_FOUND')
   return { ...updated, active: !!updated.active, lowStock: updated.stock <= lowStockThreshold }
 }
+
+export async function deleteInventoryVariant(database: D1Database, id: string) {
+  const cleanId = id.trim()
+  if (!cleanId) throw new Error('VARIANT_DELETE_INVALID')
+
+  const variant = await database.prepare(`SELECT v.id, v.product_id AS productId
+    FROM inventory_variants v WHERE v.id = ?`).bind(cleanId).first<{
+      id: string
+      productId: string
+    }>()
+  if (!variant) throw new Error('VARIANT_NOT_FOUND')
+
+  const used = await database.prepare('SELECT id FROM order_items WHERE variant_id = ? LIMIT 1')
+    .bind(cleanId).first<{ id: string }>()
+  if (used) throw new Error('VARIANT_DELETE_CONFLICT')
+
+  const safeVariant = `EXISTS (SELECT 1 FROM inventory_variants v WHERE v.id = ?
+    AND NOT EXISTS (SELECT 1 FROM order_items oi WHERE oi.variant_id = v.id))`
+  const updatedAt = new Date().toISOString()
+  const results = await database.batch([
+    database.prepare(`UPDATE inventory_variants SET active = 0, updated_at = ?
+      WHERE id = ? AND NOT EXISTS (SELECT 1 FROM order_items WHERE variant_id = ?)`)
+      .bind(updatedAt, cleanId, cleanId),
+    database.prepare(`UPDATE abandoned_carts SET
+      subtotal = COALESCE((SELECT SUM(total) FROM abandoned_cart_items i
+        WHERE i.cart_id = abandoned_carts.id AND i.variant_id <> ?), 0),
+      items_count = COALESCE((SELECT SUM(quantity) FROM abandoned_cart_items i
+        WHERE i.cart_id = abandoned_carts.id AND i.variant_id <> ?), 0),
+      state = CASE WHEN NOT EXISTS (SELECT 1 FROM abandoned_cart_items i
+        WHERE i.cart_id = abandoned_carts.id AND i.variant_id <> ?)
+        THEN 'cleared' ELSE state END,
+      version = version + 1,
+      last_activity = ?
+      WHERE state IN ('active', 'cleared')
+        AND id IN (SELECT cart_id FROM abandoned_cart_items WHERE variant_id = ?)
+        AND ${safeVariant}`)
+      .bind(cleanId, cleanId, cleanId, updatedAt, cleanId, cleanId),
+    database.prepare(`DELETE FROM abandoned_cart_items WHERE variant_id = ? AND ${safeVariant}`)
+      .bind(cleanId, cleanId),
+    database.prepare(`DELETE FROM inventory_variants WHERE id = ?
+      AND NOT EXISTS (SELECT 1 FROM order_items WHERE variant_id = ?)`)
+      .bind(cleanId, cleanId),
+    database.prepare(`UPDATE products SET active = 0, updated_at = ?
+      WHERE id = ? AND active = 1
+        AND NOT EXISTS (SELECT 1 FROM inventory_variants WHERE id = ?)
+        AND NOT EXISTS (SELECT 1 FROM inventory_variants WHERE product_id = ? AND active = 1)`)
+      .bind(updatedAt, variant.productId, cleanId, variant.productId),
+  ])
+
+  if ((results[3]?.meta?.changes || 0) !== 1) throw new Error('VARIANT_DELETE_CONFLICT')
+  return {
+    deleted: true as const,
+    id: cleanId,
+    removedFromCarts: Number(results[1]?.meta?.changes || 0),
+    productArchived: (results[4]?.meta?.changes || 0) === 1,
+  }
+}

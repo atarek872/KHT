@@ -11,6 +11,7 @@ import {
   transitionOrder,
 } from '../server/services/orderTransitions.ts'
 import { deleteAbandonedCart } from '../server/services/abandonedCarts.ts'
+import { deleteInventoryVariant } from '../server/services/inventory.ts'
 import { createStorefrontOrder } from '../server/services/storefrontCheckout.ts'
 import type { D1Database } from '../server/utils/d1.ts'
 import { createTestD1 } from './helpers/sqliteD1.ts'
@@ -69,6 +70,42 @@ function stock(sqlite: ReturnType<typeof createTestD1>['sqlite']) {
       }
     ).stock,
   )
+}
+
+function insertSingleVariantProductAndTwoCarts(
+  sqlite: ReturnType<typeof createTestD1>['sqlite'],
+) {
+  const variantId = 'kht-003-s'
+  sqlite.exec(`
+    UPDATE products SET active = 1 WHERE id = 'kht-003';
+    UPDATE inventory_variants SET active = CASE WHEN id = '${variantId}' THEN 1 ELSE 0 END
+      WHERE product_id = 'kht-003';
+    INSERT INTO abandoned_carts(id, subtotal, items_count, state)
+      VALUES ('empty-after-delete', 1290, 1, 'active'),
+             ('mixed-after-delete', 2180, 2, 'active');
+    INSERT INTO abandoned_cart_items
+      (id, cart_id, product_id, variant_id, product_name, variant, image, quantity, unit_price, total)
+      VALUES
+      ('delete-only', 'empty-after-delete', 'kht-003', '${variantId}', 'The Line Trouser', 'Black / S', '/images/kht-003.webp', 1, 1290, 1290),
+      ('delete-mixed', 'mixed-after-delete', 'kht-003', '${variantId}', 'The Line Trouser', 'Black / S', '/images/kht-003.webp', 1, 1290, 1290),
+      ('keep-mixed', 'mixed-after-delete', 'kht-001', 'kht-001-m', 'The Line Tee', 'Black / M', '/images/kht-001.webp', 1, 890, 890);
+  `)
+  return variantId
+}
+
+function cartTotals(sqlite: ReturnType<typeof createTestD1>['sqlite'], id: string) {
+  const row = sqlite.prepare(`SELECT subtotal, items_count AS itemsCount, state
+    FROM abandoned_carts WHERE id = ?`).get(id) as {
+    subtotal: number
+    itemsCount: number
+    state: string
+  }
+  return { ...row }
+}
+
+function productActive(sqlite: ReturnType<typeof createTestD1>['sqlite'], id: string) {
+  return Number((sqlite.prepare('SELECT active FROM products WHERE id = ?')
+    .get(id) as { active: number }).active)
 }
 
 function order(
@@ -268,6 +305,75 @@ test('abandoned carts linked to orders are preserved and missing carts are repor
     assert.equal(count(sqlite, 'abandoned_carts', 'id', linkedCartId), 1)
     assert.equal(count(sqlite, 'abandoned_cart_items', 'cart_id', linkedCartId), 1)
     assert.equal(count(sqlite, 'cart_merge_receipts', 'cart_id', linkedCartId), 1)
+  } finally {
+    close()
+  }
+})
+
+test('unused variant deletion repairs carts and archives a product with no active variants', async () => {
+  const { database, sqlite, close } = setup()
+  try {
+    const variantId = insertSingleVariantProductAndTwoCarts(sqlite)
+    const result = await deleteInventoryVariant(database, variantId)
+
+    assert.equal(result.removedFromCarts, 2)
+    assert.equal(result.productArchived, true)
+    assert.equal(count(sqlite, 'inventory_variants', 'id', variantId), 0)
+    assert.equal(count(sqlite, 'abandoned_cart_items', 'variant_id', variantId), 0)
+    assert.deepEqual(cartTotals(sqlite, 'empty-after-delete'), {
+      subtotal: 0,
+      itemsCount: 0,
+      state: 'cleared',
+    })
+    assert.deepEqual(cartTotals(sqlite, 'mixed-after-delete'), {
+      subtotal: 890,
+      itemsCount: 1,
+      state: 'active',
+    })
+    assert.equal(productActive(sqlite, 'kht-003'), 0)
+  } finally {
+    close()
+  }
+})
+
+test('variant deletion keeps the parent product active when another active variant remains', async () => {
+  const { database, sqlite, close } = setup()
+  try {
+    await deleteInventoryVariant(database, 'kht-003-s')
+    assert.equal(productActive(sqlite, 'kht-003'), 1)
+    assert.equal(count(sqlite, 'inventory_variants', 'id', 'kht-003-s'), 0)
+  } finally {
+    close()
+  }
+})
+
+test('missing and order-referenced variants cannot be deleted or partially change carts', async () => {
+  const { database, sqlite, close } = setup()
+  try {
+    await assert.rejects(
+      () => deleteInventoryVariant(database, 'missing-variant'),
+      /VARIANT_NOT_FOUND/,
+    )
+    await createStorefrontOrder(database, checkoutInput())
+    sqlite.exec(`
+      INSERT INTO abandoned_carts(id, subtotal, items_count, state)
+        VALUES ('protected-variant-cart', 890, 1, 'active');
+      INSERT INTO abandoned_cart_items
+        (id, cart_id, product_id, variant_id, product_name, variant, image, quantity, unit_price, total)
+        VALUES ('protected-variant-item', 'protected-variant-cart', 'kht-001', 'kht-001-m', 'The Line Tee', 'Black / M', '/images/kht-001.webp', 1, 890, 890);
+    `)
+
+    await assert.rejects(
+      () => deleteInventoryVariant(database, 'kht-001-m'),
+      /VARIANT_DELETE_CONFLICT/,
+    )
+    assert.equal(count(sqlite, 'inventory_variants', 'id', 'kht-001-m'), 1)
+    assert.equal(count(sqlite, 'abandoned_cart_items', 'id', 'protected-variant-item'), 1)
+    assert.deepEqual(cartTotals(sqlite, 'protected-variant-cart'), {
+      subtotal: 890,
+      itemsCount: 1,
+      state: 'active',
+    })
   } finally {
     close()
   }

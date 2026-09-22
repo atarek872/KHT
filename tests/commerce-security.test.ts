@@ -118,3 +118,10 @@ test('permanent abandoned-cart deletion requires admin authentication and same o
   assert.match(route, /requireSameOrigin\(event\)/)
   assert.match(route, /deleteAbandonedCart/)
 })
+
+test('permanent inventory deletion requires admin authentication and same origin', () => {
+  const route = read('../server/api/admin/inventory/[id].delete.ts')
+  assert.match(route, /requireAdmin\(event\)/)
+  assert.match(route, /requireSameOrigin\(event\)/)
+  assert.match(route, /deleteInventoryVariant/)
+})

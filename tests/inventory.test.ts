@@ -85,3 +85,13 @@ test('product metadata edits cannot overwrite existing variant stock', () => {
   assert.match(form, /:disabled="!!variant\.id"/)
   assert.match(form, /to="\/admin\/inventory"/)
 })
+
+test('inventory exposes exact-variant permanent deletion on desktop and mobile', () => {
+  const page = read('../app/pages/admin/inventory/index.vue')
+  assert.match(page, /method:\s*'DELETE'/)
+  assert.match(page, /AdminConfirmDialog/)
+  assert.match(page, /admin-inventory-desktop[\s\S]*admin-delete-action/)
+  assert.match(page, /admin-inventory-mobile[\s\S]*admin-delete-action/)
+  assert.match(page, /item\.productName[\s\S]*item\.color[\s\S]*item\.size[\s\S]*item\.sku/)
+  assert.match(page, /removed from open carts/)
+})

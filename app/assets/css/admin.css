@@ -2622,6 +2622,14 @@
   white-space: nowrap;
 }
 
+.kht-admin .admin-inventory-row__actions,
+.kht-admin .admin-inventory-card__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .kht-admin .admin-inventory-desktop input,
 .kht-admin .admin-inventory-card input {
   width: 88px;
