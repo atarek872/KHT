@@ -1,4 +1,5 @@
 import type { Catalog, CartLine } from './types.ts'
+import { sizePrice } from './productPricing.ts'
 
 export function groupOrderLines(
   lines: { key: string; quantity: number }[],
@@ -57,7 +58,7 @@ export function priceOrder(raw: unknown, catalog: Catalog, shipping = 60) {
       name: product.name,
       size: sizeName!,
       quantity,
-      price: product.price,
+      price: sizePrice(product, sizeName!),
       image: product.image,
     }
   })

@@ -2,6 +2,7 @@ import type { CartLine, Catalog, Locale, Localized, Product } from '../../shared
 import type { CustomerUser } from '../../shared/account'
 import type { CartContactInput, CartSnapshotInput } from '../../shared/abandonedCart'
 import type { SavedCart } from '../../shared/customerCart'
+import { sizePrice } from '#shared/productPricing'
 
 const cartQueues = new WeakMap<object, Promise<void>>()
 
@@ -64,7 +65,7 @@ export function useBag() {
   )
   const count = computed(() => lines.value.reduce((sum, line) => sum + line.quantity, 0))
   const total = computed(() =>
-    lines.value.reduce((sum, line) => sum + line.quantity * line.product.price, 0),
+    lines.value.reduce((sum, line) => sum + line.quantity * sizePrice(line.product, line.size), 0),
   )
   function track(items: CartLine[], contact?: CartContactInput) {
     if (!import.meta.client) return

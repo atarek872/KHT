@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { STORE_ORIGIN, absoluteStoreUrl, breadcrumbList } from '#shared/storefrontSeo'
+import { hasSizePriceRange, sizePrice, startingPrice } from '#shared/productPricing'
 
 const route = useRoute()
-const { t, localized } = useLanguage()
+const { t, localized, money } = useLanguage()
 const catalog = useCatalog()
 const product = computed(() => catalog.value.products.find((p) => p.slug === route.params.slug))
 if (!product.value) throw createError({ statusCode: 404, statusMessage: 'Piece not found' })
@@ -18,6 +19,10 @@ const category = computed(() =>
   catalog.value.categories.find((c) => c.slug === product.value?.category),
 )
 const selectedSize = ref('')
+const displayedPrice = computed(() => product.value
+  ? selectedSize.value ? sizePrice(product.value, selectedSize.value) : startingPrice(product.value)
+  : 0)
+const priceStartsAt = computed(() => !!product.value && !selectedSize.value && hasSizePriceRange(product.value))
 const selectedImageIndex = ref(0)
 const productImages = computed(() => product.value?.images?.length
   ? product.value.images
@@ -99,7 +104,7 @@ const structuredData = computed(() => {
           '@type': 'Offer',
           url: absoluteStoreUrl(canonicalPath.value),
           priceCurrency: 'EGP',
-          price: item.price.toFixed(2),
+          price: startingPrice(item).toFixed(2),
           availability: inStock
             ? 'https://schema.org/InStock'
             : 'https://schema.org/OutOfStock',
@@ -173,7 +178,7 @@ useStoreSeo({
         <p class="eyebrow">DROP 001</p>
         <h1>{{ localized(product.name) }}</h1>
         <p class="detail-product-code">{{ product.code }}</p>
-        <ProductPrice class="detail-price" :price="product.price" :compare-at-price="product.compareAtPrice" />
+        <ProductPrice class="detail-price" :price="displayedPrice" :compare-at-price="product.compareAtPrice" :from="priceStartsAt" />
         <p class="product-description">{{ localized(product.description) }}</p>
         <div class="color-choice">
           <span class="color-swatch" /><span>{{ t('Black / White', 'أسود / أبيض') }}</span>
@@ -199,6 +204,11 @@ useStoreSeo({
             >
               {{ size.name }}
             </button>
+          </div>
+          <div v-if="hasSizePriceRange(product)" class="size-price-guide" :aria-label="t('Price by size', 'السعر حسب المقاس')">
+            <span v-for="size in product.sizes.filter((option) => option.stock > 0)" :key="size.name">
+              {{ size.name }} · {{ money(sizePrice(product, size.name)) }}
+            </span>
           </div>
           <p class="size-hint">
             {{
@@ -260,7 +270,7 @@ useStoreSeo({
       </div>
     </section>
     <div v-if="stickyVisible" class="mobile-buy-bar">
-      <ProductPrice :price="product.price" :compare-at-price="product.compareAtPrice" compact />
+      <ProductPrice :price="displayedPrice" :compare-at-price="product.compareAtPrice" :from="priceStartsAt" compact />
       <button class="button button-dark" @click="addToBag">
         {{ selectedSize ? t('Add to bag', 'أضف للسلة') : t('Select size', 'اختار مقاسك')
         }}<KhtIcon name="arrow" />

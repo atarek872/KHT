@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { sizePrice } from '#shared/productPricing'
 const { t, money, localized } = useLanguage()
 const { lines, update } = useBag()
 </script>
@@ -18,7 +19,7 @@ const { lines, update } = useBag()
           ><h3>{{ localized(line.product.name) }}</h3></NuxtLink
         >
         <p>{{ t('Black / White', 'أسود / أبيض') }} · {{ t('Size', 'مقاس') }} {{ line.size }}</p>
-        <span>{{ money(line.product.price * line.quantity) }}</span>
+        <span>{{ money(sizePrice(line.product, line.size) * line.quantity) }}</span>
         <div class="bag-item-controls">
           <div class="quantity">
             <button

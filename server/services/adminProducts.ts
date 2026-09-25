@@ -39,6 +39,8 @@ export function validateProduct(input: AdminProductInput, categories = new Set([
   for (const variant of input.variants) {
     if (!variant.sku?.trim() || !variant.size?.trim() || !variant.color?.trim()) throw new Error('Every variant needs SKU, size, and color.')
     if (!Number.isInteger(variant.stock) || variant.stock < 0) throw new Error('Variant stock must be a non-negative whole number.')
+    if (variant.price != null && (!Number.isInteger(variant.price) || variant.price < 0))
+      throw new Error('Variant price must be a non-negative whole EGP amount.')
     const sku = variant.sku.trim().toUpperCase()
     if (skus.has(sku)) throw new Error('Variant SKUs must be unique.')
     skus.add(sku)
@@ -68,7 +70,7 @@ export async function getProduct(database: D1Database, id: string): Promise<Admi
     .bind(id).first<Record<string, string | number>>()
   if (!product) return null
   const [variants, images] = await Promise.all([
-    database.prepare(`SELECT id, sku, size, color, stock, active
+    database.prepare(`SELECT id, sku, size, color, unit_price AS price, stock, active
       FROM inventory_variants WHERE product_id = ? ORDER BY rowid`).bind(id)
       .all<ProductVariantRow>(),
     database.prepare(`SELECT url FROM product_images WHERE product_id = ? ORDER BY sort_order`)
@@ -123,7 +125,7 @@ export async function saveProduct(
       ON CONFLICT(id) DO UPDATE SET product_name=excluded.product_name, sku=excluded.sku,
       size=excluded.size, color=excluded.color, unit_price=excluded.unit_price,
       active=excluded.active, updated_at=excluded.updated_at`).bind(variantId, id, input.name.en.trim(),
-        variant.sku.trim().toUpperCase(), variant.size.trim(), variant.color.trim(), input.price,
+        variant.sku.trim().toUpperCase(), variant.size.trim(), variant.color.trim(), variant.price ?? input.price,
         variant.stock, variant.active ? 1 : 0, now))
   }
   statements.push(database.prepare('DELETE FROM product_images WHERE product_id = ?').bind(id))

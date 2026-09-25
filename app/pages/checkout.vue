@@ -4,6 +4,7 @@ import type { OrderQuote } from '../../shared/discount'
 import type { ShippingZone } from '../../shared/shipping'
 import type { CustomerAddress } from '../../shared/account'
 import type { PublicWelcomeCampaign } from '../../shared/welcomeCampaign'
+import { sizePrice } from '#shared/productPricing'
 const { t, money, localized } = useLanguage()
 const {
   lines,
@@ -509,7 +510,7 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
               <strong>{{ localized(line.product.name) }}</strong
               ><span>{{ line.size }} / {{ t('Qty', 'الكمية') }} {{ line.quantity }}</span>
             </div>
-            <span>{{ money(line.quantity * line.product.price) }}</span>
+            <span>{{ money(line.quantity * sizePrice(line.product, line.size)) }}</span>
           </div>
           <div class="summary-row">
             <span>{{ t('Subtotal', 'المجموع الفرعي') }}</span

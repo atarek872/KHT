@@ -87,7 +87,7 @@ test('gallery schema rejects invalid compare prices and duplicate image position
   }
 })
 
-test('product save persists ordered images and compare price while orders use current price', async () => {
+test('product save persists ordered images and compare price while orders use size prices', async () => {
   const { database, sqlite, close } = createTestD1()
   try {
     applyMigrations(sqlite)
@@ -98,12 +98,18 @@ test('product save persists ordered images and compare price while orders use cu
         ...existing,
         price: 800,
         compareAtPrice: 1000,
+        variants: existing.variants.map((variant) => ({
+          ...variant,
+          price: variant.size === 'L' ? 950 : 800,
+        })),
         images: ['/images/tee-back.webp', '/images/tee-front.webp'],
       }, existing.id)
 
     assert.deepEqual(saved.images, ['/images/tee-back.webp', '/images/tee-front.webp'])
     assert.equal(saved.image, '/images/tee-back.webp')
     assert.equal(saved.compareAtPrice, 1000)
+    assert.equal(saved.variants.find(({ size }) => size === 'M')?.price, 800)
+    assert.equal(saved.variants.find(({ size }) => size === 'L')?.price, 950)
 
     const catalog = await getCatalog(database)
     const product = catalog.products.find(({ id }) => id === 'kht-001')
@@ -111,7 +117,10 @@ test('product save persists ordered images and compare price while orders use cu
     assert.deepEqual(product.images, ['/images/tee-back.webp', '/images/tee-front.webp'])
     assert.equal(product.image, '/images/tee-back.webp')
     assert.equal(product.compareAtPrice, 1000)
+    assert.equal(product.sizes.find(({ name }) => name === 'M')?.price, 800)
+    assert.equal(product.sizes.find(({ name }) => name === 'L')?.price, 950)
     assert.equal(priceOrder([{ id: product.id, size: 'M', quantity: 1 }], catalog).subtotal, 800)
+    assert.equal(priceOrder([{ id: product.id, size: 'L', quantity: 2 }], catalog).subtotal, 1900)
   } finally {
     close()
   }
@@ -147,6 +156,12 @@ test('product validation enforces gallery and optional previous-price boundaries
       () => validateProduct({ ...valid, compareAtPrice: valid.price + 0.5 }),
       /whole EGP/i,
     )
+    for (const price of [-1, 12.5, Number.NaN]) {
+      assert.throws(
+        () => validateProduct({ ...valid, variants: [{ ...valid.variants[0]!, price }] }),
+        /variant price/i,
+      )
+    }
   } finally {
     close()
   }

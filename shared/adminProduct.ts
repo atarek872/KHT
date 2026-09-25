@@ -5,6 +5,7 @@ export interface AdminProductVariant {
   sku: string
   size: string
   color: string
+  price?: number
   stock: number
   active: boolean
 }

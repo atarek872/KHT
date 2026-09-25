@@ -1,4 +1,5 @@
 import type { CartLine, Product } from '../../shared/types'
+import { sizePrice, startingPrice } from '#shared/productPricing'
 
 type AnalyticsLine = CartLine & { product: Product }
 type AnalyticsEvent = 'view_item' | 'add_to_cart' | 'begin_checkout' | 'purchase'
@@ -19,7 +20,7 @@ function analyticsItem(product: Product, size?: string, quantity = 1, discount =
     item_brand: 'KHT',
     item_category: product.category,
     ...(size ? { item_variant: `Black / White / ${size}` } : {}),
-    price: product.price,
+    price: size ? sizePrice(product, size) : startingPrice(product),
     ...(discount > 0 ? { discount } : {}),
     quantity,
   }
@@ -40,7 +41,7 @@ export function useStoreAnalytics() {
   function trackViewItem(product: Product) {
     return send('view_item', {
       currency: 'EGP',
-      value: product.price,
+      value: startingPrice(product),
       items: [analyticsItem(product)],
     })
   }
@@ -48,7 +49,7 @@ export function useStoreAnalytics() {
   function trackAddToCart(product: Product, size: string) {
     return send('add_to_cart', {
       currency: 'EGP',
-      value: product.price,
+      value: sizePrice(product, size),
       items: [analyticsItem(product, size)],
     })
   }
@@ -65,7 +66,7 @@ export function useStoreAnalytics() {
   function trackPurchase(order: PurchaseEvent) {
     const merchandiseValue = Math.max(0, order.value - order.shipping)
     const subtotal = order.items.reduce(
-      (sum, line) => sum + line.product.price * line.quantity,
+      (sum, line) => sum + sizePrice(line.product, line.size) * line.quantity,
       0,
     )
     return send('purchase', {
@@ -79,7 +80,7 @@ export function useStoreAnalytics() {
           line.product,
           line.size,
           line.quantity,
-          subtotal > 0 ? (order.discount * line.product.price) / subtotal : 0,
+          subtotal > 0 ? (order.discount * sizePrice(line.product, line.size)) / subtotal : 0,
         ),
       ),
     })

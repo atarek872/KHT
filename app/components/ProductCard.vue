@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Product } from '../../shared/types'
+import { hasSizePriceRange, startingPrice } from '#shared/productPricing'
 defineProps<{ product: Product; index?: number }>()
 const { t, localized } = useLanguage()
 </script>
@@ -25,7 +26,7 @@ const { t, localized } = useLanguage()
         ><span class="product-code">{{ product.code }}</span
         ><span class="product-color">{{ t('Black / White', 'أسود / أبيض') }}</span>
       </div>
-      <ProductPrice :price="product.price" :compare-at-price="product.compareAtPrice" compact />
+      <ProductPrice :price="startingPrice(product)" :compare-at-price="product.compareAtPrice" :from="hasSizePriceRange(product)" compact />
     </div>
   </article>
 </template>

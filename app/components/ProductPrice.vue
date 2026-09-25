@@ -5,9 +5,11 @@ const props = withDefaults(defineProps<{
   price: number
   compareAtPrice?: number | null
   compact?: boolean
+  from?: boolean
 }>(), {
   compareAtPrice: null,
   compact: false,
+  from: false,
 })
 const { t, money } = useLanguage()
 const discount = computed(() => getDiscountPercentage(props.price, props.compareAtPrice))
@@ -18,7 +20,7 @@ const discount = computed(() => getDiscountPercentage(props.price, props.compare
     <del v-if="discount !== null && compareAtPrice !== null" class="product-price-display__previous">
       {{ money(compareAtPrice) }}
     </del>
-    <span class="product-price-display__current">{{ money(price) }}</span>
+    <span class="product-price-display__current">{{ from ? t('From', 'يبدأ من') + ' ' : '' }}{{ money(price) }}</span>
     <span v-if="discount !== null" class="product-price-display__discount">
       {{ t(`${discount}% OFF`, `خصم ${discount}٪`) }}
     </span>

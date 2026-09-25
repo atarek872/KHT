@@ -85,13 +85,13 @@ test('admin routes are session-protected and logout clears the server session', 
   assert.match(header, /\/api\/admin\/logout/)
 })
 
-test('public catalog maps D1 products and inventory without changing its storefront shape', () => {
+test('public catalog maps D1 products, inventory, and variant prices', () => {
   const endpoint = read('../server/api/catalog.get.ts')
   const service = read('../server/services/catalog.ts')
   assert.match(endpoint, /getCatalog\(getDatabase\(event\), import\.meta\.dev\)/)
   assert.match(service, /inventory_variants/)
   assert.match(service, /WHERE p\.active = 1 AND c\.active = 1/)
-  assert.match(service, /map\(\(variant\) => \(\{ name: variant\.size, stock: variant\.stock \}\)\)/)
+  assert.match(service, /map\(\(variant\) => \(\{ name: variant\.size, stock: variant\.stock, price: variant\.price \}\)\)/)
 })
 
 test('create order uses customer lookup mode and preserves selected customer identity', () => {

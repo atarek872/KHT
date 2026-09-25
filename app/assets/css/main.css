@@ -1448,6 +1448,14 @@ summary:focus-visible {
   border-color: var(--mist);
   color: var(--description);
 }
+.size-price-guide {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin: 0 0 12px;
+  font-size: 0.75rem;
+  color: var(--description);
+}
 .size-hint {
   font-size: 0.75rem;
   color: var(--description);

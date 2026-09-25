@@ -20,7 +20,7 @@ startingProduct.images = props.initial?.images || (initialImage ? [initialImage]
 const form = reactive<AdminProductInput>(startingProduct)
 
 function addVariant() {
-  form.variants.push({ sku: '', size: '', color: 'Black', stock: 0, active: true })
+  form.variants.push({ sku: '', size: '', color: 'Black', price: form.price, stock: 0, active: true })
 }
 
 async function uploadImage(event: Event) {
@@ -125,7 +125,7 @@ function submitForm() {
       </div>
     </AdminSection>
 
-    <AdminSection title="Pricing" description="The current price is used for checkout. Add a higher previous price to show the saving.">
+    <AdminSection title="Pricing" description="This price is the default for new sizes. Set each size's checkout price below.">
       <div class="admin-product-form__pricing">
         <div class="admin-field">
           <label class="admin-field__label" for="admin-product-price">Current price (EGP)</label>
@@ -139,13 +139,16 @@ function submitForm() {
       </div>
     </AdminSection>
 
-    <AdminSection title="Variants & inventory" description="Add sellable variants here. Update existing stock from Inventory to prevent conflicting writes.">
+    <AdminSection title="Variants & inventory" description="Set a price for every size in EGP. Update existing stock from Inventory to prevent conflicting writes.">
       <template v-if="initial" #actions><NuxtLink to="/admin/inventory" class="admin-button admin-button--quiet">Manage inventory</NuxtLink></template>
       <div class="admin-product-variants">
+        <button type="button" class="admin-button admin-button--quiet" @click="form.variants.forEach((variant) => { variant.price = form.price })">Apply default price to all sizes</button>
         <div v-for="(variant, index) in form.variants" :key="variant.id || index" class="admin-product-variant">
           <AdminInput v-model="variant.sku" label="SKU" required />
           <AdminInput v-model="variant.size" label="Size" required />
           <AdminInput v-model="variant.color" label="Color" required />
+          <div class="admin-field"><label class="admin-field__label" :for="`variant-price-${index}`">Price (EGP)</label>
+            <input :id="`variant-price-${index}`" v-model.number="variant.price" class="admin-field__control" type="number" min="0" step="1" required /></div>
           <div class="admin-field"><label class="admin-field__label" :for="`variant-stock-${index}`">Stock</label>
             <input :id="`variant-stock-${index}`" v-model.number="variant.stock" class="admin-field__control" type="number" min="0" step="1" required :disabled="!!variant.id" /></div>
           <AdminCheckbox v-model="variant.active" label="Active" />

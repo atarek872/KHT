@@ -42,10 +42,10 @@ export async function getCatalog(
       .all<Record<string, string | number>>(),
     database
       .prepare(
-        `SELECT product_id AS productId, size, stock FROM inventory_variants
+        `SELECT product_id AS productId, size, stock, unit_price AS price FROM inventory_variants
         WHERE active = 1 ORDER BY rowid`,
       )
-      .all<{ productId: string; size: string; stock: number }>(),
+      .all<{ productId: string; size: string; stock: number; price: number }>(),
     database
       .prepare(
         `SELECT pi.product_id AS productId, pi.url FROM product_images pi
@@ -83,7 +83,7 @@ export async function getCatalog(
       fit: { en: String(product.fitEn), ar: String(product.fitAr) },
       sizes: (variantsResult.results || [])
         .filter((variant) => variant.productId === product.id)
-        .map((variant) => ({ name: variant.size, stock: variant.stock })),
+        .map((variant) => ({ name: variant.size, stock: variant.stock, price: variant.price })),
       }
     }),
   }

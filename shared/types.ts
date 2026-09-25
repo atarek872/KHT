@@ -17,7 +17,7 @@ export interface Product {
   description: Localized
   detail: Localized
   fit: Localized
-  sizes: { name: string; stock: number }[]
+  sizes: { name: string; stock: number; price?: number }[]
   code: string
 }
 export interface Catalog {
