@@ -447,7 +447,7 @@ export const DEFAULT_STORE_CONTENT: StorefrontContent = {
     shipping: {
       label: 'Shipping & Returns',
       hero: hero(
-        text('SHIPPING & RETURNS.', 'الشحن والاسترجاع.'),
+        text('SHIPPING & RETURNS.', 'الشحن والاستبدال والاسترجاع.'),
         text(
           'Delivery, inspection, exchange and return information.',
           'معلومات التوصيل والفحص والاستبدال والاسترجاع.',
@@ -455,10 +455,10 @@ export const DEFAULT_STORE_CONTENT: StorefrontContent = {
         { eyebrow: text('KHT / CUSTOMER CARE', 'KHT / المساعدة') },
       ),
       seo: seo(
-        text('Shipping & Returns — KHT', 'الشحن والاسترجاع — KHT'),
+        text('Shipping, Exchanges & Returns — KHT', 'سياسة الشحن والاستبدال والاسترجاع — KHT'),
         text(
-          'KHT delivery, inspection, exchange and return information for Egypt.',
-          'معلومات التوصيل والفحص والاستبدال والاسترجاع لطلبات KHT داخل مصر.',
+          'KHT shipping, 14-day exchanges and returns, 30-day defect claims and refund policy for Egypt.',
+          'سياسة الشحن والاستبدال والاسترجاع خلال 14 يومًا، وعيوب التصنيع خلال 30 يومًا، واسترداد المبلغ من KHT.',
         ),
       ),
       sections: [
@@ -479,20 +479,55 @@ export const DEFAULT_STORE_CONTENT: StorefrontContent = {
           ),
         ),
         section(
-          'returns',
-          text('14-day returns', 'الاستبدال والاسترجاع خلال 14 يوم'),
+          'policy-intro',
+          text('KHT | Exchanges & Returns Policy', 'KHT | سياسة الاستبدال والاسترجاع'),
           text(
-            'Under Egyptian Consumer Protection Law, you may exchange or return an eligible item within 14 calendar days of receiving it, without giving a reason or bearing return costs. The item must be capable of being returned to its original condition; for clothing, keep it unused, unwashed, unaltered, with its tags and original packaging. Statutory exceptions apply, including goods made or altered to your specifications, unless defective.',
-            'طبقًا لقانون حماية المستهلك المصري، تقدر تستبدل أو تسترجع السلعة المؤهلة خلال أربعة عشر يوم تقويمي من استلامها، بدون إبداء سبب أو تحمل مصروفات الإرجاع. لازم تكون السلعة قابلة للعودة لحالتها الأصلية؛ وبالنسبة للملابس تكون غير مستخدمة أو مغسولة أو معدلة ومعها التيكتات والتغليف الأصلي. تسري الاستثناءات القانونية، ومنها السلع المصنوعة أو المعدلة حسب مواصفاتك، إلا إذا كانت معيبة.',
+            'At KHT, your satisfaction and trust in our products come first. This clear, simple policy protects your rights.',
+            'في KHT، رضاك وثقتك في منتجاتنا من أولوياتنا. علشان كده وفرنالك سياسة واضحة وسهلة تضمن حقوقك.',
+          ),
+        ),
+        section(
+          'returns',
+          text('1. Exchanges and returns', '1. الاستبدال والاسترجاع'),
+          text(
+            'You can exchange or return a product within 14 days of receiving it, without giving a reason or paying any fees. The product must be in its original condition, unused and unwashed, with its original tags and labels. Size exchanges depend on available stock. If the size you need is unavailable, you can request a refund.',
+            'يمكنك استبدال أو استرجاع المنتج خلال 14 يومًا من تاريخ الاستلام، دون الحاجة لإبداء أي سبب ودون تحمل أي رسوم. يُشترط أن يكون المنتج بحالته الأصلية، دون استخدام أو غسيل، مع الاحتفاظ بالتاجات والملصقات الأصلية. استبدال المقاسات متاح حسب توافر المخزون. وفي حالة عدم توافر المقاس المطلوب، يمكنك استرداد المبلغ.',
           ),
         ),
         section(
           'defects',
-          text('Defective items and refunds', 'السلع المعيبة ورد المبلغ'),
+          text('2. Manufacturing defects and incorrect orders', '2. عيوب التصنيع والطلبات الخاطئة'),
           text(
-            'If an item is defective, you may request replacement or return within 30 calendar days of receiving it, without additional cost, subject to the applicable law. Cash on delivery refunds are arranged through the official customer-care channel after the returned item is received and inspected, without reducing any statutory right.',
-            'لو السلعة فيها عيب، تقدر تطلب استبدالها أو استرجاعها خلال ثلاثين يوم تقويمي من الاستلام، بدون تكلفة إضافية، وفقًا للقانون المعمول به. رد قيمة طلبات الدفع عند الاستلام بيتم ترتيبه من خلال خدمة العملاء الرسمية بعد استلام القطعة وفحصها، من غير ما ينتقص ده من أي حق قانوني ليك.',
+            'If you receive a product with a manufacturing defect, or a product different from what you ordered, contact us within 30 days of receiving it. We will offer an exchange, or a return with a full refund, and cover all shipping costs at no extra charge to you.',
+            'لو وصلك منتج فيه عيب تصنيع، أو مختلف عن اللي طلبته، تواصل معانا خلال 30 يومًا من الاستلام. هنوفرلك الاستبدال أو الاسترجاع واسترداد المبلغ بالكامل، مع تحملنا جميع تكاليف الشحن، دون أي تكلفة إضافية عليك.',
           ),
+        ),
+        section(
+          'ineligible',
+          text('3. Items that cannot be returned', '3. الحالات غير المقبولة'),
+          text(
+            'We cannot accept an exchange or return for a product that has been used, washed or damaged by the customer, unless it has a manufacturing defect covered by consumer rights.',
+            'لا يُقبل الاستبدال أو الاسترجاع للمنتجات التي تعرضت للاستخدام أو الغسيل أو التلف بسبب العميل، ما لم يكن هناك عيب تصنيع مشمول بحقوق المستهلك.',
+          ),
+        ),
+        section(
+          'refunds',
+          text('4. Refunds', '4. استرداد المبلغ'),
+          text(
+            'After we check the condition of the product, we refund the amount through the original payment method, or through an agreed method for cash on delivery orders. For manufacturing defects, we exchange the product or issue a refund within one week of the request.',
+            'بيتم رد المبلغ بنفس وسيلة الدفع المستخدمة، أو بطريقة متفق عليها في حالة الدفع عند الاستلام، بعد التحقق من حالة المنتج. وفي حالات عيوب التصنيع، يتم الاستبدال أو رد المبلغ خلال أسبوع من تقديم الطلب.',
+          ),
+        ),
+        section(
+          'how-to-request',
+          text('5. How to request an exchange or return', '5. إزاي تقدم طلب؟'),
+          text(
+            'Contact customer care through our official WhatsApp or Instagram channel. Send your order number and the reason for the exchange or return, plus photos of the product if there is a problem. Our team will follow up with you until your request is resolved.',
+            'تواصل مع خدمة العملاء من خلال الواتساب أو حسابنا على إنستجرام، وابعتلنا رقم الطلب وسبب الاستبدال أو الاسترجاع، وصور المنتج لو فيه مشكلة. فريقنا هيتابع معاك لحد ما يتم حل طلبك.',
+          ),
+          text('', ''),
+          text('Contact KHT', 'تواصل مع KHT'),
+          '/contact',
         ),
         section(
           'complaints',
@@ -501,6 +536,15 @@ export const DEFAULT_STORE_CONTENT: StorefrontContent = {
             'Please contact KHT first so we can resolve your request. If it is not resolved, you may contact the Egyptian Consumer Protection Agency through cpa.gov.eg. Keep your order reference and proof of purchase.',
             'تواصل مع KHT أولًا علشان نحل طلبك. لو المشكلة ما اتحلتش، تقدر تتواصل مع جهاز حماية المستهلك من خلال cpa.gov.eg. احتفظ برقم الطلب وإثبات الشراء.',
           ),
+        ),
+        section(
+          'promise',
+          text('BLACK. WHITE. LINE.', 'BLACK. WHITE. LINE.'),
+          text(
+            'Your trust is part of who we are. Your rights are protected.',
+            'ثقتك جزء من هويتنا. وحقوقك محفوظة.',
+          ),
+          text('KHT', 'KHT'),
         ),
       ],
     },

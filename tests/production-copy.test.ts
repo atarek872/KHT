@@ -30,8 +30,8 @@ test('storefront no longer claims checkout is a concept preview', () => {
 test('policies describe actual COD, exchanges, and cart data handling', () => {
   const page = read('../shared/storeContent.ts')
   assert.match(page, /cash on delivery|الدفع عند الاستلام/i)
-  assert.match(page, /14 calendar days|أربعة عشر يوم/i)
-  assert.match(page, /30 calendar days|ثلاثين يوم/i)
+  assert.match(page, /14 (?:calendar )?days|14 يومًا|أربعة عشر يوم/i)
+  assert.match(page, /30 (?:calendar )?days|30 يومًا|ثلاثين يوم/i)
   assert.match(page, /cart contents|محتويات السلة/i)
   assert.match(page, /inspection at delivery|فحص الطلب عند الاستلام/i)
   assert.doesNotMatch(page, /19588/)
