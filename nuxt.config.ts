@@ -52,6 +52,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       storeWhatsApp: environment.NUXT_PUBLIC_STORE_WHATSAPP || '',
       storeIndexingEnabled: indexingEnabled,
       googleTagId: environment.NUXT_PUBLIC_GOOGLE_TAG_ID || '',
+      metaPixelId: environment.NUXT_PUBLIC_META_PIXEL_ID || '',
     },
   },
   typescript: { strict: true },

@@ -88,6 +88,7 @@
         "NUXT_PUBLIC_STORE_PHONE": "",
         "NUXT_PUBLIC_STORE_WHATSAPP": "",
         "NUXT_PUBLIC_GOOGLE_TAG_ID": "G-YHQBDWSBKG",
+        "NUXT_PUBLIC_META_PIXEL_ID": "1603918338193891",
       },
     },
   },
