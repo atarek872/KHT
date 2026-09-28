@@ -2,6 +2,13 @@
 import { sizePrice } from '#shared/productPricing'
 const { t, money, localized } = useLanguage()
 const { lines, update } = useBag()
+const { trackAddToCart } = useStoreAnalytics()
+function increase(line: (typeof lines.value)[number]) {
+  const limit = Math.min(10, line.product.sizes.find((size) => size.name === line.size)?.stock || 0)
+  if (line.quantity >= limit) return
+  update(line.id, line.size, line.quantity + 1)
+  trackAddToCart(line.product, line.size)
+}
 </script>
 <template>
   <div class="bag-items">
@@ -34,7 +41,7 @@ const { lines, update } = useBag()
                 Math.min(10, line.product.sizes.find((s) => s.name === line.size)?.stock || 0)
               "
               :aria-label="t('Increase quantity', 'زوّد الكمية')"
-              @click="update(line.id, line.size, line.quantity + 1)"
+              @click="increase(line)"
             >
               <KhtIcon name="plus" />
             </button>

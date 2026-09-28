@@ -3,6 +3,7 @@ const props = defineProps<{ mode: 'login' | 'register' | 'forgot-password' | 're
 const { t } = useLanguage()
 const route = useRoute()
 const customer = useCustomer()
+const { trackCompleteRegistration } = useStoreAnalytics()
 const form = reactive({ name: '', email: '', phone: '', password: '' })
 const busy = ref(false),
   error = ref(''),
@@ -28,6 +29,7 @@ async function submit() {
   try {
     if (props.mode === 'login' || props.mode === 'register') {
       await customer.authenticate(props.mode, { ...form })
+      if (props.mode === 'register') trackCompleteRegistration()
       await navigateTo(customerReturnTo(route.query.returnTo))
     } else if (props.mode === 'forgot-password') {
       await $fetch('/api/account/forgot-password', { method: 'POST', body: { email: form.email } })

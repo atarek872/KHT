@@ -7,6 +7,21 @@ const catalog = useCatalog()
 const storeContent = useStoreContent()
 const route = useRoute()
 const router = useRouter()
+const { trackSearch } = useStoreAnalytics()
+let lastTrackedSearch = ''
+function trackCurrentSearch(query: unknown) {
+  if (!props.search) return
+  const term = String(query || '').trim()
+  if (!term || term === lastTrackedSearch) return
+  if (trackSearch(term)) lastTrackedSearch = term
+}
+onMounted(() => {
+  trackCurrentSearch(route.query.q)
+})
+watch(
+  () => route.query.q,
+  (query) => trackCurrentSearch(query),
+)
 const size = computed({
   get: () => String(route.query.size || ''),
   set: (value) => updateQuery('size', value),

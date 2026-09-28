@@ -1,5 +1,11 @@
 import type { CartLine, Product } from '../../shared/types'
 import { sizePrice, startingPrice } from '#shared/productPricing'
+import {
+  metaCartPayload,
+  metaProductPayload,
+  metaPurchasePayload,
+  safeMetaSearchTerm,
+} from '#shared/metaCommerce'
 
 type AnalyticsLine = CartLine & { product: Product }
 type AnalyticsEvent = 'view_item' | 'add_to_cart' | 'begin_checkout' | 'purchase'
@@ -27,40 +33,53 @@ function analyticsItem(product: Product, size?: string, quantity = 1, discount =
 }
 
 export function useStoreAnalytics() {
-  const configuredId = String(useRuntimeConfig().public.googleTagId || '')
-  const enabled = /^G-[A-Z0-9]+$/.test(configuredId)
+  const config = useRuntimeConfig().public
+  const googleEnabled = /^G-[A-Z0-9]+$/.test(String(config.googleTagId || ''))
+  const metaEnabled = /^\d{10,20}$/.test(String(config.metaPixelId || ''))
 
   function send(event: AnalyticsEvent, parameters: Record<string, unknown>) {
-    if (!import.meta.client || !enabled) return false
+    if (!import.meta.client || !googleEnabled) return false
     const gtag = (window as Window & { gtag?: (...args: unknown[]) => void }).gtag
     if (typeof gtag !== 'function') return false
     gtag('event', event, parameters)
     return true
   }
 
+  function sendMeta(event: string, parameters: Record<string, unknown>, eventId?: string) {
+    if (!import.meta.client || !metaEnabled) return false
+    const fbq = (window as Window & { fbq?: (...args: unknown[]) => void }).fbq
+    if (typeof fbq !== 'function') return false
+    if (eventId) fbq('track', event, parameters, { eventID: eventId })
+    else fbq('track', event, parameters)
+    return true
+  }
+
   function trackViewItem(product: Product) {
-    return send('view_item', {
+    const googleSent = send('view_item', {
       currency: 'EGP',
       value: startingPrice(product),
       items: [analyticsItem(product)],
     })
+    return sendMeta('ViewContent', metaProductPayload(product)) || googleSent
   }
 
   function trackAddToCart(product: Product, size: string) {
-    return send('add_to_cart', {
+    const googleSent = send('add_to_cart', {
       currency: 'EGP',
       value: sizePrice(product, size),
       items: [analyticsItem(product, size)],
     })
+    return sendMeta('AddToCart', metaProductPayload(product, size)) || googleSent
   }
 
   function trackBeginCheckout(items: AnalyticsLine[], value: number, coupon?: string) {
-    return send('begin_checkout', {
+    const googleSent = send('begin_checkout', {
       currency: 'EGP',
       value,
       ...(coupon ? { coupon } : {}),
       items: items.map((line) => analyticsItem(line.product, line.size, line.quantity)),
     })
+    return sendMeta('InitiateCheckout', metaCartPayload(items, value)) || googleSent
   }
 
   function trackPurchase(order: PurchaseEvent) {
@@ -69,7 +88,7 @@ export function useStoreAnalytics() {
       (sum, line) => sum + sizePrice(line.product, line.size) * line.quantity,
       0,
     )
-    return send('purchase', {
+    const googleSent = send('purchase', {
       transaction_id: order.transactionId,
       currency: 'EGP',
       value: merchandiseValue,
@@ -84,7 +103,43 @@ export function useStoreAnalytics() {
         ),
       ),
     })
+    const key = `kht-meta-purchase:${order.transactionId}`
+    try {
+      if (sessionStorage.getItem(key)) return googleSent
+    } catch {
+      // Private browsing can disable session storage; the order ID still identifies the event.
+    }
+    const metaSent = sendMeta(
+      'Purchase',
+      metaPurchasePayload(order.items, order.value, order.transactionId),
+      order.transactionId,
+    )
+    if (metaSent) {
+      try {
+        sessionStorage.setItem(key, '1')
+      } catch {
+        // Tracking remains functional when session storage is unavailable.
+      }
+    }
+    return metaSent || googleSent
   }
 
-  return { trackViewItem, trackAddToCart, trackBeginCheckout, trackPurchase }
+  function trackSearch(query: string) {
+    const term = safeMetaSearchTerm(query)
+    if (!term) return false
+    return sendMeta('Search', { search_string: term })
+  }
+
+  function trackCompleteRegistration() {
+    return sendMeta('CompleteRegistration', { status: 'completed' })
+  }
+
+  return {
+    trackViewItem,
+    trackAddToCart,
+    trackBeginCheckout,
+    trackPurchase,
+    trackSearch,
+    trackCompleteRegistration,
+  }
 }
