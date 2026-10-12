@@ -447,20 +447,20 @@ summary:focus-visible {
 }
 .hero-image {
   position: absolute;
-  inset: 0 0 0 34%;
+  inset: 0 0 0 40%;
   overflow: hidden;
 }
 .hero-image img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 68% center;
+  object-position: right center;
 }
 .hero-content {
   position: relative;
   z-index: 1;
   padding: 52px 0 68px var(--gutter);
-  width: 44%;
+  width: 40%;
   display: flex;
   align-items: flex-start;
   flex-direction: column;
@@ -478,7 +478,7 @@ summary:focus-visible {
   margin-bottom: 26px;
 }
 .hero h1 {
-  font-size: clamp(100px, 9.85vw, 164px);
+  font-size: clamp(80px, 8.8vw, 150px);
   font-weight: 600;
   letter-spacing: -0.035em;
   line-height: 0.84;
@@ -487,7 +487,7 @@ summary:focus-visible {
 }
 .hero-signature-line {
   height: 3px;
-  width: min(36vw, 550px);
+  width: min(30vw, 440px);
   background: var(--white);
   margin-top: 33px;
   transform-origin: left;
@@ -2207,7 +2207,13 @@ thead {
   line-height: 1.9;
 }
 .about-campaign {
+  display: block;
   width: 100%;
+  background: var(--image);
+}
+.about-campaign img {
+  width: 100%;
+  height: auto;
   max-height: 720px;
   object-fit: contain;
   background: var(--image);
@@ -2259,7 +2265,7 @@ thead {
 [dir='rtl'] .hero-content {
   padding: 52px var(--gutter) 68px 0;
   text-align: right;
-  width: 44%;
+  width: 40%;
   align-items: flex-start;
 }
 [dir='rtl'] .hero h1 {
@@ -2267,10 +2273,10 @@ thead {
   align-self: flex-start;
 }
 [dir='rtl'] .hero-image {
-  inset: 0 34% 0 0;
+  inset: 0 40% 0 0;
 }
 [dir='rtl'] .hero-image img {
-  object-position: 72% center;
+  object-position: right center;
 }
 [dir='rtl'] .hero-scroll {
   right: var(--gutter);
@@ -2281,7 +2287,7 @@ thead {
   right: auto;
 }
 [dir='rtl'] .hero h1 {
-  font-size: clamp(100px, 9.85vw, 164px);
+  font-size: clamp(80px, 8.8vw, 150px);
 }
 [dir='rtl'] .hero-edition {
   letter-spacing: 0;
@@ -2400,18 +2406,23 @@ thead {
     height: auto;
     min-height: 665px;
   }
-  .hero-content {
-    width: 48%;
+  .hero-content,
+  [dir='rtl'] .hero-content {
+    width: 44%;
     padding-top: 45px;
   }
-  .hero h1 {
-    font-size: 115px;
+  .hero h1,
+  [dir='rtl'] .hero h1 {
+    font-size: clamp(80px, 8.8vw, 105px);
   }
   .hero-image {
-    inset-inline-start: 36%;
+    inset-inline-start: 44%;
+  }
+  [dir='rtl'] .hero-image {
+    inset: 0 44% 0 0;
   }
   .hero-signature-line {
-    width: 36vw;
+    width: min(30vw, 350px);
   }
   .hero-content p {
     margin: 24px 0;
@@ -3757,6 +3768,7 @@ a {
   .hero-content p {
     margin: 16px 0;
     font-size: 0.84rem;
+    max-width: 38rem;
   }
   .hero-shop-price {
     margin-bottom: 15px;
@@ -3772,6 +3784,150 @@ a {
   .look-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 28px 14px;
+  }
+}
+
+/* Keep campaign copy in its own panel when the tablet split gets too narrow. */
+@media (min-width: 768px) and (max-width: 900px) {
+  .hero {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .hero-image,
+  [dir='rtl'] .hero-image {
+    position: relative;
+    inset: auto;
+    order: 0;
+    width: 100%;
+    height: clamp(300px, 43vw, 380px);
+  }
+  .hero-image img,
+  [dir='rtl'] .hero-image img {
+    object-position: 83% center;
+  }
+  .hero-content,
+  [dir='rtl'] .hero-content {
+    order: 1;
+    width: 100%;
+    padding: 32px var(--gutter) 40px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: 32px;
+    align-items: start;
+  }
+  .hero-edition {
+    grid-column: 1 / -1;
+    margin-bottom: 20px;
+  }
+  .hero-content h1 {
+    grid-column: 1;
+    grid-row: 2 / 6;
+  }
+  .hero-content .hero-signature-line {
+    grid-column: 2;
+    grid-row: 2;
+    width: 100%;
+    margin: 3px 0 0;
+  }
+  .hero-content > p {
+    grid-column: 2;
+    grid-row: 3;
+    margin: 12px 0 16px;
+  }
+  .hero-shop-price {
+    grid-column: 2;
+    grid-row: 4;
+    margin-bottom: 12px;
+  }
+  .hero-actions {
+    grid-column: 2;
+    grid-row: 5;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  .hero h1,
+  [dir='rtl'] .hero h1 {
+    font-size: clamp(74px, 9vw, 92px);
+    max-width: 100%;
+  }
+  .hero-image-caption {
+    top: calc(clamp(300px, 43vw, 380px) - 35px);
+    bottom: auto;
+  }
+  .hero-scroll {
+    display: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .hero-image {
+    height: clamp(300px, 52svh, 430px);
+  }
+  .hero-image img,
+  [dir='rtl'] .hero-image img {
+    object-position: 82% center;
+  }
+  .hero-image-caption {
+    top: calc(clamp(300px, 52svh, 430px) - 28px);
+  }
+  .hero h1,
+  [dir='rtl'] .hero h1,
+  .manifesto-layout h2,
+  .closing-copy h2 {
+    max-width: 100%;
+    overflow-wrap: break-word;
+  }
+  .content-page-hero__copy h1 {
+    overflow-wrap: break-word;
+  }
+}
+
+@media (max-width: 600px) {
+  .drop-banner {
+    display: block;
+    height: auto;
+    margin-bottom: 32px;
+  }
+  .drop-banner picture {
+    width: 100%;
+    height: clamp(280px, 88vw, 420px);
+  }
+  .drop-banner img {
+    object-position: center;
+  }
+  .drop-banner > span {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 130px;
+    padding: 20px;
+    font-size: clamp(36px, 10vw, 52px);
+    line-height: 1;
+    overflow-wrap: break-word;
+  }
+}
+
+@media (max-width: 480px) {
+  .collection-section .section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .collection-section .section-heading > .text-link {
+    align-self: flex-start;
+    max-width: none;
+  }
+}
+
+@media (max-width: 359px) {
+  .site-header .header-actions > a.icon-button {
+    display: none;
+  }
+  .announcement {
+    padding-inline: 12px;
+    gap: 8px;
+    font-size: 0.65rem;
   }
 }
 @media (max-width: 560px) {

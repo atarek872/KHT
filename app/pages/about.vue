@@ -42,15 +42,21 @@ useStoreSeo({
         </p>
       </div>
     </section>
-    <StoreImage
-      class="about-campaign"
-      :src="page.hero.imageUrl || '/images/our-story-cover.png'"
-      :alt="t(page.hero.imageAlt.en, page.hero.imageAlt.ar)"
-      sizes="(max-width: 767px) 100vw, 70vw"
-      width="2659"
-      height="984"
-      loading="lazy"
-    />
+    <picture class="about-campaign">
+      <source
+        v-if="page.hero.mobileImageUrl"
+        media="(max-width: 767px)"
+        :srcset="page.hero.mobileImageUrl"
+      />
+      <StoreImage
+        :src="page.hero.imageUrl || '/images/our-story-cover.png'"
+        :alt="t(page.hero.imageAlt.en, page.hero.imageAlt.ar)"
+        sizes="(max-width: 767px) 100vw, 70vw"
+        width="2659"
+        height="984"
+        loading="lazy"
+      />
+    </picture>
     <section class="about-ending">
       <span>{{ t(storeContent.brand.tagline.en, storeContent.brand.tagline.ar) }}</span
       ><NuxtLink v-if="page.hero.ctaEnabled" :to="page.hero.ctaUrl" class="button button-white"

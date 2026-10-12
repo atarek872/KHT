@@ -13,7 +13,14 @@ const { t } = useLanguage()
         media="(max-width: 767px)"
         :srcset="page.hero.mobileImageUrl"
       />
-      <img :src="page.hero.imageUrl" :alt="t(page.hero.imageAlt.en, page.hero.imageAlt.ar)" />
+      <StoreImage
+        :src="page.hero.imageUrl"
+        :alt="t(page.hero.imageAlt.en, page.hero.imageAlt.ar)"
+        sizes="(max-width: 900px) 100vw, 60vw"
+        width="1672"
+        height="941"
+        fetchpriority="high"
+      />
     </picture>
     <div class="content-page-hero__copy">
       <p class="eyebrow">{{ t(page.hero.eyebrow.en, page.hero.eyebrow.ar) }}</p>
