@@ -27,6 +27,8 @@ test('draft stays private until publish and each publish creates a restorable ve
   const { database } = testDatabase()
   const first = cloneStoreContent(DEFAULT_STORE_CONTENT)
   first.pages.home.hero.title.en = 'A NEW LINE.'
+  first.brand.announcementStart.en = 'NEW DROP ✨'
+  first.brand.announcementDurationSeconds = 18
   await saveStoreContentDraft(database, first, 'admin@kht-eg.com')
   assert.equal(
     (await getPublicStoreContent(database)).content.pages.home.hero.title.en,
@@ -35,6 +37,14 @@ test('draft stays private until publish and each publish creates a restorable ve
 
   const publishedFirst = await publishStoreContent(database, first, 'admin@kht-eg.com')
   assert.equal(publishedFirst.published.pages.home.hero.title.en, 'A NEW LINE.')
+  assert.equal(
+    (await getPublicStoreContent(database)).content.brand.announcementStart.en,
+    'NEW DROP ✨',
+  )
+  assert.equal(
+    (await getPublicStoreContent(database)).content.brand.announcementDurationSeconds,
+    18,
+  )
   assert.equal(publishedFirst.versions.length, 1)
 
   const second = cloneStoreContent(first)
@@ -86,6 +96,17 @@ test('content validation rejects unsafe links, images, duplicate navigation, and
     ...duplicateCard.pages.home.homeShopping!.cards[0]!,
   })
   assert.throws(() => validateStoreContent(duplicateCard), /unique ID/)
+
+  const invalidAnnouncementSpeed = cloneStoreContent(DEFAULT_STORE_CONTENT)
+  invalidAnnouncementSpeed.brand.announcementDurationSeconds = 5
+  assert.throws(() => validateStoreContent(invalidAnnouncementSpeed), /announcement speed/i)
+  invalidAnnouncementSpeed.brand.announcementDurationSeconds = 20.5
+  assert.throws(() => validateStoreContent(invalidAnnouncementSpeed), /announcement speed/i)
+
+  const emojiAnnouncement = cloneStoreContent(DEFAULT_STORE_CONTENT)
+  emojiAnnouncement.brand.announcementStart.en = 'A new drop ✨'
+  emojiAnnouncement.brand.announcementStart.ar = 'إصدار جديد ✨'
+  assert.doesNotThrow(() => validateStoreContent(emojiAnnouncement))
 })
 
 test('old published content gains shopping controls without losing customized copy', async () => {
@@ -107,6 +128,21 @@ test('old published content gains shopping controls without losing customized co
   assert.equal(state.published.pages.home.sections[0]?.ctaUrl, '/drops/001')
   assert.equal(state.published.pages.home.sections[0]?.heading.en, 'SHOP THE LOOK.')
   assert.equal(state.published.pages.home.homeShopping?.cards.length, 3)
+  assert.equal(state.hasUnpublishedChanges, false)
+})
+
+test('existing published announcements gain the default motion speed without losing copy', async () => {
+  const { database } = testDatabase()
+  const legacy = cloneStoreContent(DEFAULT_STORE_CONTENT)
+  legacy.brand.announcementStart.en = 'CUSTOM DROP ✨'
+  delete (legacy.brand as Partial<typeof legacy.brand>).announcementDurationSeconds
+  await database
+    .prepare('UPDATE storefront_content_state SET published_json=?, draft_json=? WHERE id=1')
+    .bind(JSON.stringify(legacy), JSON.stringify(legacy))
+    .run()
+  const state = await getAdminStoreContent(database)
+  assert.equal(state.published.brand.announcementStart.en, 'CUSTOM DROP ✨')
+  assert.equal(state.published.brand.announcementDurationSeconds, 24)
   assert.equal(state.hasUnpublishedChanges, false)
 })
 

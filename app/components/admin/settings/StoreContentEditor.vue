@@ -23,6 +23,13 @@ const feedback = ref('')
 const failure = ref(false)
 const selectedPageKey = ref<StorePageKey>('home')
 const previewLanguage = ref<'en' | 'ar'>('en')
+const announcementFields = [
+  { key: 'announcementStart', label: 'First message' },
+  { key: 'announcementCenter', label: 'Second message' },
+  { key: 'announcementEnd', label: 'Third message' },
+] as const
+type AnnouncementField = (typeof announcementFields)[number]['key']
+const announcementSymbols = ['✦', '🖤', '🤍', '🎁', '✨'] as const
 
 const pageKeys: StorePageKey[] = [
   'home',
@@ -60,6 +67,9 @@ watch(
 
 const page = computed(() => form.value?.pages[selectedPageKey.value])
 const homeShopping = computed(() => form.value?.pages.home.homeShopping)
+const announcementPreview = computed(() =>
+  announcementFields.map((field) => form.value?.brand[field.key][previewLanguage.value] || ''),
+)
 const homeCollection = computed(() =>
   form.value?.pages.home.sections.find((section) => section.id === 'collection'),
 )
@@ -189,6 +199,21 @@ function addNavigation() {
   form.value.navigation.push(item)
 }
 
+function addAnnouncementSymbol(field: AnnouncementField, symbol: string) {
+  if (!form.value) return
+  const next = {
+    en: `${form.value.brand[field].en.trimEnd()} ${symbol}`,
+    ar: `${form.value.brand[field].ar.trimEnd()} ${symbol}`,
+  }
+  if (next.en.length > 120 || next.ar.length > 120) {
+    failure.value = true
+    feedback.value = 'Announcement messages can be up to 120 characters.'
+    return
+  }
+  form.value.brand[field] = next
+  feedback.value = ''
+}
+
 function moveNavigation(index: number, direction: -1 | 1) {
   if (!form.value) return
   const next = index + direction
@@ -305,21 +330,79 @@ onBeforeUnmount(() => {
       </AdminSection>
       <AdminSection
         title="Announcement bar"
-        description="The three messages across the top of every page."
+        description="A continuous strip across the top of every page. Edit both languages, add symbols, and set the speed."
       >
         <div class="admin-content-editor__grid">
-          <template
-            v-for="field in ['announcementStart', 'announcementCenter', 'announcementEnd'] as const"
-            :key="field"
-          >
-            <AdminInput v-model="form.brand[field].en" :label="`English ${field}`" required />
+          <template v-for="field in announcementFields" :key="field.key">
             <AdminInput
-              v-model="form.brand[field].ar"
-              :label="`Arabic ${field}`"
+              v-model="form.brand[field.key].en"
+              :label="`${field.label} · English`"
+              maxlength="120"
+              required
+            />
+            <AdminInput
+              v-model="form.brand[field.key].ar"
+              :label="`${field.label} · Arabic`"
+              maxlength="120"
               required
               dir="rtl"
             />
+            <div class="admin-announcement-symbols">
+              <span>Insert into both versions:</span>
+              <button
+                v-for="symbol in announcementSymbols"
+                :key="symbol"
+                type="button"
+                :aria-label="`Add ${symbol} to ${field.label} in both languages`"
+                @click="addAnnouncementSymbol(field.key, symbol)"
+              >
+                {{ symbol }}
+              </button>
+            </div>
           </template>
+        </div>
+        <div class="admin-announcement-speed">
+          <label for="announcement-duration"
+            >One full scroll: {{ form.brand.announcementDurationSeconds }} seconds</label
+          >
+          <input
+            id="announcement-duration"
+            v-model.number="form.brand.announcementDurationSeconds"
+            type="range"
+            min="10"
+            max="60"
+            step="1"
+            aria-describedby="announcement-duration-help"
+          />
+          <p id="announcement-duration-help">
+            10 seconds is fastest; 60 seconds is slowest. Default: 24 seconds.
+          </p>
+        </div>
+        <div class="admin-announcement-preview">
+          <div class="admin-announcement-preview__heading">
+            <strong>Live preview</strong>
+            <div>
+              <button
+                type="button"
+                :aria-pressed="previewLanguage === 'en'"
+                @click="previewLanguage = 'en'"
+              >
+                EN
+              </button>
+              <button
+                type="button"
+                :aria-pressed="previewLanguage === 'ar'"
+                @click="previewLanguage = 'ar'"
+              >
+                AR
+              </button>
+            </div>
+          </div>
+          <AnnouncementBar
+            :messages="announcementPreview"
+            :duration-seconds="form.brand.announcementDurationSeconds"
+            :language="previewLanguage"
+          />
         </div>
       </AdminSection>
       <AdminSection

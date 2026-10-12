@@ -2,6 +2,11 @@
 const { t, locale, localized } = useLanguage()
 const storeContent = useStoreContent()
 const brand = computed(() => storeContent.value.brand)
+const announcementMessages = computed(() => [
+  t(brand.value.announcementStart.en, brand.value.announcementStart.ar),
+  t(brand.value.announcementCenter.en, brand.value.announcementCenter.ar),
+  t(brand.value.announcementEnd.en, brand.value.announcementEnd.ar),
+])
 const navigation = computed(() => storeContent.value.navigation.filter((item) => item.enabled))
 const desktopNavigation = computed(() => navigation.value.filter((item) => item.desktop))
 const mobileMainNavigation = computed(() =>
@@ -29,13 +34,11 @@ function submitSearch() {
 }
 </script>
 <template>
-  <div class="announcement">
-    <span>{{ t(brand.announcementStart.en, brand.announcementStart.ar) }}</span
-    ><span class="announcement-secondary">{{
-      t(brand.announcementCenter.en, brand.announcementCenter.ar)
-    }}</span
-    ><span>{{ t(brand.announcementEnd.en, brand.announcementEnd.ar) }}</span>
-  </div>
+  <AnnouncementBar
+    :messages="announcementMessages"
+    :duration-seconds="brand.announcementDurationSeconds"
+    :language="locale"
+  />
   <header class="site-header">
     <NuxtLink to="/" class="wordmark" :aria-label="`${brand.name} home`">
       <img v-if="brand.logoUrl" :src="brand.logoUrl" :alt="brand.name" />

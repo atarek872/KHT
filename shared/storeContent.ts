@@ -105,6 +105,7 @@ export type StoreBrandContent = {
   announcementStart: ContentText
   announcementCenter: ContentText
   announcementEnd: ContentText
+  announcementDurationSeconds: number
   footerCollectionTitle: ContentText
   footerCareTitle: ContentText
   footerStatement: ContentText
@@ -239,6 +240,7 @@ export const DEFAULT_STORE_CONTENT: StorefrontContent = {
     announcementStart: text('DROP 001 — THE FIRST CHAPTER', 'الإصدار 001 — الفصل الأول'),
     announcementCenter: text('BLACK. WHITE. LINE.', 'أسود. أبيض. خط.'),
     announcementEnd: text('THE KHT COLLECTION', 'مجموعة KHT'),
+    announcementDurationSeconds: 24,
     footerCollectionTitle: text('Collection', 'المجموعة'),
     footerCareTitle: text('Customer care', 'المساعدة'),
     footerStatement: text('THE LINE CONNECTS US.', 'الخط يجمعنا.'),

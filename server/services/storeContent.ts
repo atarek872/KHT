@@ -101,6 +101,12 @@ export function validateStoreContent(input: StorefrontContent) {
     ['terms label', brand.termsLabel, 60],
   ] as const)
     bilingual(value, label, max)
+  if (
+    !Number.isInteger(brand.announcementDurationSeconds) ||
+    brand.announcementDurationSeconds < 10 ||
+    brand.announcementDurationSeconds > 60
+  )
+    throw new Error('Announcement speed must be between 10 and 60 seconds.')
   safeImage(brand.logoUrl, 'Brand logo')
   safeImage(brand.defaultSocialImageUrl, 'Default social sharing image', false)
   safeLink(brand.footerStatementLinkUrl, 'Footer statement destination')
@@ -226,6 +232,10 @@ function parseContent(value: string) {
   if (!value || value === '{}') return cloneStoreContent()
   try {
     const content = JSON.parse(value) as StorefrontContent
+    // Preserve existing announcement copy when older saved content gains motion controls.
+    if (content.brand && content.brand.announcementDurationSeconds === undefined)
+      content.brand.announcementDurationSeconds =
+        DEFAULT_STORE_CONTENT.brand.announcementDurationSeconds
     // Older published content predates the shoppable homepage. Preserve every existing edit.
     if (content.pages?.home && !('homeShopping' in content.pages.home)) {
       content.pages.home.homeShopping = structuredClone(DEFAULT_HOME_SHOPPING)
