@@ -42,11 +42,48 @@ export type StoreContentSection = {
   ctaUrl: string
 }
 
+export type HomeShoppingCard = {
+  id: string
+  enabled: boolean
+  productSlug: string
+  eyebrow: ContentText
+  heading: ContentText
+  body: ContentText
+  imageUrl: string | null
+  mobileImageUrl: string | null
+  imageAlt: ContentText
+  ctaLabel: ContentText
+  useProductLink: boolean
+  ctaUrl: string
+  showPrice: boolean
+}
+
+export type HomeShoppingContent = {
+  heroCaption: ContentText
+  heroScrollLabel: ContentText
+  heroProductSlug: string
+  heroUseProductLink: boolean
+  heroShowPrice: boolean
+  heroPricePrefix: ContentText
+  secondaryEnabled: boolean
+  secondaryLabel: ContentText
+  secondaryUrl: string
+  stripEnabled: boolean
+  stripStart: ContentText
+  stripCenter: ContentText
+  stripEnd: ContentText
+  sectionEnabled: boolean
+  sectionShowAllLink: boolean
+  sectionShowFooter: boolean
+  cards: HomeShoppingCard[]
+}
+
 export type StorePageContent = {
   label: string
   hero: StoreHeroContent
   seo: StoreSeoContent
   sections: StoreContentSection[]
+  homeShopping?: HomeShoppingContent
 }
 
 export type StoreNavigationItem = {
@@ -126,6 +163,72 @@ const seo = (
   description,
   socialImageUrl,
 })
+
+export const DEFAULT_HOME_SHOPPING: HomeShoppingContent = {
+  heroCaption: text('KHT / STUDY IN CONTRAST', 'KHT / دراسة في التباين'),
+  heroScrollLabel: text('Scroll to discover', 'انزل واكتشف'),
+  heroProductSlug: 'line-01-full-set-black',
+  heroUseProductLink: true,
+  heroShowPrice: true,
+  heroPricePrefix: text('Full look from', 'الإطلالة الكاملة من'),
+  secondaryEnabled: true,
+  secondaryLabel: text('Explore the pieces', 'اكتشف القطع'),
+  secondaryUrl: '/#collection',
+  stripEnabled: true,
+  stripStart: text('A STUDY IN CONTRAST', 'دراسة في التباين'),
+  stripCenter: text('ONE LINE. NO NOISE.', 'خط واحد. من غير ضوضاء.'),
+  stripEnd: text('DESIGNED TO STAND APART', 'تفاصيل تميزك'),
+  sectionEnabled: true,
+  sectionShowAllLink: true,
+  sectionShowFooter: true,
+  cards: [
+    {
+      id: 'full-look',
+      enabled: true,
+      productSlug: 'line-01-full-set-black',
+      eyebrow: text('01 / THE FULL LOOK', '01 / الإطلالة الكاملة'),
+      heading: text('Wear the whole line.', 'البس الإطلالة كاملة.'),
+      body: text('The hoodie and pants, together.', 'الهودي والبنطلون، مع بعض.'),
+      imageUrl: null,
+      mobileImageUrl: null,
+      imageAlt: text('KHT complete black set', 'طقم KHT الأسود الكامل'),
+      ctaLabel: text('Shop the set', 'تسوق الطقم'),
+      useProductLink: true,
+      ctaUrl: '/shop',
+      showPrice: true,
+    },
+    {
+      id: 'hoodie',
+      enabled: true,
+      productSlug: 'line-01-oversized-hoodie-black',
+      eyebrow: text('02 / THE HOODIE', '02 / الهودي'),
+      heading: text('Make it your layer.', 'قطعتك الأساسية.'),
+      body: text('One line. Your way to wear it.', 'خط واحد. وأنت تختار طريقتك.'),
+      imageUrl: null,
+      mobileImageUrl: null,
+      imageAlt: text('KHT black oversized hoodie', 'هودي KHT الأسود الأوفر سايز'),
+      ctaLabel: text('Shop the hoodie', 'تسوق الهودي'),
+      useProductLink: true,
+      ctaUrl: '/shop',
+      showPrice: true,
+    },
+    {
+      id: 'pants',
+      enabled: true,
+      productSlug: 'line-01-wide-leg-pants-black',
+      eyebrow: text('03 / THE PANTS', '03 / البنطلون'),
+      heading: text('Find your form.', 'اختار قصّتك.'),
+      body: text('The wide-leg silhouette, on its own.', 'البنطلون الواسع، لوحده أو مع الطقم.'),
+      imageUrl: null,
+      mobileImageUrl: null,
+      imageAlt: text('KHT black wide-leg pants', 'بنطلون KHT الأسود الواسع'),
+      ctaLabel: text('Shop the pants', 'تسوق البنطلون'),
+      useProductLink: true,
+      ctaUrl: '/shop',
+      showPrice: true,
+    },
+  ],
+}
 
 export const DEFAULT_STORE_CONTENT: StorefrontContent = {
   brand: {
@@ -237,6 +340,7 @@ export const DEFAULT_STORE_CONTENT: StorefrontContent = {
   pages: {
     home: {
       label: 'Homepage',
+      homeShopping: DEFAULT_HOME_SHOPPING,
       hero: hero(
         text('BLACK.\nWHITE.\nLINE.', 'أسود.\nأبيض.\nخط.'),
         text(
@@ -252,7 +356,7 @@ export const DEFAULT_STORE_CONTENT: StorefrontContent = {
             'موديلان بملابس KHT السوداء وخطوط بيضاء مميزة',
           ),
           ctaEnabled: true,
-          ctaLabel: text('SHOP DROP 001', 'تسوق الإصدار 001'),
+          ctaLabel: text('SHOP THE FULL SET', 'تسوق الطقم الكامل'),
           ctaUrl: '/drops/001',
         },
       ),
@@ -267,8 +371,11 @@ export const DEFAULT_STORE_CONTENT: StorefrontContent = {
       sections: [
         section(
           'collection',
-          text('THE ESSENTIALS.', 'القطع الأساسية.'),
-          text('Three silhouettes. One identity.', 'ثلاث قصّات. هوية واحدة.'),
+          text('SHOP THE LOOK.', 'الإطلالة كاملة أو قطعتك.'),
+          text(
+            'The full set or your favourite piece. Choose your way.',
+            'الطقم الكامل أو القطعة اللي تناسبك. اختار بطريقتك.',
+          ),
           text('THE FIRST CHAPTER', 'الفصل الأول'),
           text('Explore the collection', 'اكتشف المجموعة'),
           '/shop',

@@ -1,14 +1,33 @@
 <script setup lang="ts">
 import { useStoreContact } from '#shared/storeConfig'
 import { DEFAULT_SOCIAL_IMAGE, STORE_ORIGIN } from '#shared/storefrontSeo'
+import { DEFAULT_HOME_SHOPPING, type HomeShoppingCard } from '#shared/storeContent'
+import { hasSizePriceRange, startingPrice } from '#shared/productPricing'
+import type { Product } from '#shared/types'
 
-const { t, localized } = useLanguage()
+const { t, localized, money } = useLanguage()
 const catalog = useCatalog()
 const storeContent = useStoreContent()
 const page = computed(() => storeContent.value.pages.home)
 const brand = computed(() => storeContent.value.brand)
 const section = (id: string) => computed(() => page.value.sections.find((item) => item.id === id)!)
 const collectionContent = section('collection')
+const shopping = computed(() => page.value.homeShopping || DEFAULT_HOME_SHOPPING)
+const productFor = (slug: string) => catalog.value.products.find((product) => product.slug === slug)
+const heroProduct = computed(() => productFor(shopping.value.heroProductSlug))
+const heroDestination = computed(() =>
+  shopping.value.heroUseProductLink && heroProduct.value
+    ? `/products/${heroProduct.value.slug}`
+    : page.value.hero.ctaUrl,
+)
+const cardDestination = (card: HomeShoppingCard, product?: Product) =>
+  card.useProductLink && product ? `/products/${product.slug}` : card.ctaUrl
+const visibleCards = computed(() =>
+  shopping.value.cards.flatMap((card) => {
+    const product = productFor(card.productSlug)
+    return card.enabled && product ? [{ card, product }] : []
+  }),
+)
 const manifestoContent = section('manifesto')
 const manifestoHeading = computed(() =>
   t(manifestoContent.value.heading.en, manifestoContent.value.heading.ar).split('\n'),
@@ -88,7 +107,7 @@ useStoreSeo({
 </script>
 <template>
   <main id="main">
-    <section class="hero" aria-labelledby="hero-title">
+    <section v-if="page.hero.enabled" class="hero" aria-labelledby="hero-title">
       <div class="hero-image">
         <picture>
           <source
@@ -117,34 +136,102 @@ useStoreSeo({
         <p>
           {{ t(page.hero.body.en, page.hero.body.ar) }}
         </p>
-        <NuxtLink v-if="page.hero.ctaEnabled" :to="page.hero.ctaUrl" class="button button-white"
-          >{{ t(page.hero.ctaLabel.en, page.hero.ctaLabel.ar) }}<KhtIcon name="arrow"
-        /></NuxtLink>
+        <div v-if="shopping.heroShowPrice && heroProduct" class="hero-shop-price">
+          <span>{{ t(shopping.heroPricePrefix.en, shopping.heroPricePrefix.ar) }}</span>
+          <strong>{{ money(startingPrice(heroProduct)) }}</strong>
+        </div>
+        <div class="hero-actions">
+          <NuxtLink v-if="page.hero.ctaEnabled" :to="heroDestination" class="button button-white"
+            >{{ t(page.hero.ctaLabel.en, page.hero.ctaLabel.ar) }}<KhtIcon name="arrow"
+          /></NuxtLink>
+          <NuxtLink
+            v-if="shopping.secondaryEnabled"
+            :to="shopping.secondaryUrl"
+            class="hero-secondary-link"
+            >{{ t(shopping.secondaryLabel.en, shopping.secondaryLabel.ar) }}<KhtIcon name="arrow"
+          /></NuxtLink>
+        </div>
       </div>
-      <span class="hero-image-caption">KHT / STUDY IN CONTRAST</span
-      ><a href="#collection" class="hero-scroll"
-        >{{ t('Scroll to discover', 'انزل واكتشف') }}<span>↓</span></a
+      <span v-if="t(shopping.heroCaption.en, shopping.heroCaption.ar)" class="hero-image-caption">{{
+        t(shopping.heroCaption.en, shopping.heroCaption.ar)
+      }}</span
+      ><a
+        v-if="
+          shopping.sectionEnabled && t(shopping.heroScrollLabel.en, shopping.heroScrollLabel.ar)
+        "
+        href="#collection"
+        class="hero-scroll"
+        >{{ t(shopping.heroScrollLabel.en, shopping.heroScrollLabel.ar) }}<span>↓</span></a
       >
     </section>
-    <div class="brand-strip">
-      <span>{{ t('A STUDY IN CONTRAST', 'دراسة في التباين') }}</span
+    <div v-if="shopping.stripEnabled" class="brand-strip">
+      <span>{{ t(shopping.stripStart.en, shopping.stripStart.ar) }}</span
       ><span class="brand-strip-center">{{
-        t('ONE LINE. NO NOISE.', 'خط واحد. من غير ضوضاء.')
+        t(shopping.stripCenter.en, shopping.stripCenter.ar)
       }}</span
-      ><span>{{ t('DESIGNED TO STAND APART', 'تفاصيل تميزك') }}</span>
+      ><span>{{ t(shopping.stripEnd.en, shopping.stripEnd.ar) }}</span>
     </div>
-    <section id="collection" class="collection-section light-surface">
+    <section
+      v-if="shopping.sectionEnabled"
+      id="collection"
+      class="collection-section light-surface"
+    >
       <div class="section-heading">
         <div>
           <p class="eyebrow">{{ t(collectionContent.eyebrow.en, collectionContent.eyebrow.ar) }}</p>
           <h2>{{ t(collectionContent.heading.en, collectionContent.heading.ar) }}</h2>
         </div>
-        <NuxtLink :to="collectionContent.ctaUrl" class="text-link"
+        <NuxtLink
+          v-if="
+            shopping.sectionShowAllLink &&
+            t(collectionContent.ctaLabel.en, collectionContent.ctaLabel.ar)
+          "
+          :to="collectionContent.ctaUrl"
+          class="text-link"
           >{{ t(collectionContent.ctaLabel.en, collectionContent.ctaLabel.ar)
           }}<KhtIcon name="arrow"
         /></NuxtLink>
       </div>
-      <div class="product-grid">
+      <div v-if="visibleCards.length" class="look-grid">
+        <article v-for="{ card, product } in visibleCards" :key="card.id" class="look-card">
+          <NuxtLink
+            :to="cardDestination(card, product)"
+            class="look-card__image-link"
+            :aria-label="t(card.heading.en, card.heading.ar)"
+          >
+            <picture>
+              <source
+                v-if="card.mobileImageUrl"
+                media="(max-width: 767px)"
+                :srcset="card.mobileImageUrl"
+              />
+              <StoreImage
+                :src="card.imageUrl || product.image"
+                :alt="t(card.imageAlt.en, card.imageAlt.ar)"
+                loading="lazy"
+                width="900"
+                height="1200"
+              />
+            </picture>
+          </NuxtLink>
+          <div class="look-card__copy">
+            <span class="look-card__eyebrow">{{ t(card.eyebrow.en, card.eyebrow.ar) }}</span>
+            <h3>{{ t(card.heading.en, card.heading.ar) }}</h3>
+            <p>{{ t(card.body.en, card.body.ar) }}</p>
+            <span class="look-card__code">{{ product.code }}</span>
+            <div class="look-card__bottom">
+              <span v-if="card.showPrice" class="look-card__price"
+                >{{ hasSizePriceRange(product) ? t('From', 'من') + ' ' : ''
+                }}{{ money(startingPrice(product)) }}</span
+              >
+              <NuxtLink :to="cardDestination(card, product)" class="text-link"
+                >{{ t(card.ctaLabel.en, card.ctaLabel.ar) }}<KhtIcon name="arrow"
+              /></NuxtLink>
+            </div>
+          </div>
+        </article>
+      </div>
+      <div v-else-if="shopping.cards.some((card) => card.enabled)" class="product-grid">
         <ProductCard
           v-for="(product, index) in catalog.products"
           :key="product.id"
@@ -152,9 +239,17 @@ useStoreSeo({
           :index="index"
         />
       </div>
-      <div class="collection-footnote">
+      <div v-if="shopping.sectionShowFooter" class="collection-footnote">
         <span>{{ t(collectionContent.body.en, collectionContent.body.ar) }}</span
-        ><span>001 — 003</span>
+        ><span
+          >{{
+            String(
+              visibleCards.length ||
+                (shopping.cards.some((card) => card.enabled) ? catalog.products.length : 0),
+            ).padStart(2, '0')
+          }}
+          / KHT</span
+        >
       </div>
     </section>
     <section class="manifesto-section">

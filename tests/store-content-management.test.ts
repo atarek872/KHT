@@ -72,6 +72,42 @@ test('content validation rejects unsafe links, images, duplicate navigation, and
   const emptyArabic = cloneStoreContent(DEFAULT_STORE_CONTENT)
   emptyArabic.pages.about.hero.title.ar = ''
   assert.throws(() => validateStoreContent(emptyArabic), /Arabic/)
+
+  const unsafeCard = cloneStoreContent(DEFAULT_STORE_CONTENT)
+  unsafeCard.pages.home.homeShopping!.cards[0]!.imageUrl = 'https://tracker.example/pixel.png'
+  assert.throws(() => validateStoreContent(unsafeCard), /KHT image/)
+
+  const unsafeSecondButton = cloneStoreContent(DEFAULT_STORE_CONTENT)
+  unsafeSecondButton.pages.home.homeShopping!.secondaryUrl = 'javascript:alert(1)'
+  assert.throws(() => validateStoreContent(unsafeSecondButton), /safe store path or HTTPS URL/)
+
+  const duplicateCard = cloneStoreContent(DEFAULT_STORE_CONTENT)
+  duplicateCard.pages.home.homeShopping!.cards.push({
+    ...duplicateCard.pages.home.homeShopping!.cards[0]!,
+  })
+  assert.throws(() => validateStoreContent(duplicateCard), /unique ID/)
+})
+
+test('old published content gains shopping controls without losing customized copy', async () => {
+  const { database } = testDatabase()
+  const legacy = cloneStoreContent(DEFAULT_STORE_CONTENT)
+  legacy.pages.home.hero.title.en = 'CUSTOM CAMPAIGN'
+  legacy.pages.home.hero.ctaLabel = { en: 'SHOP DROP 001', ar: 'تسوق الإصدار 001' }
+  const collection = legacy.pages.home.sections.find((section) => section.id === 'collection')!
+  collection.heading = { en: 'THE ESSENTIALS.', ar: 'القطع الأساسية.' }
+  collection.ctaUrl = '/drops/001'
+  delete legacy.pages.home.homeShopping
+  await database
+    .prepare('UPDATE storefront_content_state SET published_json=?, draft_json=? WHERE id=1')
+    .bind(JSON.stringify(legacy), JSON.stringify(legacy))
+    .run()
+  const state = await getAdminStoreContent(database)
+  assert.equal(state.published.pages.home.hero.title.en, 'CUSTOM CAMPAIGN')
+  assert.equal(state.published.pages.home.hero.ctaLabel.en, 'SHOP THE FULL SET')
+  assert.equal(state.published.pages.home.sections[0]?.ctaUrl, '/drops/001')
+  assert.equal(state.published.pages.home.sections[0]?.heading.en, 'SHOP THE LOOK.')
+  assert.equal(state.published.pages.home.homeShopping?.cards.length, 3)
+  assert.equal(state.hasUnpublishedChanges, false)
 })
 
 test('content APIs protect mutations and expose one public published projection', () => {

@@ -1,5 +1,6 @@
 import {
   DEFAULT_STORE_CONTENT,
+  DEFAULT_HOME_SHOPPING,
   cloneStoreContent,
   type AdminStoreContentState,
   type ContentText,
@@ -161,13 +162,92 @@ export function validateStoreContent(input: StorefrontContent) {
       safeLink(section.ctaUrl, `${page.label} section button destination`)
     }
   }
+  const shopping = input.pages.home.homeShopping
+  if (shopping) {
+    bilingual(shopping.heroCaption, 'homepage hero image caption', 120, true)
+    bilingual(shopping.heroScrollLabel, 'homepage hero scroll label', 80, true)
+    requiredText(shopping.heroProductSlug, 'Homepage hero product slug', 120)
+    if (!/^[a-z0-9-]+$/.test(shopping.heroProductSlug))
+      throw new Error('Homepage hero product slug is invalid.')
+    if (
+      typeof shopping.heroUseProductLink !== 'boolean' ||
+      typeof shopping.heroShowPrice !== 'boolean'
+    )
+      throw new Error('Homepage hero product options are invalid.')
+    bilingual(shopping.heroPricePrefix, 'homepage hero price prefix', 80)
+    if (typeof shopping.secondaryEnabled !== 'boolean')
+      throw new Error('Homepage secondary button option is invalid.')
+    bilingual(shopping.secondaryLabel, 'homepage secondary button', 80)
+    safeLink(shopping.secondaryUrl, 'Homepage secondary button destination')
+    if (
+      [
+        shopping.stripEnabled,
+        shopping.sectionEnabled,
+        shopping.sectionShowAllLink,
+        shopping.sectionShowFooter,
+      ].some((value) => typeof value !== 'boolean')
+    )
+      throw new Error('Homepage section visibility options are invalid.')
+    bilingual(shopping.stripStart, 'homepage strip start', 120)
+    bilingual(shopping.stripCenter, 'homepage strip center', 120)
+    bilingual(shopping.stripEnd, 'homepage strip end', 120)
+    if (!Array.isArray(shopping.cards) || shopping.cards.length > 6)
+      throw new Error('Homepage shopping cards must contain no more than 6 items.')
+    const cardIds = new Set<string>()
+    for (const card of shopping.cards) {
+      if (!/^[a-z0-9-]{1,60}$/.test(card.id) || cardIds.has(card.id))
+        throw new Error('Every homepage shopping card needs a unique ID.')
+      cardIds.add(card.id)
+      if (!/^[a-z0-9-]{1,120}$/.test(card.productSlug))
+        throw new Error('Homepage shopping card product slug is invalid.')
+      for (const [label, value, max] of [
+        ['eyebrow', card.eyebrow, 160],
+        ['heading', card.heading, 220],
+        ['body', card.body, 500],
+        ['image description', card.imageAlt, 240],
+        ['button label', card.ctaLabel, 80],
+      ] as const)
+        bilingual(value, `homepage shopping card ${label}`, max)
+      safeImage(card.imageUrl, 'Homepage shopping card image')
+      safeImage(card.mobileImageUrl, 'Homepage shopping card mobile image')
+      safeLink(card.ctaUrl, 'Homepage shopping card button destination')
+      if (
+        typeof card.enabled !== 'boolean' ||
+        typeof card.useProductLink !== 'boolean' ||
+        typeof card.showPrice !== 'boolean'
+      )
+        throw new Error('Homepage shopping card options are invalid.')
+    }
+  }
   return input
 }
 
 function parseContent(value: string) {
   if (!value || value === '{}') return cloneStoreContent()
   try {
-    return validateStoreContent(JSON.parse(value) as StorefrontContent)
+    const content = JSON.parse(value) as StorefrontContent
+    // Older published content predates the shoppable homepage. Preserve every existing edit.
+    if (content.pages?.home && !('homeShopping' in content.pages.home)) {
+      content.pages.home.homeShopping = structuredClone(DEFAULT_HOME_SHOPPING)
+      const heroButton = content.pages.home.hero.ctaLabel
+      if (heroButton?.en === 'SHOP DROP 001' && heroButton.ar === 'تسوق الإصدار 001')
+        content.pages.home.hero.ctaLabel = { en: 'SHOP THE FULL SET', ar: 'تسوق الطقم الكامل' }
+      const collection = content.pages.home.sections.find((section) => section.id === 'collection')
+      if (
+        collection?.heading.en === 'THE ESSENTIALS.' &&
+        collection.heading.ar === 'القطع الأساسية.'
+      )
+        collection.heading = { en: 'SHOP THE LOOK.', ar: 'الإطلالة كاملة أو قطعتك.' }
+      if (
+        collection?.body.en === 'Three silhouettes. One identity.' &&
+        collection.body.ar === 'ثلاث قصّات. هوية واحدة.'
+      )
+        collection.body = {
+          en: 'The full set or your favourite piece. Choose your way.',
+          ar: 'الطقم الكامل أو القطعة اللي تناسبك. اختار بطريقتك.',
+        }
+    }
+    return validateStoreContent(content)
   } catch {
     return cloneStoreContent(DEFAULT_STORE_CONTENT)
   }

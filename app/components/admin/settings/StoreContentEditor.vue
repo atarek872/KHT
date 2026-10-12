@@ -1,17 +1,20 @@
 <script setup lang="ts">
 import {
   cloneStoreContent,
+  DEFAULT_HOME_SHOPPING,
   DEFAULT_STORE_CONTENT,
   type AdminStoreContentState,
   type StoreNavigationItem,
   type StorePageKey,
   type StorefrontContent,
 } from '#shared/storeContent'
+import type { Catalog } from '#shared/types'
 
 const props = defineProps<{ view: 'brand' | 'navigation' | 'pages' | 'publishing' }>()
 const { data, error, status, refresh } = await useFetch<AdminStoreContentState>(
   '/api/admin/store-content',
 )
+const { data: catalog } = await useFetch<Catalog>('/api/catalog')
 const form = ref<StorefrontContent | null>(null)
 const busy = ref(false)
 const uploading = ref('')
@@ -48,18 +51,26 @@ watch(
         if (featureBanner) draft.pages.drop.sections.unshift(structuredClone(featureBanner))
       }
       form.value = draft
+      if (!form.value.pages.home.homeShopping)
+        form.value.pages.home.homeShopping = structuredClone(DEFAULT_HOME_SHOPPING)
     }
   },
   { immediate: true },
 )
 
 const page = computed(() => form.value?.pages[selectedPageKey.value])
+const homeShopping = computed(() => form.value?.pages.home.homeShopping)
+const homeCollection = computed(() =>
+  form.value?.pages.home.sections.find((section) => section.id === 'collection'),
+)
 const dropBanner = computed(() =>
   page.value?.sections.find((section) => section.id === 'feature-banner'),
 )
 const pageSections = computed(() =>
   (page.value?.sections || []).filter(
-    (section) => selectedPageKey.value !== 'drop' || section.id !== 'feature-banner',
+    (section) =>
+      !(selectedPageKey.value === 'drop' && section.id === 'feature-banner') &&
+      !(selectedPageKey.value === 'home' && section.id === 'collection'),
   ),
 )
 const local = (value: { en: string; ar: string } | undefined) =>
@@ -491,6 +502,7 @@ onBeforeUnmount(() => {
                   label="Arabic button label"
                   required
                   dir="rtl" /><AdminInput
+                  v-if="selectedPageKey !== 'home' || !homeShopping?.heroUseProductLink"
                   v-model="page.hero.ctaUrl"
                   label="Button destination"
                   required
@@ -537,6 +549,12 @@ onBeforeUnmount(() => {
               </div>
             </div>
           </AdminSection>
+          <AdminSettingsHomeShopping
+            v-if="selectedPageKey === 'home' && homeShopping && homeCollection"
+            :shopping="homeShopping"
+            :section="homeCollection"
+            :catalog="catalog?.products || []"
+          />
           <AdminSection
             v-if="selectedPageKey === 'drop' && dropBanner"
             title="Drop 001 feature banner"
