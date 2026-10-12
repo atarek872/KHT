@@ -5,6 +5,12 @@ import type { ShippingZone } from '../../shared/shipping'
 import type { CustomerAddress } from '../../shared/account'
 import type { PublicWelcomeCampaign } from '../../shared/welcomeCampaign'
 import { sizePrice } from '#shared/productPricing'
+import {
+  invalidCheckoutFields,
+  normalizeCheckoutPhone,
+  type CheckoutField,
+  type CheckoutStep,
+} from '#shared/checkoutSteps'
 const { t, money, localized } = useLanguage()
 const {
   lines,
@@ -22,16 +28,19 @@ const { user } = useCustomer()
 const { trackBeginCheckout, trackPurchase } = useStoreAnalytics()
 const addresses = ref<CustomerAddress[]>([])
 const addressId = ref('')
-const form = useState('checkout-draft', () => ({
+const addressFieldsOpen = ref(true)
+const step = ref<CheckoutStep>(1)
+const fieldErrors = ref<CheckoutField[]>([])
+const newCheckoutDraft = () => ({
   name: '',
   email: '',
   phone: '',
-  governorate: 'Cairo',
+  governorate: '',
   city: '',
   address: '',
   notes: '',
-}))
-const phoneInvalid = ref(false)
+})
+const form = useState('checkout-draft', newCheckoutDraft)
 const busy = ref(false)
 const requestId = ref(crypto.randomUUID())
 const error = ref('')
@@ -39,18 +48,30 @@ const couponCode = ref('')
 const couponBusy = ref(false)
 const couponError = ref('')
 const couponQuote = ref<OrderQuote | null>(null)
+const appliedCouponCode = ref('')
 const welcomeBusy = ref(false)
+let quoteRequestId = 0
+let requestedCouponCode = ''
 let contactSnapshotTimer: ReturnType<typeof setTimeout> | undefined
-watch(addressId, (id) => {
+watch(addressId, (id, previousId) => {
   const address = addresses.value.find((item) => item.id === id)
-  if (!address) return
+  if (!address) {
+    addressFieldsOpen.value = true
+    if (previousId) {
+      form.value.governorate = ''
+      form.value.city = ''
+      form.value.address = ''
+    }
+    return
+  }
+  addressFieldsOpen.value = false
   Object.assign(form.value, {
-    name: address.name,
-    phone: address.phone,
     address: address.address,
     governorate: address.governorate,
     city: address.city,
   })
+  form.value.name ||= address.name
+  form.value.phone ||= address.phone
 })
 onMounted(async () => {
   if (count.value) trackBeginCheckout(lines.value, total.value)
@@ -86,42 +107,53 @@ watch(
   shippingOptions,
   (options) => {
     if (
-      options.length &&
+      form.value.governorate &&
       !options.some((option) => option.governorate === form.value.governorate)
     ) {
-      form.value.governorate = options[0]!.governorate
+      form.value.governorate = ''
     }
   },
   { immediate: true },
 )
 
-async function applyCoupon() {
-  if (!couponCode.value.trim() || couponBusy.value) return
+async function applyCoupon(code = couponCode.value) {
+  if (!code.trim() || !count.value || !selectedShipping.value) return
+  const requestId = ++quoteRequestId
+  requestedCouponCode = code.trim().toUpperCase()
   couponBusy.value = true
+  welcomeBusy.value = false
   couponError.value = ''
   try {
-    couponQuote.value = await $fetch<OrderQuote>('/api/discounts/quote', {
+    const quote = await $fetch<OrderQuote>('/api/discounts/quote', {
       method: 'POST',
       body: {
-        code: couponCode.value,
+        code,
         shippingGovernorate: form.value.governorate,
         items: lines.value.map(({ id, size, quantity }) => ({ id, size, quantity })),
       },
     })
-    couponCode.value = couponQuote.value.couponCode || couponCode.value.toUpperCase()
+    if (requestId !== quoteRequestId) return
+    couponQuote.value = quote
+    appliedCouponCode.value = quote.couponCode || code.toUpperCase()
+    couponCode.value = appliedCouponCode.value
   } catch (cause: unknown) {
+    if (requestId !== quoteRequestId) return
     const failure = cause as { data?: { statusMessage?: string } }
     couponQuote.value = null
+    appliedCouponCode.value = ''
     couponError.value =
       failure.data?.statusMessage || t('Coupon could not be applied.', 'تعذر تطبيق الكوبون.')
-  } finally {
     couponBusy.value = false
+    void refreshAutomaticOffer()
+  } finally {
+    if (requestId === quoteRequestId) couponBusy.value = false
   }
 }
 
 async function refreshAutomaticOffer() {
-  if (!count.value || !selectedShipping.value || couponCode.value.trim()) return
+  if (!count.value || !selectedShipping.value || appliedCouponCode.value) return
   if (!user.value && welcomeCampaign.value?.loginRequired) return
+  const requestId = ++quoteRequestId
   welcomeBusy.value = true
   try {
     const quote = await $fetch<OrderQuote>('/api/discounts/quote', {
@@ -131,11 +163,12 @@ async function refreshAutomaticOffer() {
         items: lines.value.map(({ id, size, quantity }) => ({ id, size, quantity })),
       },
     })
-    couponQuote.value = quote.promotion === 'welcome' ? quote : null
+    if (requestId === quoteRequestId)
+      couponQuote.value = quote.promotion === 'welcome' ? quote : null
   } catch {
-    couponQuote.value = null
+    if (requestId === quoteRequestId) couponQuote.value = null
   } finally {
-    welcomeBusy.value = false
+    if (requestId === quoteRequestId) welcomeBusy.value = false
   }
 }
 
@@ -151,20 +184,43 @@ function promotionRule(quote: OrderQuote) {
 watch(
   () => lines.value.map((line) => `${line.id}:${line.size}:${line.quantity}`).join('|'),
   () => {
+    quoteRequestId++
+    couponBusy.value = false
+    welcomeBusy.value = false
     couponQuote.value = null
     couponError.value = ''
-    void nextTick(refreshAutomaticOffer)
+    if (appliedCouponCode.value) void applyCoupon(appliedCouponCode.value)
+    else void nextTick(refreshAutomaticOffer)
   },
 )
 watch(couponCode, (value) => {
-  if (couponQuote.value && value.trim().toUpperCase() !== couponQuote.value.couponCode) {
+  couponError.value = ''
+  if (couponBusy.value && value.trim().toUpperCase() !== requestedCouponCode) {
+    quoteRequestId++
+    couponBusy.value = false
+    welcomeBusy.value = false
     couponQuote.value = null
+    if (!appliedCouponCode.value) void refreshAutomaticOffer()
   }
-  if (!value.trim()) void refreshAutomaticOffer()
+  if (appliedCouponCode.value && value.trim().toUpperCase() !== appliedCouponCode.value) {
+    quoteRequestId++
+    appliedCouponCode.value = ''
+    couponBusy.value = false
+    welcomeBusy.value = false
+    couponQuote.value = null
+    void refreshAutomaticOffer()
+  }
 })
 watch(
   () => [user.value?.id, form.value.governorate],
-  () => void refreshAutomaticOffer(),
+  () => {
+    quoteRequestId++
+    couponBusy.value = false
+    welcomeBusy.value = false
+    couponQuote.value = null
+    if (appliedCouponCode.value) void applyCoupon(appliedCouponCode.value)
+    else void refreshAutomaticOffer()
+  },
 )
 watch(
   () => [form.value.name, form.value.phone, form.value.email],
@@ -183,8 +239,53 @@ watch(
   },
 )
 onBeforeUnmount(() => clearTimeout(contactSnapshotTimer))
+function clearFieldError(field: CheckoutField) {
+  fieldErrors.value = fieldErrors.value.filter((item) => item !== field)
+}
+
+async function showStep(nextStep: CheckoutStep) {
+  if (busy.value) return
+  step.value = nextStep
+  await nextTick()
+  document.getElementById(`checkout-step-${nextStep}`)?.focus()
+}
+
+async function validateStep(targetStep: 1 | 2) {
+  const invalid = invalidCheckoutFields(
+    targetStep,
+    form.value,
+    shippingOptions.value.map((option) => option.governorate),
+  )
+  fieldErrors.value = invalid
+  if (!invalid.length) return true
+  if (targetStep === 2 && addressId.value) addressFieldsOpen.value = true
+  await showStep(targetStep)
+  await nextTick()
+  document.querySelector<HTMLElement>(`[name="${invalid[0]}"]`)?.focus()
+  return false
+}
+
+async function handleStepAction() {
+  if (busy.value) return
+  if (step.value === 1) {
+    if (await validateStep(1)) await showStep(2)
+    return
+  }
+  if (step.value === 2) {
+    if (await validateStep(2)) await showStep(3)
+    return
+  }
+  if (!(await validateStep(1)) || !(await validateStep(2))) return
+  await submit()
+}
+
 async function submit() {
   if (busy.value || !selectedShipping.value) return
+  const normalizedPhone = normalizeCheckoutPhone(form.value.phone)
+  if (!normalizedPhone) {
+    await validateStep(1)
+    return
+  }
   busy.value = true
   error.value = ''
   try {
@@ -194,6 +295,7 @@ async function submit() {
         method: 'POST',
         body: {
           ...form.value,
+          phone: normalizedPhone,
           shippingGovernorate: form.value.governorate,
           requestId: requestId.value,
           confirmed: true,
@@ -214,6 +316,7 @@ async function submit() {
         items: lines.value,
       })
       resetLocal()
+      form.value = newCheckoutDraft()
       requestId.value = crypto.randomUUID()
       if (user.value) await restore(false).catch(() => undefined)
       await navigateTo(`/account/orders/${accountOrder.id}`)
@@ -227,7 +330,7 @@ async function submit() {
         customer: {
           name: form.value.name,
           email: form.value.email || undefined,
-          phone: form.value.phone,
+          phone: normalizedPhone,
           address: form.value.address,
           governorate: form.value.governorate,
           city: form.value.city,
@@ -249,15 +352,7 @@ async function submit() {
     })
     completeCheckout()
     requestId.value = crypto.randomUUID()
-    form.value = {
-      name: '',
-      email: '',
-      phone: '',
-      governorate: 'Cairo',
-      city: '',
-      address: '',
-      notes: '',
-    }
+    form.value = newCheckoutDraft()
     await navigateTo(`/order-confirmation/${order.reference}`)
   } catch (e: unknown) {
     const detail = e as { data?: { statusMessage?: string } }
@@ -280,104 +375,191 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
       <h1>{{ t('MAKE IT YOURS.', 'كمّل إطلالتك.') }}</h1>
     </div>
     <template v-if="count"
-      ><div class="commerce-grid">
-        <form id="checkout-form" class="checkout-form" @submit.prevent="submit">
-          <aside
-            v-if="!user && welcomeCampaign?.loginRequired"
-            class="checkout-welcome-offer"
-            aria-labelledby="checkout-welcome-title"
-          >
-            <p class="eyebrow">{{ localized(welcomeCampaign.eyebrow) }}</p>
-            <h2 id="checkout-welcome-title">{{ localized(welcomeCampaign.title) }}</h2>
-            <p>{{ localized(welcomeCampaign.body) }}</p>
-            <div>
-              <NuxtLink
-                class="button button-dark"
-                :to="campaignRedirect(welcomeCampaign.primaryRedirect)"
-                >{{ localized(welcomeCampaign.primaryLabel) }}<KhtIcon name="arrow"
-              /></NuxtLink>
-              <NuxtLink
-                class="checkout-welcome-login"
-                :to="campaignRedirect(welcomeCampaign.secondaryRedirect)"
-                >{{ localized(welcomeCampaign.secondaryLabel) }}</NuxtLink
-              >
-            </div>
-          </aside>
-          <p v-else-if="welcomeBusy" class="checkout-welcome-status" role="status">
-            {{ t('Checking your welcome gift…', 'جارٍ التحقق من هدية الترحيب…') }}
-          </p>
-          <p
-            v-else-if="couponQuote?.promotion === 'welcome'"
-            class="checkout-welcome-status applied"
-            role="status"
-          >
-            {{ t('Your welcome gift is applied.', 'تم تطبيق هدية الترحيب.') }}
-          </p>
-          <fieldset>
-            <legend><span>01</span>{{ t('Your details', 'بياناتك') }}</legend>
+      ><div class="commerce-grid" :class="`checkout-step-${step}`">
+        <form
+          id="checkout-form"
+          class="checkout-form"
+          novalidate
+          @submit.prevent="handleStepAction"
+        >
+          <nav class="checkout-progress" :aria-label="t('Checkout progress', 'مراحل إتمام الطلب')">
+            <ol>
+              <li>
+                <button
+                  type="button"
+                  :aria-current="step === 1 ? 'step' : undefined"
+                  :disabled="busy"
+                  @click="showStep(1)"
+                >
+                  <span>01</span>{{ t('Contact', 'البيانات') }}
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  :aria-current="step === 2 ? 'step' : undefined"
+                  :disabled="step < 2 || busy"
+                  @click="showStep(2)"
+                >
+                  <span>02</span>{{ t('Delivery', 'التوصيل') }}
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  :aria-current="step === 3 ? 'step' : undefined"
+                  :disabled="step < 3 || busy"
+                  @click="showStep(3)"
+                >
+                  <span>03</span>{{ t('Review', 'المراجعة') }}
+                </button>
+              </li>
+            </ol>
+          </nav>
+
+          <fieldset v-if="step === 1" id="checkout-step-1" tabindex="-1">
+            <legend><span>01</span>{{ t('How can we reach you?', 'إزاي نتواصل معاك؟') }}</legend>
+            <p v-if="!user" class="checkout-guest-note">
+              {{ t('Checkout as a guest — no account needed.', 'كمّل كضيف — مش محتاج تعمل حساب.') }}
+            </p>
+            <aside
+              v-if="!user && welcomeCampaign?.loginRequired"
+              class="checkout-welcome-offer"
+              aria-labelledby="checkout-welcome-title"
+            >
+              <div>
+                <p class="eyebrow">{{ localized(welcomeCampaign.eyebrow) }}</p>
+                <h2 id="checkout-welcome-title">{{ localized(welcomeCampaign.title) }}</h2>
+                <p>{{ localized(welcomeCampaign.body) }}</p>
+              </div>
+              <div class="checkout-welcome-links">
+                <NuxtLink :to="campaignRedirect(welcomeCampaign.primaryRedirect)">{{
+                  localized(welcomeCampaign.primaryLabel)
+                }}</NuxtLink>
+                <NuxtLink :to="campaignRedirect(welcomeCampaign.secondaryRedirect)">{{
+                  localized(welcomeCampaign.secondaryLabel)
+                }}</NuxtLink>
+              </div>
+            </aside>
             <div class="form-grid">
               <label class="full-field"
-                >{{ t('Full name', 'الاسم بالكامل')
-                }}<input
+                >{{ t('Full name', 'الاسم بالكامل') }}
+                <input
                   v-model="form.name"
                   name="name"
                   autocomplete="name"
                   required
-                  maxlength="100" /></label
-              ><label
-                >{{ t('Email (optional)', 'البريد الإلكتروني (اختياري)')
-                }}<input
-                  v-model="form.email"
-                  name="email"
-                  type="email"
-                  autocomplete="email"
-                  maxlength="160" /></label
-              ><label
-                >{{ t('Phone', 'الهاتف')
-                }}<input
+                  maxlength="100"
+                  :aria-invalid="fieldErrors.includes('name') || undefined"
+                  :aria-describedby="
+                    fieldErrors.includes('name') ? 'checkout-name-error' : undefined
+                  "
+                  @input="clearFieldError('name')"
+                />
+                <span
+                  v-if="fieldErrors.includes('name')"
+                  id="checkout-name-error"
+                  class="field-error"
+                  role="alert"
+                  >{{ t('Enter the name for this order.', 'اكتب الاسم المطلوب على الطلب.') }}</span
+                >
+              </label>
+              <label class="full-field"
+                >{{ t('Mobile number', 'رقم الموبايل') }}
+                <input
                   v-model="form.phone"
                   name="phone"
                   type="tel"
                   inputmode="tel"
                   autocomplete="tel"
                   required
-                  pattern="(?=(?:[^0-9٠-٩۰-۹]*[0-9٠-٩۰-۹]){7,15}[^0-9٠-٩۰-۹]*$)[+0-9٠-٩۰-۹ \(\)\-]{7,20}"
                   maxlength="20"
-                  :aria-invalid="phoneInvalid || undefined"
-                  :aria-describedby="phoneInvalid ? 'phone-error' : undefined"
-                  @invalid="phoneInvalid = true"
-                  @input="phoneInvalid = false"
-                  @blur="
-                    phoneInvalid =
-                      !!form.phone && !($event.target as HTMLInputElement).validity.valid
+                  :aria-invalid="fieldErrors.includes('phone') || undefined"
+                  :aria-describedby="
+                    fieldErrors.includes('phone') ? 'checkout-phone-error' : 'checkout-phone-help'
                   "
-                /><span v-if="phoneInvalid" id="phone-error" class="field-error" role="alert">{{
-                  t('Enter a valid Egyptian mobile number.', 'اكتب رقم موبايل مصري صحيح.')
-                }}</span></label
-              >
+                  @input="clearFieldError('phone')"
+                />
+                <span id="checkout-phone-help" class="checkout-field-help">{{
+                  t(
+                    'The courier will use this number to arrange delivery.',
+                    'شركة الشحن هتتواصل معاك على الرقم ده لتنسيق التوصيل.',
+                  )
+                }}</span>
+                <span
+                  v-if="fieldErrors.includes('phone')"
+                  id="checkout-phone-error"
+                  class="field-error"
+                  role="alert"
+                  >{{ t('Enter a valid mobile number.', 'اكتب رقم موبايل صحيح.') }}</span
+                >
+              </label>
+              <label class="full-field"
+                >{{ t('Email (optional)', 'البريد الإلكتروني (اختياري)') }}
+                <input
+                  v-model="form.email"
+                  name="email"
+                  type="email"
+                  autocomplete="email"
+                  maxlength="160"
+                  :aria-invalid="fieldErrors.includes('email') || undefined"
+                  :aria-describedby="
+                    fieldErrors.includes('email') ? 'checkout-email-error' : undefined
+                  "
+                  @input="clearFieldError('email')"
+                />
+                <span
+                  v-if="fieldErrors.includes('email')"
+                  id="checkout-email-error"
+                  class="field-error"
+                  role="alert"
+                  >{{
+                    t(
+                      'Enter a valid email or leave this blank.',
+                      'اكتب بريدًا صحيحًا أو اترك الخانة فارغة.',
+                    )
+                  }}</span
+                >
+              </label>
             </div>
           </fieldset>
-          <fieldset>
-            <legend><span>02</span>{{ t('Delivery', 'التوصيل') }}</legend>
-            <label v-if="addresses.length" class="full-field"
+
+          <fieldset v-else-if="step === 2" id="checkout-step-2" tabindex="-1">
+            <legend><span>02</span>{{ t('Where should we deliver?', 'هنوصل الطلب فين؟') }}</legend>
+            <label v-if="addresses.length" class="checkout-saved-address-select"
               >{{ t('Saved address', 'عنوان محفوظ') }}
               <select v-model="addressId">
                 <option value="">{{ t('Enter another address', 'إدخال عنوان آخر') }}</option>
                 <option v-for="item in addresses" :key="item.id" :value="item.id">
                   {{ item.label }} — {{ item.address }}
                 </option>
-              </select></label
-            >
-            <div class="form-grid">
+              </select>
+            </label>
+            <div v-if="addressId && !addressFieldsOpen" class="checkout-saved-address">
+              <strong>{{ form.address }}</strong>
+              <span>{{ form.city }} · {{ form.governorate }}</span>
+              <button type="button" class="remove-link" @click="addressFieldsOpen = true">
+                {{ t('Edit delivery address', 'عدّل عنوان التوصيل') }}
+              </button>
+            </div>
+            <div v-else class="form-grid">
               <label class="full-field"
-                >{{ t('Governorate', 'المحافظة')
-                }}<select
+                >{{ t('Governorate', 'المحافظة') }}
+                <select
                   v-model="form.governorate"
                   name="governorate"
                   autocomplete="address-level1"
                   required
                   :disabled="shippingStatus === 'pending' || !shippingOptions.length"
+                  :aria-invalid="fieldErrors.includes('governorate') || undefined"
+                  :aria-describedby="
+                    fieldErrors.includes('governorate') ? 'checkout-governorate-error' : undefined
+                  "
+                  @change="clearFieldError('governorate')"
                 >
+                  <option value="" disabled>
+                    {{ t('Select your governorate', 'اختار المحافظة') }}
+                  </option>
                   <option
                     v-for="option in shippingOptions"
                     :key="option.governorate"
@@ -385,29 +567,80 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
                   >
                     {{ option.governorate }}
                   </option>
-                </select></label
-              ><label class="full-field"
-                >{{ t('City or area', 'المدينة أو المنطقة')
-                }}<input
+                </select>
+                <span
+                  v-if="fieldErrors.includes('governorate')"
+                  id="checkout-governorate-error"
+                  class="field-error"
+                  role="alert"
+                  >{{
+                    t('Choose a delivery area from the list.', 'اختار محافظة متاح لها التوصيل.')
+                  }}</span
+                >
+              </label>
+              <label class="full-field"
+                >{{ t('City or area', 'المدينة أو المنطقة') }}
+                <input
                   v-model="form.city"
                   name="city"
                   autocomplete="address-level2"
                   required
-                  maxlength="100" /></label
-              ><label class="full-field"
-                >{{ t('Street address', 'العنوان')
-                }}<input
+                  maxlength="100"
+                  :aria-invalid="fieldErrors.includes('city') || undefined"
+                  :aria-describedby="
+                    fieldErrors.includes('city') ? 'checkout-city-error' : undefined
+                  "
+                  @input="clearFieldError('city')"
+                />
+                <span
+                  v-if="fieldErrors.includes('city')"
+                  id="checkout-city-error"
+                  class="field-error"
+                  role="alert"
+                  >{{ t('Enter your city or area.', 'اكتب المدينة أو المنطقة.') }}</span
+                >
+              </label>
+              <label class="full-field"
+                >{{ t('Street address', 'العنوان بالتفصيل') }}
+                <input
                   v-model="form.address"
                   name="address"
                   autocomplete="street-address"
                   required
                   maxlength="250"
-              /></label>
+                  :aria-invalid="fieldErrors.includes('address') || undefined"
+                  :aria-describedby="
+                    fieldErrors.includes('address') ? 'checkout-address-error' : undefined
+                  "
+                  @input="clearFieldError('address')"
+                />
+                <span
+                  v-if="fieldErrors.includes('address')"
+                  id="checkout-address-error"
+                  class="field-error"
+                  role="alert"
+                  >{{
+                    t('Enter a street address for delivery.', 'اكتب عنوان التوصيل بالتفصيل.')
+                  }}</span
+                >
+              </label>
             </div>
             <p v-if="shippingError" class="form-error" role="alert">
-              {{ t('Delivery options could not be loaded.', 'تعذر تحميل خيارات التوصيل.') }}
+              {{
+                t(
+                  'Delivery options could not be loaded. Refresh and try again.',
+                  'تعذر تحميل مناطق التوصيل. حدّث الصفحة وحاول تاني.',
+                )
+              }}
             </p>
-            <div class="delivery-option">
+            <p
+              v-else-if="!shippingOptions.length && shippingStatus !== 'pending'"
+              class="form-error"
+              role="alert"
+            >
+              {{ t('Delivery is not available right now.', 'التوصيل غير متاح حاليًا.') }}
+            </p>
+            <div v-if="selectedShipping" class="delivery-option" role="status">
               <span class="selected-indicator" />
               <div>
                 <strong>{{ t('Standard delivery', 'توصيل عادي') }}</strong
@@ -421,16 +654,58 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
               <strong>{{ money(shipping) }}</strong>
             </div>
           </fieldset>
-          <fieldset>
-            <legend><span>03</span>{{ t('Review & payment', 'المراجعة والدفع') }}</legend>
-            <div class="delivery-option">
-              <input
-                type="radio"
-                name="payment-method"
-                value="cod"
-                checked
-                aria-label="Cash on delivery"
-              />
+
+          <fieldset v-else id="checkout-step-3" tabindex="-1">
+            <legend><span>03</span>{{ t('Review and confirm', 'راجع وأكد الطلب') }}</legend>
+            <div class="checkout-review-block">
+              <div>
+                <strong>{{ t('Contact', 'بيانات التواصل') }}</strong
+                ><button type="button" class="remove-link" @click="showStep(1)">
+                  {{ t('Edit', 'تعديل') }}
+                </button>
+              </div>
+              <p>
+                {{ form.name }} · <bdi>{{ form.phone }}</bdi
+                ><br v-if="form.email" /><span v-if="form.email">{{ form.email }}</span>
+              </p>
+            </div>
+            <div class="checkout-review-block">
+              <div>
+                <strong>{{ t('Delivery', 'التوصيل') }}</strong
+                ><button type="button" class="remove-link" @click="showStep(2)">
+                  {{ t('Edit', 'تعديل') }}
+                </button>
+              </div>
+              <p>{{ form.address }}<br />{{ form.city }} · {{ form.governorate }}</p>
+            </div>
+            <div class="checkout-review-block">
+              <div>
+                <strong>{{ t('Your items', 'القطع المطلوبة') }}</strong
+                ><NuxtLink to="/cart" class="remove-link">{{
+                  t('Edit bag', 'عدّل السلة')
+                }}</NuxtLink>
+              </div>
+              <p
+                v-for="line in lines"
+                :key="`${line.id}:${line.size}`"
+                class="checkout-review-item"
+              >
+                <span
+                  >{{ localized(line.product.name) }} · {{ line.size }} × {{ line.quantity }}</span
+                >
+                <strong>{{ money(line.quantity * sizePrice(line.product, line.size)) }}</strong>
+              </p>
+              <p class="checkout-review-item">
+                <span>{{ t('Delivery', 'التوصيل') }}</span
+                ><strong>{{ money(shipping) }}</strong>
+              </p>
+              <p v-if="couponQuote?.discount" class="checkout-review-item">
+                <span>{{ t('Discount', 'الخصم') }}</span
+                ><strong>− {{ money(couponQuote.discount) }}</strong>
+              </p>
+            </div>
+            <div class="delivery-option checkout-payment-note">
+              <span class="selected-indicator" />
               <div>
                 <strong>{{ t('Cash on delivery', 'الدفع عند الاستلام') }}</strong
                 ><span>{{
@@ -438,52 +713,52 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
                 }}</span>
               </div>
             </div>
-            <div class="form-grid">
-              <label class="full-field"
-                >{{ t('Order notes (optional)', 'ملاحظات الطلب (اختياري)')
+            <p v-if="welcomeBusy" class="checkout-welcome-status" role="status">
+              {{ t('Checking your welcome gift…', 'جارٍ التحقق من هدية الترحيب…') }}
+            </p>
+            <p
+              v-else-if="couponQuote?.promotion === 'welcome'"
+              class="checkout-welcome-status applied"
+              role="status"
+            >
+              {{ t('Your welcome gift is applied.', 'تم تطبيق هدية الترحيب.') }}
+            </p>
+            <details class="checkout-optional">
+              <summary>{{ t('Have a discount code?', 'معاك كود خصم؟') }}</summary>
+              <div class="checkout-coupon">
+                <label for="checkout-coupon">{{ t('Coupon code', 'كود الخصم') }}</label>
+                <div>
+                  <input
+                    id="checkout-coupon"
+                    v-model.trim="couponCode"
+                    autocomplete="off"
+                    placeholder="WELCOME10"
+                  /><button
+                    type="button"
+                    class="button button-outline"
+                    :disabled="couponBusy || !couponCode"
+                    @click="applyCoupon()"
+                  >
+                    {{ couponBusy ? t('Applying…', 'جارٍ التطبيق…') : t('Apply', 'تطبيق') }}
+                  </button>
+                </div>
+                <p v-if="couponError" class="field-error" role="alert">{{ couponError }}</p>
+                <p v-else-if="couponQuote && couponQuote.promotion !== 'welcome'" role="status">
+                  {{ t('Coupon applied.', 'تم تطبيق الكوبون.') }}
+                </p>
+              </div>
+            </details>
+            <details class="checkout-optional" :open="Boolean(form.notes)">
+              <summary>
+                {{ t('Add delivery notes (optional)', 'أضف ملاحظات للتوصيل (اختياري)') }}
+              </summary>
+              <label class="checkout-notes"
+                >{{ t('Order notes', 'ملاحظات الطلب')
                 }}<textarea v-model="form.notes" name="notes" maxlength="500" rows="3" />
               </label>
-            </div>
+            </details>
             <p v-if="error" class="form-error" role="alert">{{ error }}</p>
-            <div class="checkout-coupon">
-              <label for="checkout-coupon">{{ t('Coupon code', 'كود الخصم') }}</label>
-              <div>
-                <input
-                  id="checkout-coupon"
-                  v-model.trim="couponCode"
-                  autocomplete="off"
-                  placeholder="WELCOME10"
-                />
-                <button
-                  type="button"
-                  class="button button-outline"
-                  :disabled="couponBusy || !couponCode"
-                  @click="applyCoupon"
-                >
-                  {{ couponBusy ? t('Applying…', 'جارٍ التطبيق…') : t('Apply', 'تطبيق') }}
-                </button>
-              </div>
-              <p v-if="couponError" class="field-error" role="alert">{{ couponError }}</p>
-              <p v-else-if="couponQuote" role="status">
-                {{
-                  couponQuote.promotion === 'welcome'
-                    ? t('Welcome gift applied automatically.', 'تم تطبيق هدية الترحيب تلقائياً.')
-                    : t('Coupon applied.', 'تم تطبيق الكوبون.')
-                }}
-              </p>
-            </div>
-            <div class="checkout-final-total" aria-live="polite">
-              <span>{{ t('Order total · delivery included', 'إجمالي الطلب شامل التوصيل') }}</span>
-              <strong>{{ money(couponQuote?.total ?? total + shipping) }}</strong>
-            </div>
-            <button class="button button-dark" :disabled="busy || !selectedShipping">
-              {{
-                busy
-                  ? t('Placing order…', 'جارٍ تسجيل الطلب…')
-                  : t('Place COD order', 'سجّل طلب الدفع عند الاستلام')
-              }}<KhtIcon name="arrow" />
-            </button>
-            <p class="small-copy muted">
+            <p class="small-copy muted checkout-terms">
               {{ t('By placing the order, you agree to the', 'بتسجيل الطلب أنت موافق على') }}
               <NuxtLink to="/terms">{{ t('terms', 'الشروط') }}</NuxtLink>
               {{ t('and acknowledge the', 'ومطلع على') }}
@@ -493,6 +768,37 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
               >.
             </p>
           </fieldset>
+
+          <div class="checkout-actions">
+            <button
+              v-if="step > 1"
+              type="button"
+              class="checkout-back-button"
+              :disabled="busy"
+              @click="showStep((step - 1) as CheckoutStep)"
+            >
+              {{ t('Back', 'رجوع') }}
+            </button>
+            <div class="checkout-final-total" aria-live="polite">
+              <span>{{
+                selectedShipping
+                  ? t('Total · delivery included', 'الإجمالي شامل التوصيل')
+                  : t('Subtotal', 'المجموع الفرعي')
+              }}</span
+              ><strong>{{ money(couponQuote?.total ?? total + shipping) }}</strong>
+            </div>
+            <button class="button button-dark checkout-primary-action" :disabled="busy">
+              {{
+                busy
+                  ? t('Placing order…', 'جارٍ تسجيل الطلب…')
+                  : step === 1
+                    ? t('Continue to delivery', 'متابعة للتوصيل')
+                    : step === 2
+                      ? t('Review order', 'مراجعة الطلب')
+                      : t('Confirm COD order', 'أكد طلب الدفع عند الاستلام')
+              }}<KhtIcon name="arrow" />
+            </button>
+          </div>
         </form>
         <aside class="order-summary checkout-summary">
           <h2>
@@ -518,7 +824,9 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
           </div>
           <div class="summary-row">
             <span>{{ t('Delivery', 'التوصيل') }}</span
-            ><span>{{ money(shipping) }}</span>
+            ><span>{{
+              selectedShipping ? money(shipping) : t('Select area', 'اختار المحافظة')
+            }}</span>
           </div>
           <div v-if="couponQuote?.discount" class="summary-row">
             <span>{{
@@ -529,7 +837,11 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
             ><span>− {{ money(couponQuote.discount) }}</span>
           </div>
           <div class="summary-row summary-total">
-            <strong>{{ t('Order total', 'إجمالي الطلب') }}</strong
+            <strong>{{
+              selectedShipping
+                ? t('Order total', 'إجمالي الطلب')
+                : t('Subtotal before delivery', 'المجموع قبل التوصيل')
+            }}</strong
             ><strong>{{ money(couponQuote?.total ?? total + shipping) }}</strong>
           </div>
           <p class="small-copy muted">
