@@ -6,67 +6,78 @@ const { t } = useLanguage()
     <p>
       {{
         t(
-          'The KHT collection uses relaxed and oversized silhouettes. Use the body measurements below in centimetres and choose the larger size when you are between two sizes.',
-          'مجموعة KHT بقصّات واسعة ومريحة. استخدم قياسات الجسم بالسنتيمتر، ولو قياسك بين مقاسين اختار المقاس الأكبر.',
+          'These are the actual garment measurements in centimetres, not body measurements. Lay a similar piece flat to compare before choosing your size.',
+          'دي مقاسات القطعة الفعلية بالسنتيمتر، مش مقاسات الجسم. افرد قطعة مشابهة وقارن مقاساتها قبل ما تختار.',
         )
       }}
     </p>
+
     <div class="table-scroll">
       <table>
         <caption>
           {{
-            t('Body measurements (cm)', 'قياسات الجسم (سم)')
+            t('Hoodie measurements (cm)', 'مقاسات الهودي (سم)')
           }}
         </caption>
         <thead>
           <tr>
-            <th>{{ t('Size', 'المقاس') }}</th>
-            <th>{{ t('Chest', 'الصدر') }}</th>
-            <th>{{ t('Waist', 'الوسط') }}</th>
+            <th scope="col">{{ t('Size', 'المقاس') }}</th>
+            <th scope="col">{{ t('Length', 'الطول') }}</th>
+            <th scope="col">{{ t('Width (laid flat)', 'العرض (مفرود)') }}</th>
           </tr>
         </thead>
         <tbody>
-          <tr
-            v-for="row in [
-              ['S', '88–94', '72–78'],
-              ['M', '94–100', '78–84'],
-              ['L', '100–106', '84–90'],
-              ['XL', '106–112', '90–96'],
-              ['XXL', '112–118', '96–102'],
-            ]"
-            :key="row[0]"
-          >
-            <th>{{ row[0] }}</th>
-            <td dir="ltr">{{ row[1] }}</td>
-            <td dir="ltr">{{ row[2] }}</td>
+          <tr>
+            <th scope="row">M</th>
+            <td>72</td>
+            <td>67</td>
+          </tr>
+          <tr>
+            <th scope="row">L</th>
+            <td>76</td>
+            <td>72</td>
           </tr>
         </tbody>
       </table>
     </div>
-    <h3>{{ t('How to measure', 'إزاي تاخد مقاسك') }}</h3>
+
+    <div class="table-scroll">
+      <table>
+        <caption>
+          {{
+            t('Pants measurements (cm)', 'مقاسات البنطلون (سم)')
+          }}
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">{{ t('Size', 'المقاس') }}</th>
+            <th scope="col">{{ t('Length', 'الطول') }}</th>
+            <th scope="col">{{ t('Half waist width (laid flat)', 'نصف عرض الوسط (مفرود)') }}</th>
+            <th scope="col">{{ t('Waist circumference', 'محيط الوسط') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">M</th>
+            <td>100</td>
+            <td>52</td>
+            <td>104</td>
+          </tr>
+          <tr>
+            <th scope="row">L</th>
+            <td>100</td>
+            <td>56</td>
+            <td>112</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
     <p>
-      <strong>{{ t('Chest:', 'الصدر:') }}</strong>
       {{
         t(
-          'Measure around the fullest part, keeping the tape level.',
-          'قيس محيط أوسع نقطة مع الحفاظ على شريط القياس مستقيم.',
-        )
-      }}
-    </p>
-    <p>
-      <strong>{{ t('Waist:', 'الوسط:') }}</strong>
-      {{
-        t(
-          'Measure around your natural waist without pulling the tape tight.',
-          'قيس محيط وسطك الطبيعي من غير شد شريط القياس.',
-        )
-      }}
-    </p>
-    <p>
-      {{
-        t(
-          'Tracksuit jackets and trousers share the selected size unless the product page states otherwise.',
-          'الجاكيت والبنطلون في السوت بنفس المقاس المختار إلا لو صفحة المنتج موضحة غير كده.',
+          'For a set, compare both pieces in the same selected size.',
+          'لو بتختار طقم، قارن مقاسات القطعتين على نفس المقاس المختار.',
         )
       }}
     </p>
