@@ -1,5 +1,6 @@
 import type { CartLine, Product } from '../../shared/types'
 import { sizePrice, startingPrice } from '#shared/productPricing'
+import { sendOnce } from '#shared/analyticsOnce'
 import {
   metaCartPayload,
   metaProductPayload,
@@ -34,6 +35,8 @@ function analyticsItem(product: Product, size?: string, quantity = 1, discount =
 
 export function useStoreAnalytics() {
   const config = useRuntimeConfig().public
+  const { locale } = useLanguage()
+  const { attribution } = useCampaignAttribution()
   const googleEnabled = /^G-[A-Z0-9]+$/.test(String(config.googleTagId || ''))
   const metaEnabled = /^\d{10,20}$/.test(String(config.metaPixelId || ''))
 
@@ -41,7 +44,13 @@ export function useStoreAnalytics() {
     if (!import.meta.client || !googleEnabled) return false
     const gtag = (window as Window & { gtag?: (...args: unknown[]) => void }).gtag
     if (typeof gtag !== 'function') return false
-    gtag('event', event, parameters)
+    gtag('event', event, {
+      ...parameters,
+      language: locale.value,
+      ...(attribution.value?.source
+        ? { source_campaign: attribution.value.source, campaign_name: attribution.value.campaign }
+        : {}),
+    })
     return true
   }
 
@@ -49,8 +58,18 @@ export function useStoreAnalytics() {
     if (!import.meta.client || !metaEnabled) return false
     const fbq = (window as Window & { fbq?: (...args: unknown[]) => void }).fbq
     if (typeof fbq !== 'function') return false
-    if (eventId) fbq('track', event, parameters, { eventID: eventId })
-    else fbq('track', event, parameters)
+    fbq(
+      'track',
+      event,
+      {
+        ...parameters,
+        language: locale.value,
+        ...(attribution.value?.source
+          ? { source_campaign: attribution.value.source, campaign_name: attribution.value.campaign }
+          : {}),
+      },
+      { eventID: eventId || crypto.randomUUID() },
+    )
     return true
   }
 
@@ -83,45 +102,45 @@ export function useStoreAnalytics() {
   }
 
   function trackPurchase(order: PurchaseEvent) {
-    const merchandiseValue = Math.max(0, order.value - order.shipping)
-    const subtotal = order.items.reduce(
-      (sum, line) => sum + sizePrice(line.product, line.size) * line.quantity,
-      0,
-    )
-    const googleSent = send('purchase', {
-      transaction_id: order.transactionId,
-      currency: 'EGP',
-      value: merchandiseValue,
-      shipping: order.shipping,
-      ...(order.coupon ? { coupon: order.coupon } : {}),
-      items: order.items.map((line) =>
-        analyticsItem(
-          line.product,
-          line.size,
-          line.quantity,
-          subtotal > 0 ? (order.discount * sizePrice(line.product, line.size)) / subtotal : 0,
-        ),
-      ),
-    })
-    const key = `kht-meta-purchase:${order.transactionId}`
+    if (!import.meta.client) return false
+    let storage: Storage | undefined
     try {
-      if (sessionStorage.getItem(key)) return googleSent
+      storage = sessionStorage
     } catch {
-      // Private browsing can disable session storage; the order ID still identifies the event.
+      /* Private browsing can block it. */
     }
-    const metaSent = sendMeta(
-      'Purchase',
-      metaPurchasePayload(order.items, order.value, order.transactionId),
-      order.transactionId,
+    return sendOnce(
+      `kht-purchase:${order.transactionId}`,
+      () => {
+        const merchandiseValue = Math.max(0, order.value - order.shipping)
+        const subtotal = order.items.reduce(
+          (sum, line) => sum + sizePrice(line.product, line.size) * line.quantity,
+          0,
+        )
+        const googleSent = send('purchase', {
+          transaction_id: order.transactionId,
+          currency: 'EGP',
+          value: merchandiseValue,
+          shipping: order.shipping,
+          ...(order.coupon ? { coupon: order.coupon } : {}),
+          items: order.items.map((line) =>
+            analyticsItem(
+              line.product,
+              line.size,
+              line.quantity,
+              subtotal > 0 ? (order.discount * sizePrice(line.product, line.size)) / subtotal : 0,
+            ),
+          ),
+        })
+        const metaSent = sendMeta(
+          'Purchase',
+          metaPurchasePayload(order.items, order.value, order.transactionId),
+          order.transactionId,
+        )
+        return metaSent || googleSent
+      },
+      storage,
     )
-    if (metaSent) {
-      try {
-        sessionStorage.setItem(key, '1')
-      } catch {
-        // Tracking remains functional when session storage is unavailable.
-      }
-    }
-    return metaSent || googleSent
   }
 
   function trackSearch(query: string) {

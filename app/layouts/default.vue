@@ -15,6 +15,12 @@ import {
 const { locale } = useLanguage()
 const catalog = useCatalog()
 const route = useRoute()
+const { capture: captureCampaign } = useCampaignAttribution()
+watch(
+  () => route.query,
+  (query) => captureCampaign(query),
+  { immediate: true },
+)
 const runtimeConfig = useRuntimeConfig()
 const configuredGoogleTagId = String(runtimeConfig.public.googleTagId || '')
 const googleTagId = /^G-[A-Z0-9]+$/.test(configuredGoogleTagId) ? configuredGoogleTagId : ''
@@ -23,8 +29,7 @@ const metaPixelId = /^\d{10,20}$/.test(configuredMetaPixelId) ? configuredMetaPi
 const requestEvent = import.meta.server ? useRequestEvent() : undefined
 const cloudflareIndexingValue = (
   requestEvent?.context.cloudflare as
-    | { env?: { NUXT_PUBLIC_STORE_INDEXING_ENABLED?: string } }
-    | undefined
+    { env?: { NUXT_PUBLIC_STORE_INDEXING_ENABLED?: string } } | undefined
 )?.env?.NUXT_PUBLIC_STORE_INDEXING_ENABLED
 const indexingEnabled = useState('store-indexing-enabled', () =>
   resolveStoreIndexingEnabled(runtimeConfig.public.storeIndexingEnabled, cloudflareIndexingValue),
@@ -87,7 +92,7 @@ if (import.meta.client && metaPixelId) {
     () => route.fullPath,
     (currentPath, previousPath) => {
       if (currentPath !== previousPath) {
-        (window as Window & { fbq?: (...args: string[]) => void }).fbq?.('track', 'PageView')
+        ;(window as Window & { fbq?: (...args: string[]) => void }).fbq?.('track', 'PageView')
       }
     },
   )

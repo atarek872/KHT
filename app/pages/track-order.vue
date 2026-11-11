@@ -4,7 +4,7 @@ import type { StorefrontOrderView } from '../../shared/storefrontOrder'
 const { t, money } = useLanguage()
 const storeContent = useStoreContent()
 const page = computed(() => storeContent.value.pages.trackOrder)
-const reference = ref('')
+const reference = ref(String(useRoute().query.reference || ''))
 const phone = ref('')
 const busy = ref(false)
 const error = ref('')

@@ -4,6 +4,7 @@ import { DEFAULT_SOCIAL_IMAGE, STORE_ORIGIN } from '#shared/storefrontSeo'
 import { DEFAULT_HOME_SHOPPING, type HomeShoppingCard } from '#shared/storeContent'
 import { hasSizePriceRange, startingPrice } from '#shared/productPricing'
 import type { Product } from '#shared/types'
+import { fullSetDiscountPercent } from '#shared/setOffer'
 
 const { t, localized, money } = useLanguage()
 const catalog = useCatalog()
@@ -15,6 +16,7 @@ const collectionContent = section('collection')
 const shopping = computed(() => page.value.homeShopping || DEFAULT_HOME_SHOPPING)
 const productFor = (slug: string) => catalog.value.products.find((product) => product.slug === slug)
 const heroProduct = computed(() => productFor(shopping.value.heroProductSlug))
+const fullSetSaving = computed(() => fullSetDiscountPercent(catalog.value))
 const heroDestination = computed(() =>
   shopping.value.heroUseProductLink && heroProduct.value
     ? `/products/${heroProduct.value.slug}`
@@ -124,6 +126,20 @@ useStoreSeo({
             height="941"
           />
         </picture>
+        <div v-if="page.hero.ctaEnabled" class="hero-mobile-offer">
+          <span
+            v-if="heroProduct?.slug === DEFAULT_HOME_SHOPPING.heroProductSlug && fullSetSaving"
+            >{{
+              t(
+                `Save around ${fullSetSaving}% with the Full Set`,
+                `وفّر حوالي ${fullSetSaving}٪ مع الطقم الكامل`,
+              )
+            }}</span
+          >
+          <NuxtLink :to="heroDestination" class="button button-white"
+            >{{ t(page.hero.ctaLabel.en, page.hero.ctaLabel.ar) }}<KhtIcon name="arrow"
+          /></NuxtLink>
+        </div>
       </div>
       <div class="hero-content">
         <div class="hero-edition">
@@ -140,6 +156,17 @@ useStoreSeo({
           <span>{{ t(shopping.heroPricePrefix.en, shopping.heroPricePrefix.ar) }}</span>
           <strong>{{ money(startingPrice(heroProduct)) }}</strong>
         </div>
+        <p
+          v-if="heroProduct?.slug === DEFAULT_HOME_SHOPPING.heroProductSlug && fullSetSaving"
+          class="hero-set-saving"
+        >
+          {{
+            t(
+              `Choose the Full Set and save around ${fullSetSaving}%`,
+              `اختار الطقم الكامل ووفر حوالي ${fullSetSaving}٪`,
+            )
+          }}
+        </p>
         <div class="hero-actions">
           <NuxtLink v-if="page.hero.ctaEnabled" :to="heroDestination" class="button button-white"
             >{{ t(page.hero.ctaLabel.en, page.hero.ctaLabel.ar) }}<KhtIcon name="arrow"
@@ -164,6 +191,16 @@ useStoreSeo({
         >{{ t(shopping.heroScrollLabel.en, shopping.heroScrollLabel.ar) }}<span>↓</span></a
       >
     </section>
+    <div
+      class="store-trust-strip light-surface"
+      :aria-label="t('Shopping information', 'معلومات التسوق')"
+    >
+      <span>{{ t('Cash on delivery', 'الدفع عند الاستلام') }}</span>
+      <span>{{ t('14-day exchanges & returns', 'استبدال واسترجاع خلال 14 يوم') }}</span>
+      <span>{{
+        t('Delivery to available Egyptian governorates', 'توصيل للمحافظات المتاحة في مصر')
+      }}</span>
+    </div>
     <div v-if="shopping.stripEnabled" class="brand-strip">
       <span>{{ t(shopping.stripStart.en, shopping.stripStart.ar) }}</span
       ><span class="brand-strip-center">{{

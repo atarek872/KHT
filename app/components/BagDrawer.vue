@@ -1,6 +1,9 @@
 <script setup lang="ts">
+import { setSavingsForLines } from '#shared/setOffer'
 const { t, money } = useLanguage()
-const { open, count, total } = useBag()
+const { open, count, total, lines } = useBag()
+const catalog = useCatalog()
+const setSaving = computed(() => setSavingsForLines(catalog.value, lines.value))
 </script>
 <template>
   <OverlayPanel
@@ -15,6 +18,14 @@ const { open, count, total } = useBag()
           <span>{{ t('Subtotal', 'المجموع الفرعي') }}</span
           ><strong>{{ money(total) }}</strong>
         </div>
+        <p v-if="setSaving" class="set-saving">
+          {{
+            t(
+              `You save ${money(setSaving)} with the Full Set.`,
+              `وفرت ${money(setSaving)} باختيار الطقم الكامل.`,
+            )
+          }}
+        </p>
         <p class="muted">
           {{ t('Delivery calculated at checkout.', 'تكلفة التوصيل تُحدد عند إتمام الطلب.') }}
         </p>

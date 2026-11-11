@@ -17,6 +17,7 @@ const migrations = [
   '0005_abandoned_carts.sql',
   '0006_commerce_safety.sql',
   '0007_production_commerce.sql',
+  '0015_order_campaign.sql',
 ].map((name) => new URL(`../server/db/migrations/${name}`, import.meta.url))
 
 function setup() {

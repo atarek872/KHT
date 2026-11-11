@@ -14,6 +14,7 @@ const migrationUrls = [
   '../server/db/migrations/0005_abandoned_carts.sql',
   '../server/db/migrations/0006_commerce_safety.sql',
   '../server/db/migrations/0007_production_commerce.sql',
+  '../server/db/migrations/0015_order_campaign.sql',
 ].map((path) => new URL(path, import.meta.url))
 
 function setup() {
@@ -50,6 +51,7 @@ test('guest checkout creates one customer and one order from server prices', asy
   const { database, sqlite, close } = setup()
   try {
     const input = checkoutInput()
+    input.attribution = { source: 'facebook', campaign: 'drop_001' }
     const first = await createStorefrontOrder(database, input)
     const second = await createStorefrontOrder(database, input)
 
@@ -64,6 +66,16 @@ test('guest checkout creates one customer and one order from server prices', asy
     assert.equal(count(sqlite, 'customers'), 1)
     assert.equal(count(sqlite, 'orders'), 1)
     assert.equal(count(sqlite, 'order_items'), 1)
+    assert.deepEqual(
+      JSON.parse(
+        (
+          sqlite.prepare('SELECT campaign_attribution FROM orders').get() as {
+            campaign_attribution: string
+          }
+        ).campaign_attribution,
+      ),
+      input.attribution,
+    )
     assert.equal(
       (sqlite.prepare('SELECT source FROM orders').get() as { source: string }).source,
       'website',

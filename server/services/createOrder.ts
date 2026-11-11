@@ -223,8 +223,8 @@ export async function createDurableOrder(
             `INSERT INTO orders
       (id, number, public_reference, idempotency_key, customer_id, subtotal, shipping,
        shipping_governorate, discount, total, payment_method, source, notes, created_at,
-       discount_id, discount_code)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'cod', ?, ?, ?, ?, ?)`,
+       discount_id, discount_code, campaign_attribution)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'cod', ?, ?, ?, ?, ?, ?)`,
           )
           .bind(
             orderId,
@@ -242,14 +242,15 @@ export async function createDurableOrder(
             createdAt,
             priced.discountId || null,
             priced.couponCode || null,
+            input.attribution ? JSON.stringify(input.attribution) : null,
           )
       : database
           .prepare(
             `INSERT INTO orders
       (id, number, public_reference, idempotency_key, customer_id, subtotal, shipping,
        shipping_governorate, discount, total, payment_method, source, notes, created_at,
-       discount_id, discount_code, user_id, cart_id, cart_version, shipping_snapshot)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'cod', ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       discount_id, discount_code, user_id, cart_id, cart_version, shipping_snapshot, campaign_attribution)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'cod', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           )
           .bind(
             orderId,
@@ -278,6 +279,7 @@ export async function createDurableOrder(
               city: input.customer.city.trim(),
               governorate: input.customer.governorate.trim(),
             }),
+            input.attribution ? JSON.stringify(input.attribution) : null,
           )
   const statements = [
     customerStatement,

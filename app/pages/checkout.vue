@@ -26,10 +26,12 @@ const {
 } = useBag()
 const { user } = useCustomer()
 const { trackBeginCheckout, trackPurchase } = useStoreAnalytics()
+const { attribution } = useCampaignAttribution()
 const addresses = ref<CustomerAddress[]>([])
 const addressId = ref('')
 const addressFieldsOpen = ref(true)
 const step = ref<CheckoutStep>(1)
+const summaryOpen = ref(false)
 const fieldErrors = ref<CheckoutField[]>([])
 const newCheckoutDraft = () => ({
   name: '',
@@ -43,6 +45,10 @@ const newCheckoutDraft = () => ({
 const form = useState('checkout-draft', newCheckoutDraft)
 const busy = ref(false)
 const requestId = ref(crypto.randomUUID())
+const confirmationAddress = useState('checkout-confirmation-address', () => ({
+  reference: '',
+  address: '',
+}))
 const error = ref('')
 const couponCode = ref('')
 const couponBusy = ref(false)
@@ -96,6 +102,10 @@ const {
 const { data: welcomeCampaignData } = await useFetch<{
   campaign: PublicWelcomeCampaign | null
 }>('/api/storefront/welcome-campaign', { key: 'welcome-campaign' })
+const { data: checkoutOptions } = await useFetch<{ paymentMethods: string[] }>(
+  '/api/checkout/options',
+)
+const codAvailable = computed(() => checkoutOptions.value?.paymentMethods.includes('cod') ?? false)
 const welcomeCampaign = computed(() => welcomeCampaignData.value?.campaign || null)
 const shippingOptions = computed(() => shippingData.value?.items || [])
 const selectedShipping = computed(() =>
@@ -242,6 +252,16 @@ onBeforeUnmount(() => clearTimeout(contactSnapshotTimer))
 function clearFieldError(field: CheckoutField) {
   fieldErrors.value = fieldErrors.value.filter((item) => item !== field)
 }
+function validateField(field: CheckoutField, targetStep: 1 | 2) {
+  const invalid = invalidCheckoutFields(
+    targetStep,
+    form.value,
+    shippingOptions.value.map((option) => option.governorate),
+  )
+  fieldErrors.value = invalid.includes(field)
+    ? [...new Set([...fieldErrors.value, field])]
+    : fieldErrors.value.filter((item) => item !== field)
+}
 
 async function showStep(nextStep: CheckoutStep) {
   if (busy.value) return
@@ -280,7 +300,7 @@ async function handleStepAction() {
 }
 
 async function submit() {
-  if (busy.value || !selectedShipping.value) return
+  if (busy.value || !selectedShipping.value || !codAvailable.value) return
   const normalizedPhone = normalizeCheckoutPhone(form.value.phone)
   if (!normalizedPhone) {
     await validateStep(1)
@@ -305,6 +325,7 @@ async function submit() {
           expectedTotal: couponQuote.value?.total ?? total.value + shipping.value,
           items: lines.value.map(({ id, size, quantity }) => ({ id, size, quantity })),
           couponCode: couponQuote.value?.couponCode,
+          attribution: attribution.value,
         },
       })
       trackPurchase({
@@ -340,6 +361,7 @@ async function submit() {
         shippingGovernorate: form.value.governorate,
         paymentMethod: 'cod',
         notes: form.value.notes || undefined,
+        attribution: attribution.value,
       },
     })
     trackPurchase({
@@ -350,6 +372,10 @@ async function submit() {
       coupon: order.discountCode,
       items: lines.value,
     })
+    confirmationAddress.value = {
+      reference: order.reference,
+      address: `${form.value.address}, ${form.value.city}, ${form.value.governorate}`,
+    }
     completeCheckout()
     requestId.value = crypto.randomUUID()
     form.value = newCheckoutDraft()
@@ -455,6 +481,7 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
                     fieldErrors.includes('name') ? 'checkout-name-error' : undefined
                   "
                   @input="clearFieldError('name')"
+                  @blur="validateField('name', 1)"
                 />
                 <span
                   v-if="fieldErrors.includes('name')"
@@ -479,6 +506,7 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
                     fieldErrors.includes('phone') ? 'checkout-phone-error' : 'checkout-phone-help'
                   "
                   @input="clearFieldError('phone')"
+                  @blur="validateField('phone', 1)"
                 />
                 <span id="checkout-phone-help" class="checkout-field-help">{{
                   t(
@@ -507,6 +535,7 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
                     fieldErrors.includes('email') ? 'checkout-email-error' : undefined
                   "
                   @input="clearFieldError('email')"
+                  @blur="validateField('email', 1)"
                 />
                 <span
                   v-if="fieldErrors.includes('email')"
@@ -556,6 +585,7 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
                     fieldErrors.includes('governorate') ? 'checkout-governorate-error' : undefined
                   "
                   @change="clearFieldError('governorate')"
+                  @blur="validateField('governorate', 2)"
                 >
                   <option value="" disabled>
                     {{ t('Select your governorate', 'اختار المحافظة') }}
@@ -591,6 +621,7 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
                     fieldErrors.includes('city') ? 'checkout-city-error' : undefined
                   "
                   @input="clearFieldError('city')"
+                  @blur="validateField('city', 2)"
                 />
                 <span
                   v-if="fieldErrors.includes('city')"
@@ -613,6 +644,7 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
                     fieldErrors.includes('address') ? 'checkout-address-error' : undefined
                   "
                   @input="clearFieldError('address')"
+                  @blur="validateField('address', 2)"
                 />
                 <span
                   v-if="fieldErrors.includes('address')"
@@ -704,7 +736,7 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
                 ><strong>− {{ money(couponQuote.discount) }}</strong>
               </p>
             </div>
-            <div class="delivery-option checkout-payment-note">
+            <div v-if="codAvailable" class="delivery-option checkout-payment-note">
               <span class="selected-indicator" />
               <div>
                 <strong>{{ t('Cash on delivery', 'الدفع عند الاستلام') }}</strong
@@ -713,6 +745,14 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
                 }}</span>
               </div>
             </div>
+            <p v-else class="form-error" role="alert">
+              {{
+                t(
+                  'Payment is unavailable right now. Please try again later.',
+                  'الدفع غير متاح حاليًا. حاول مرة تانية لاحقًا.',
+                )
+              }}
+            </p>
             <p v-if="welcomeBusy" class="checkout-welcome-status" role="status">
               {{ t('Checking your welcome gift…', 'جارٍ التحقق من هدية الترحيب…') }}
             </p>
@@ -787,7 +827,10 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
               }}</span
               ><strong>{{ money(couponQuote?.total ?? total + shipping) }}</strong>
             </div>
-            <button class="button button-dark checkout-primary-action" :disabled="busy">
+            <button
+              class="button button-dark checkout-primary-action"
+              :disabled="busy || (step === 3 && !codAvailable)"
+            >
               {{
                 busy
                   ? t('Placing order…', 'جارٍ تسجيل الطلب…')
@@ -795,64 +838,81 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
                     ? t('Continue to delivery', 'متابعة للتوصيل')
                     : step === 2
                       ? t('Review order', 'مراجعة الطلب')
-                      : t('Confirm COD order', 'أكد طلب الدفع عند الاستلام')
+                      : t(
+                          `Place order — ${money(couponQuote?.total ?? total + shipping)}`,
+                          `تأكيد الطلب — ${money(couponQuote?.total ?? total + shipping)}`,
+                        )
               }}<KhtIcon name="arrow" />
             </button>
           </div>
         </form>
         <aside class="order-summary checkout-summary">
-          <h2>
-            {{ t('Your selection', 'اختياراتك') }} <span>({{ count }})</span>
-          </h2>
-          <div v-for="line in lines" :key="line.id + line.size" class="checkout-line">
-            <StoreImage
-              :src="line.product.image"
-              sizes="72px"
-              :alt="localized(line.product.name)"
-              width="72"
-              height="96"
-            />
-            <div>
-              <strong>{{ localized(line.product.name) }}</strong
-              ><span>{{ line.size }} / {{ t('Qty', 'الكمية') }} {{ line.quantity }}</span>
+          <button
+            type="button"
+            class="checkout-summary-toggle"
+            :aria-expanded="summaryOpen"
+            @click="summaryOpen = !summaryOpen"
+          >
+            {{ t('Order summary', 'ملخص الطلب') }} ·
+            {{ money(couponQuote?.total ?? total + shipping) }}
+            <span>{{ summaryOpen ? '−' : '+' }}</span>
+          </button>
+          <div class="checkout-summary-content" :class="{ 'is-open': summaryOpen }">
+            <h2>
+              {{ t('Your selection', 'اختياراتك') }} <span>({{ count }})</span>
+            </h2>
+            <div v-for="line in lines" :key="line.id + line.size" class="checkout-line">
+              <StoreImage
+                :src="line.product.image"
+                sizes="72px"
+                :alt="localized(line.product.name)"
+                width="72"
+                height="96"
+              />
+              <div>
+                <strong>{{ localized(line.product.name) }}</strong
+                ><span>{{ line.size }} / {{ t('Qty', 'الكمية') }} {{ line.quantity }}</span>
+              </div>
+              <span>{{ money(line.quantity * sizePrice(line.product, line.size)) }}</span>
             </div>
-            <span>{{ money(line.quantity * sizePrice(line.product, line.size)) }}</span>
+            <div class="summary-row">
+              <span>{{ t('Subtotal', 'المجموع الفرعي') }}</span
+              ><span>{{ money(total) }}</span>
+            </div>
+            <div class="summary-row">
+              <span>{{ t('Delivery', 'التوصيل') }}</span
+              ><span>{{
+                selectedShipping ? money(shipping) : t('Select area', 'اختار المحافظة')
+              }}</span>
+            </div>
+            <div v-if="couponQuote?.discount" class="summary-row">
+              <span>{{
+                couponQuote.promotion === 'welcome'
+                  ? `${t('Welcome gift', 'هدية الترحيب')} · ${promotionRule(couponQuote)}`
+                  : `${t('Discount', 'الخصم')} · ${couponQuote.couponCode}`
+              }}</span
+              ><span>− {{ money(couponQuote.discount) }}</span>
+            </div>
+            <div class="summary-row summary-total">
+              <strong>{{
+                selectedShipping
+                  ? t('Order total', 'إجمالي الطلب')
+                  : t('Subtotal before delivery', 'المجموع قبل التوصيل')
+              }}</strong
+              ><strong>{{ money(couponQuote?.total ?? total + shipping) }}</strong>
+            </div>
+            <p class="small-copy muted">
+              {{
+                t(
+                  'No account is required. Prices and stock are confirmed when you place the order.',
+                  'مش محتاج تعمل حساب. السعر والمخزون بيتأكدوا وقت تسجيل الطلب.',
+                )
+              }}
+            </p>
+            <NuxtLink to="/cart" class="remove-link">{{
+              t('Edit your bag', 'عدّل السلة')
+            }}</NuxtLink>
           </div>
-          <div class="summary-row">
-            <span>{{ t('Subtotal', 'المجموع الفرعي') }}</span
-            ><span>{{ money(total) }}</span>
-          </div>
-          <div class="summary-row">
-            <span>{{ t('Delivery', 'التوصيل') }}</span
-            ><span>{{
-              selectedShipping ? money(shipping) : t('Select area', 'اختار المحافظة')
-            }}</span>
-          </div>
-          <div v-if="couponQuote?.discount" class="summary-row">
-            <span>{{
-              couponQuote.promotion === 'welcome'
-                ? `${t('Welcome gift', 'هدية الترحيب')} · ${promotionRule(couponQuote)}`
-                : `${t('Discount', 'الخصم')} · ${couponQuote.couponCode}`
-            }}</span
-            ><span>− {{ money(couponQuote.discount) }}</span>
-          </div>
-          <div class="summary-row summary-total">
-            <strong>{{
-              selectedShipping
-                ? t('Order total', 'إجمالي الطلب')
-                : t('Subtotal before delivery', 'المجموع قبل التوصيل')
-            }}</strong
-            ><strong>{{ money(couponQuote?.total ?? total + shipping) }}</strong>
-          </div>
-          <p class="small-copy muted">
-            {{
-              t(
-                'No account is required. Prices and stock are confirmed when you place the order.',
-                'مش محتاج تعمل حساب. السعر والمخزون بيتأكدوا وقت تسجيل الطلب.',
-              )
-            }}
-          </p>
-          <NuxtLink to="/cart" class="remove-link">{{ t('Edit your bag', 'عدّل السلة') }}</NuxtLink>
         </aside>
       </div></template
     >

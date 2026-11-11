@@ -358,7 +358,7 @@ export const DEFAULT_STORE_CONTENT: StorefrontContent = {
             'موديلان بملابس KHT السوداء وخطوط بيضاء مميزة',
           ),
           ctaEnabled: true,
-          ctaLabel: text('SHOP THE FULL SET', 'تسوق الطقم الكامل'),
+          ctaLabel: text('SHOP THE FULL SET', 'تسوّق الطقم الكامل'),
           ctaUrl: '/drops/001',
         },
       ),

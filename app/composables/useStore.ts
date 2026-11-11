@@ -8,7 +8,18 @@ const cartQueues = new WeakMap<object, Promise<void>>()
 
 export function useLanguage() {
   const locale = useCookie<Locale>('kht-language', {
-    default: () => 'en',
+    default: () => {
+      const query = useRoute().query
+      if (query.lang === 'ar' || query.utm_language === 'ar') return 'ar'
+      const source = String(query.utm_source || '').toLowerCase()
+      const metaAd = Boolean(query.fbclid) || ['facebook', 'instagram', 'meta'].includes(source)
+      const country = import.meta.server ? useRequestHeaders(['cf-ipcountry'])['cf-ipcountry'] : ''
+      if (metaAd && country === 'EG') return 'ar'
+      const language = import.meta.server
+        ? useRequestHeaders(['accept-language'])['accept-language'] || ''
+        : navigator.language || ''
+      return /(?:^|,)\s*ar(?:-|\b)/i.test(language) ? 'ar' : 'en'
+    },
     sameSite: 'lax',
     maxAge: 31536000,
   })
@@ -189,6 +200,22 @@ export function useBag() {
     track(next)
     announcement.value = t('Bag updated.', 'تم تحديث السلة.')
   }
+  function changeSize(id: string, oldSize: string, newSize: string) {
+    const line = lines.value.find((item) => item.id === id && item.size === oldSize)
+    if (!line || oldSize === newSize) return false
+    const stock = line.product.sizes.find((item) => item.name === newSize)?.stock || 0
+    if (stock < 1) return false
+    const existing = lines.value.find((item) => item.id === id && item.size === newSize)
+    const quantity = Math.min(10, stock, line.quantity + (existing?.quantity || 0))
+    const next = lines.value
+      .filter((item) => !(item.id === id && (item.size === oldSize || item.size === newSize)))
+      .map(({ id, size, quantity }) => ({ id, size, quantity }))
+    next.push({ id, size: newSize, quantity })
+    raw.value = next
+    track(next)
+    announcement.value = t('Bag size updated.', 'تم تعديل المقاس في السلة.')
+    return true
+  }
   function clear() {
     raw.value = []
     track([])
@@ -207,6 +234,7 @@ export function useBag() {
     announcement,
     add,
     update,
+    changeSize,
     clear,
     completeCheckout,
     snapshotContact,

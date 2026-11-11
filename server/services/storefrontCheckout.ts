@@ -5,6 +5,7 @@ import type {
 } from '../../shared/storefrontOrder.ts'
 import type { D1Database } from '../utils/d1.ts'
 import { createDurableOrder, normalizeEgyptianPhone } from './createOrder.ts'
+import { sanitizeCampaignAttribution } from '../../shared/campaignAttribution.ts'
 
 function requireText(value: unknown, label: string, maximum: number) {
   if (typeof value !== 'string' || !value.trim()) throw new Error(`${label} is required.`)
@@ -83,6 +84,7 @@ export async function createStorefrontOrder(
     source: 'website',
     couponCode: input.couponCode?.trim() || undefined,
     notes: input.notes?.trim() || undefined,
+    attribution: sanitizeCampaignAttribution(input.attribution),
   }
   const { order, publicReference } = await createDurableOrder(database, orderInput, {
     cartId: input.cartId,

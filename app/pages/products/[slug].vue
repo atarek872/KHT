@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { STORE_ORIGIN, absoluteStoreUrl, breadcrumbList } from '#shared/storefrontSeo'
 import { hasSizePriceRange, sizePrice, startingPrice } from '#shared/productPricing'
+import { DEFAULT_HOME_SHOPPING } from '#shared/storeContent'
+import { useStoreContact } from '#shared/storeConfig'
+import { fullSetDiscountPercent } from '#shared/setOffer'
 
 const route = useRoute()
-const { t, localized, money } = useLanguage()
+const { t, localized, money, locale } = useLanguage()
 const catalog = useCatalog()
 const product = computed(() => catalog.value.products.find((p) => p.slug === route.params.slug))
 if (!product.value) throw createError({ statusCode: 404, statusMessage: 'Piece not found' })
@@ -19,23 +22,76 @@ const category = computed(() =>
   catalog.value.categories.find((c) => c.slug === product.value?.category),
 )
 const selectedSize = ref('')
-const displayedPrice = computed(() => product.value
-  ? selectedSize.value ? sizePrice(product.value, selectedSize.value) : startingPrice(product.value)
-  : 0)
-const priceStartsAt = computed(() => !!product.value && !selectedSize.value && hasSizePriceRange(product.value))
+const displayedPrice = computed(() =>
+  product.value
+    ? selectedSize.value
+      ? sizePrice(product.value, selectedSize.value)
+      : startingPrice(product.value)
+    : 0,
+)
+const priceStartsAt = computed(
+  () => !!product.value && !selectedSize.value && hasSizePriceRange(product.value),
+)
 const selectedImageIndex = ref(0)
-const productImages = computed(() => product.value?.images?.length
-  ? product.value.images
-  : product.value ? [product.value.image] : [])
-const selectedImage = computed(() => productImages.value[selectedImageIndex.value] || product.value?.image || '')
+const productImages = computed(() =>
+  product.value?.images?.length ? product.value.images : product.value ? [product.value.image] : [],
+)
+const selectedImage = computed(
+  () => productImages.value[selectedImageIndex.value] || product.value?.image || '',
+)
+const fullSet = computed(() =>
+  catalog.value.products.find(
+    (item) =>
+      item.slug ===
+      DEFAULT_HOME_SHOPPING.cards.find((card) => card.id === 'full-look')?.productSlug,
+  ),
+)
+const setSaving = computed(() =>
+  product.value?.id === fullSet.value?.id
+    ? fullSetDiscountPercent(catalog.value, selectedSize.value || undefined)
+    : 0,
+)
+const storeContent = useStoreContent()
+const brand = computed(() => storeContent.value.brand)
+const contact = computed(() => useStoreContact({ whatsapp: brand.value.contactWhatsApp }))
 const message = ref('')
 const zoom = ref(false)
 const actualSize = ref(true)
 const sizeGuide = ref(false)
+const activeInfoTab = ref<'fit' | 'care' | 'delivery' | 'returns'>('fit')
+function moveInfoTab(event: KeyboardEvent) {
+  const tabs = ['fit', 'care', 'delivery', 'returns'] as const
+  let index = tabs.indexOf(activeInfoTab.value)
+  if (event.key === 'Home') index = 0
+  else if (event.key === 'End') index = tabs.length - 1
+  else if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+    const offset = (event.key === 'ArrowRight' ? 1 : -1) * (locale.value === 'ar' ? -1 : 1)
+    index = (index + offset + tabs.length) % tabs.length
+  } else return
+  event.preventDefault()
+  activeInfoTab.value = tabs[index]!
+  nextTick(() => document.getElementById(`product-tab-${activeInfoTab.value}`)?.focus())
+}
 const buying = ref(false)
 function selectSize(size: string) {
   selectedSize.value = size
   message.value = ''
+}
+function moveImage(direction: number) {
+  if (productImages.value.length < 2) return
+  selectedImageIndex.value =
+    (selectedImageIndex.value + direction + productImages.value.length) % productImages.value.length
+}
+let touchStartX = 0
+let touchStartY = 0
+function startSwipe(event: TouchEvent) {
+  touchStartX = event.changedTouches[0]?.clientX || 0
+  touchStartY = event.changedTouches[0]?.clientY || 0
+}
+function endSwipe(event: TouchEvent) {
+  const dx = (event.changedTouches[0]?.clientX || 0) - touchStartX
+  const dy = (event.changedTouches[0]?.clientY || 0) - touchStartY
+  if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)) moveImage(dx < 0 ? 1 : -1)
 }
 const bag = useBag()
 const sizesElement = ref<HTMLElement>()
@@ -57,10 +113,14 @@ watch(
     message.value = ''
   },
 )
-async function addToBag() {
+function promptSize() {
+  message.value = t('Choose an available size first.', 'اختار مقاس متاح الأول.')
+  sizesElement.value?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  sizesElement.value?.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus()
+}
+async function addToBag(checkout = false) {
   if (!selectedSize.value) {
-    sizesElement.value?.scrollIntoView({ behavior: 'auto', block: 'center' })
-    sizesElement.value?.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus()
+    promptSize()
     return
   }
   if (!product.value || buying.value) return
@@ -73,10 +133,16 @@ async function addToBag() {
     )
   } else {
     trackAddToCart(product.value, selectedSize.value)
+    if (checkout) {
+      bag.open.value = false
+      await navigateTo('/checkout')
+    }
   }
   buying.value = false
 }
-const canonicalPath = computed(() => `/products/${product.value?.slug || String(route.params.slug)}`)
+const canonicalPath = computed(
+  () => `/products/${product.value?.slug || String(route.params.slug)}`,
+)
 const seoTitle = computed(() =>
   product.value ? `${localized(product.value.name)} — KHT Egypt` : 'KHT Product',
 )
@@ -105,9 +171,7 @@ const structuredData = computed(() => {
           url: absoluteStoreUrl(canonicalPath.value),
           priceCurrency: 'EGP',
           price: startingPrice(item).toFixed(2),
-          availability: inStock
-            ? 'https://schema.org/InStock'
-            : 'https://schema.org/OutOfStock',
+          availability: inStock ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
           itemCondition: 'https://schema.org/NewCondition',
           seller: { '@id': `${STORE_ORIGIN}/#store` },
         },
@@ -143,7 +207,15 @@ useStoreSeo({
       ><span>/</span><span>{{ localized(product.name) }}</span>
     </nav>
     <div class="product-detail-grid">
-      <div class="product-gallery">
+      <div class="product-gallery" @touchstart.passive="startSwipe" @touchend.passive="endSwipe">
+        <div class="mobile-product-summary">
+          <strong>{{ localized(product.name) }}</strong
+          ><ProductPrice
+            :price="displayedPrice"
+            :compare-at-price="product.compareAtPrice"
+            :from="priceStartsAt"
+          />
+        </div>
         <button
           class="product-main-image"
           :aria-label="t('Enlarge product image', 'كبّر صورة المنتج')"
@@ -156,8 +228,31 @@ useStoreSeo({
             width="1086"
             height="1448"
             fetchpriority="high"
-          /></button
-        ><div v-if="productImages.length > 1" class="product-thumbnails" role="group" :aria-label="t('Product images', 'صور المنتج')">
+          />
+        </button>
+        <div v-if="productImages.length > 1" class="product-gallery-nav">
+          <button
+            type="button"
+            :aria-label="t('Previous image', 'الصورة السابقة')"
+            @click="moveImage(-1)"
+          >
+            ‹
+          </button>
+          <span aria-live="polite">{{ selectedImageIndex + 1 }} / {{ productImages.length }}</span>
+          <button
+            type="button"
+            :aria-label="t('Next image', 'الصورة التالية')"
+            @click="moveImage(1)"
+          >
+            ›
+          </button>
+        </div>
+        <div
+          v-if="productImages.length > 1"
+          class="product-thumbnails"
+          role="group"
+          :aria-label="t('Product images', 'صور المنتج')"
+        >
           <button
             v-for="(image, index) in productImages"
             :key="image"
@@ -168,17 +263,39 @@ useStoreSeo({
             :aria-label="`${t('Show image', 'اعرض الصورة')} ${index + 1}`"
             @click="selectedImageIndex = index"
           >
-            <StoreImage :src="image" sizes="88px" :alt="`${localized(product.name)} — ${t('image', 'صورة')} ${index + 1}`" loading="lazy" />
+            <StoreImage
+              :src="image"
+              sizes="88px"
+              :alt="`${localized(product.name)} — ${t('image', 'صورة')} ${index + 1}`"
+              loading="lazy"
+            />
           </button>
-        </div><span class="image-note">{{
-          t(`Product image ${selectedImageIndex + 1} of ${productImages.length}`, `صورة المنتج ${selectedImageIndex + 1} من ${productImages.length}`)
+        </div>
+        <span class="image-note">{{
+          t(
+            `Product image ${selectedImageIndex + 1} of ${productImages.length}`,
+            `صورة المنتج ${selectedImageIndex + 1} من ${productImages.length}`,
+          )
         }}</span>
       </div>
       <div class="product-details">
         <p class="eyebrow">DROP 001</p>
         <h1>{{ localized(product.name) }}</h1>
         <p class="detail-product-code">{{ product.code }}</p>
-        <ProductPrice class="detail-price" :price="displayedPrice" :compare-at-price="product.compareAtPrice" :from="priceStartsAt" />
+        <ProductPrice
+          class="detail-price"
+          :price="displayedPrice"
+          :compare-at-price="product.compareAtPrice"
+          :from="priceStartsAt"
+        />
+        <p v-if="setSaving" class="set-saving">
+          {{
+            t(
+              `Choose the Full Set and save around ${setSaving}% compared with the pieces separately.`,
+              `اختار الطقم الكامل ووفر حوالي ${setSaving}٪ مقارنة بشراء القطع منفصلة.`,
+            )
+          }}
+        </p>
         <p class="product-description">{{ localized(product.description) }}</p>
         <div class="color-choice">
           <span class="color-swatch" /><span>{{ t('Black / White', 'أسود / أبيض') }}</span>
@@ -205,8 +322,15 @@ useStoreSeo({
               {{ size.name }}
             </button>
           </div>
-          <div v-if="hasSizePriceRange(product)" class="size-price-guide" :aria-label="t('Price by size', 'السعر حسب المقاس')">
-            <span v-for="size in product.sizes.filter((option) => option.stock > 0)" :key="size.name">
+          <div
+            v-if="hasSizePriceRange(product)"
+            class="size-price-guide"
+            :aria-label="t('Price by size', 'السعر حسب المقاس')"
+          >
+            <span
+              v-for="size in product.sizes.filter((option) => option.stock > 0)"
+              :key="size.name"
+            >
               {{ size.name }} · {{ money(sizePrice(product, size.name)) }}
             </span>
           </div>
@@ -221,20 +345,118 @@ useStoreSeo({
             }}
           </p>
         </div>
-        <div ref="buyElement">
+        <div ref="buyElement" class="product-actions">
           <button
             class="button button-dark add-button"
-            :disabled="!selectedSize || buying"
-            @click="addToBag"
+            :disabled="buying"
+            @click="selectedSize ? addToBag(true) : promptSize()"
           >
-            {{ buying ? t('Adding…', 'جارٍ الإضافة…') : t('Add to bag', 'أضف للسلة')
+            {{
+              buying
+                ? t('Adding…', 'جارٍ الإضافة…')
+                : selectedSize
+                  ? t('Buy now', 'اشتري الآن')
+                  : t('Choose a size', 'اختار المقاس')
             }}<KhtIcon name="arrow" />
+          </button>
+          <button
+            class="button button-outline add-button"
+            :disabled="!selectedSize || buying"
+            @click="addToBag(false)"
+          >
+            {{ t('Add to bag', 'أضف للسلة') }}
           </button>
         </div>
         <p v-if="message" class="form-error" role="alert">{{ message }}</p>
+        <ul class="product-trust">
+          <li>{{ t('Cash on delivery', 'الدفع عند الاستلام') }}</li>
+          <li>
+            {{
+              t(
+                'Ask to inspect the parcel at delivery if the courier permits.',
+                'اطلب فحص الطرد عند الاستلام لو شركة الشحن تسمح.',
+              )
+            }}
+          </li>
+          <li>{{ t('Exchanges and returns within 14 days', 'استبدال واسترجاع خلال 14 يوم') }}</li>
+          <li>
+            {{
+              t(
+                'Delivery charge shown before order confirmation',
+                'مصاريف الشحن بتظهر قبل تأكيد الطلب',
+              )
+            }}
+          </li>
+        </ul>
+        <p class="product-size-help">
+          <a
+            v-if="contact.whatsappHref"
+            :href="contact.whatsappHref"
+            target="_blank"
+            rel="noopener noreferrer"
+            >{{ t('Need size help? WhatsApp us', 'محتاج مساعدة في المقاس؟ راسلنا واتساب') }}</a
+          ><a
+            v-else-if="brand.instagramUrl"
+            :href="brand.instagramUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            >{{ t('Need size help? Message us', 'محتاج مساعدة في المقاس؟ راسلنا') }}</a
+          >
+        </p>
         <div class="product-service-links">
           <NuxtLink to="/shipping">{{ t('Delivery information', 'معلومات التوصيل') }}</NuxtLink
           ><NuxtLink to="/returns">{{ t('Returns & exchanges', 'الاستبدال والاسترجاع') }}</NuxtLink>
+        </div>
+        <div class="product-info-tabs">
+          <div role="tablist" :aria-label="t('Product information', 'معلومات المنتج')">
+            <button
+              v-for="tab in ['fit', 'care', 'delivery', 'returns'] as const"
+              :id="`product-tab-${tab}`"
+              :key="tab"
+              type="button"
+              role="tab"
+              :aria-controls="`product-panel-${tab}`"
+              :aria-selected="activeInfoTab === tab"
+              :tabindex="activeInfoTab === tab ? 0 : -1"
+              @click="activeInfoTab = tab"
+              @keydown="moveInfoTab"
+            >
+              {{
+                tab === 'fit'
+                  ? t('Fit', 'القَصّة')
+                  : tab === 'care'
+                    ? t('Details & care', 'التفاصيل والعناية')
+                    : tab === 'delivery'
+                      ? t('Delivery', 'التوصيل')
+                      : t('Returns', 'الاسترجاع')
+              }}
+            </button>
+          </div>
+          <div
+            v-for="tab in ['fit', 'care', 'delivery', 'returns'] as const"
+            v-show="activeInfoTab === tab"
+            :id="`product-panel-${tab}`"
+            :key="tab"
+            role="tabpanel"
+            :aria-labelledby="`product-tab-${tab}`"
+            tabindex="0"
+          >
+            <p v-if="tab === 'fit'">{{ localized(product.fit) }}</p>
+            <p v-else-if="tab === 'care'">{{ localized(product.detail) }}</p>
+            <p v-else-if="tab === 'delivery'">
+              {{
+                t(
+                  'Delivery charge is shown before order confirmation.',
+                  'مصاريف الشحن بتظهر قبل تأكيد الطلب.',
+                )
+              }}
+              <NuxtLink to="/shipping">{{ t('Delivery information', 'معلومات التوصيل') }}</NuxtLink>
+            </p>
+            <p v-else>
+              {{ t('Exchanges and returns within 14 days.', 'استبدال واسترجاع خلال 14 يوم.') }}
+              <NuxtLink to="/returns">{{ t('Read the policy', 'اقرأ السياسة') }}</NuxtLink>
+            </p>
+          </div>
         </div>
         <details class="detail-accordion" open>
           <summary>{{ t('The fit', 'القَصّة') }}<span>+</span></summary>
@@ -243,6 +465,25 @@ useStoreSeo({
         <details class="detail-accordion">
           <summary>{{ t('Details & care', 'التفاصيل والعناية') }}<span>+</span></summary>
           <p>{{ localized(product.detail) }}</p>
+        </details>
+        <details class="detail-accordion">
+          <summary>{{ t('Delivery', 'التوصيل') }}<span>+</span></summary>
+          <p>
+            {{
+              t(
+                'Delivery charge is shown before order confirmation.',
+                'مصاريف الشحن بتظهر قبل تأكيد الطلب.',
+              )
+            }}
+            <NuxtLink to="/shipping">{{ t('Delivery information', 'معلومات التوصيل') }}</NuxtLink>
+          </p>
+        </details>
+        <details class="detail-accordion">
+          <summary>{{ t('Returns', 'الاسترجاع') }}<span>+</span></summary>
+          <p>
+            {{ t('Exchanges and returns within 14 days.', 'استبدال واسترجاع خلال 14 يوم.') }}
+            <NuxtLink to="/returns">{{ t('Read the policy', 'اقرأ السياسة') }}</NuxtLink>
+          </p>
         </details>
         <p class="product-demo-note">
           {{
@@ -270,9 +511,24 @@ useStoreSeo({
       </div>
     </section>
     <div v-if="stickyVisible" class="mobile-buy-bar">
-      <ProductPrice :price="displayedPrice" :compare-at-price="product.compareAtPrice" :from="priceStartsAt" compact />
-      <button class="button button-dark" @click="addToBag">
-        {{ selectedSize ? t('Add to bag', 'أضف للسلة') : t('Select size', 'اختار مقاسك')
+      <div>
+        <ProductPrice
+          :price="displayedPrice"
+          :compare-at-price="product.compareAtPrice"
+          :from="priceStartsAt"
+          compact
+        /><small>{{
+          selectedSize
+            ? `${t('Size', 'المقاس')}: ${selectedSize}`
+            : t('Select size', 'اختار المقاس')
+        }}</small>
+      </div>
+      <button
+        class="button button-dark"
+        :disabled="buying"
+        @click="selectedSize ? addToBag(true) : promptSize()"
+      >
+        {{ selectedSize ? t('Buy now', 'اشتري الآن') : t('Select size', 'اختار مقاسك')
         }}<KhtIcon name="arrow" />
       </button>
     </div>

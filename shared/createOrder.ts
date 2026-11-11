@@ -1,4 +1,5 @@
 import type { AdminOrderDetail, OrderSource } from './adminOrder'
+import type { CampaignAttribution } from './campaignAttribution'
 
 export interface CreateOrderCustomer {
   id?: string
@@ -19,6 +20,7 @@ export interface CreateOrderInput {
   source: OrderSource
   couponCode?: string
   notes?: string
+  attribution?: CampaignAttribution | null
 }
 
 export interface OrderVariantOption {

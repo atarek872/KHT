@@ -3,6 +3,7 @@ import type {
   OrderPaymentMethod,
   OrderPaymentStatus,
 } from './adminOrder.ts'
+import type { CampaignAttribution } from './campaignAttribution.ts'
 
 export interface StorefrontCheckoutCustomer {
   name: string
@@ -22,6 +23,7 @@ export interface StorefrontCheckoutInput {
   paymentMethod: OrderPaymentMethod
   couponCode?: string
   notes?: string
+  attribution?: CampaignAttribution | null
 }
 
 export interface StorefrontOrderLine {

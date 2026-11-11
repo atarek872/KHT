@@ -10,6 +10,7 @@ import {
 import { createOrder } from '../../services/createOrder'
 import { field, normalizeEmail } from '../../services/customerAccounts'
 import { digest } from '../../utils/password'
+import { sanitizeCampaignAttribution } from '../../../shared/campaignAttribution'
 
 export default defineEventHandler(async (event) => {
   const body = await accountBody(event)
@@ -69,6 +70,7 @@ export default defineEventHandler(async (event) => {
         paymentMethod: 'cod',
         source: 'website',
         couponCode: typeof body.couponCode === 'string' ? body.couponCode : undefined,
+        attribution: sanitizeCampaignAttribution(body.attribution),
       },
       {
         userId: user?.id || null,

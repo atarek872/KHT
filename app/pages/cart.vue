@@ -1,6 +1,9 @@
 <script setup lang="ts">
+import { setSavingsForLines } from '#shared/setOffer'
 const { t, money } = useLanguage()
-const { count, total } = useBag()
+const { count, total, lines } = useBag()
+const catalog = useCatalog()
+const setSaving = computed(() => setSavingsForLines(catalog.value, lines.value))
 useSeoMeta({ title: () => t('Your bag — KHT', 'سلتك — KHT') })
 </script>
 <template>
@@ -19,6 +22,14 @@ useSeoMeta({ title: () => t('Your bag — KHT', 'سلتك — KHT') })
           <span>{{ t('Subtotal', 'المجموع الفرعي') }}</span
           ><span>{{ money(total) }}</span>
         </div>
+        <p v-if="setSaving" class="set-saving">
+          {{
+            t(
+              `You save ${money(setSaving)} with the Full Set.`,
+              `وفرت ${money(setSaving)} باختيار الطقم الكامل.`,
+            )
+          }}
+        </p>
         <div class="summary-row muted">
           <span>{{ t('Delivery', 'التوصيل') }}</span
           ><span>{{ t('At checkout', 'عند إتمام الطلب') }}</span>
