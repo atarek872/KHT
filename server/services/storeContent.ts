@@ -193,6 +193,7 @@ export function validateStoreContent(input: StorefrontContent) {
   if (shopping) {
     bilingual(shopping.heroCaption, 'homepage hero image caption', 120, true)
     bilingual(shopping.heroScrollLabel, 'homepage hero scroll label', 80, true)
+    bilingual(shopping.welcomeOfferText, 'homepage first-order offer', 300)
     requiredText(shopping.heroProductSlug, 'Homepage hero product slug', 120)
     if (!/^[a-z0-9-]+$/.test(shopping.heroProductSlug))
       throw new Error('Homepage hero product slug is invalid.')
@@ -280,6 +281,10 @@ function parseContent(value: string) {
           ar: 'الطقم الكامل أو القطعة اللي تناسبك. اختار بطريقتك.',
         }
     }
+    if (content.pages?.home?.homeShopping && !content.pages.home.homeShopping.welcomeOfferText)
+      content.pages.home.homeShopping.welcomeOfferText = structuredClone(
+        DEFAULT_HOME_SHOPPING.welcomeOfferText,
+      )
     return validateStoreContent(content)
   } catch {
     return cloneStoreContent(DEFAULT_STORE_CONTENT)

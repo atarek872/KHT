@@ -98,6 +98,23 @@ onBeforeUnmount(() => {
         required
         dir="rtl"
       />
+      <AdminTextarea
+        v-model="shopping.welcomeOfferText.en"
+        label="English first-order offer"
+        :rows="2"
+        maxlength="300"
+        required
+        help="Use {discount} for the live discount and {stock} for the available set count. The offer appears only while the campaign is active and sets are in stock."
+      />
+      <AdminTextarea
+        v-model="shopping.welcomeOfferText.ar"
+        label="Arabic first-order offer"
+        :rows="2"
+        maxlength="300"
+        required
+        dir="rtl"
+        help="Use {discount} and {stock} wherever the live discount and available set count should appear."
+      />
       <AdminInput v-model="shopping.heroCaption.en" label="English image caption" optional />
       <AdminInput
         v-model="shopping.heroCaption.ar"

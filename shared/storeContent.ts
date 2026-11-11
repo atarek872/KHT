@@ -61,6 +61,7 @@ export type HomeShoppingCard = {
 export type HomeShoppingContent = {
   heroCaption: ContentText
   heroScrollLabel: ContentText
+  welcomeOfferText: ContentText
   heroProductSlug: string
   heroUseProductLink: boolean
   heroShowPrice: boolean
@@ -181,6 +182,10 @@ const seo = (
 export const DEFAULT_HOME_SHOPPING: HomeShoppingContent = {
   heroCaption: text('KHT / STUDY IN CONTRAST', 'KHT / دراسة في التباين'),
   heroScrollLabel: text('Scroll to discover', 'انزل واكتشف'),
+  welcomeOfferText: text(
+    '{discount} off your first signed-in order. {stock} sets available now — shop before they sell out.',
+    'خصم {discount} على أول طلب بعد تسجيل الدخول. المتاح الآن {stock} سيت — الحق العرض قبل نفاد الكمية.',
+  ),
   heroProductSlug: 'line-01-full-set-black',
   heroUseProductLink: true,
   heroShowPrice: true,
@@ -849,6 +854,10 @@ export const DEFAULT_STORE_CONTENT: StorefrontContent = {
 
 export function cloneStoreContent(content: StorefrontContent = DEFAULT_STORE_CONTENT) {
   return JSON.parse(JSON.stringify(content)) as StorefrontContent
+}
+
+export function renderHomeWelcomeOffer(template: string, discount: string, stock: number) {
+  return template.replaceAll('{discount}', discount).replaceAll('{stock}', String(stock))
 }
 
 export type StoreContentVersion = { id: string; publishedAt: string; publishedBy: string }

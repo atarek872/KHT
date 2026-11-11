@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import { useStoreContact } from '#shared/storeConfig'
 import { DEFAULT_SOCIAL_IMAGE, STORE_ORIGIN } from '#shared/storefrontSeo'
-import { DEFAULT_HOME_SHOPPING, type HomeShoppingCard } from '#shared/storeContent'
+import {
+  DEFAULT_HOME_SHOPPING,
+  renderHomeWelcomeOffer,
+  type HomeShoppingCard,
+} from '#shared/storeContent'
 import { hasSizePriceRange, startingPrice } from '#shared/productPricing'
 import type { Product } from '#shared/types'
 import type { PublicWelcomeCampaign } from '#shared/welcomeCampaign'
 
-const { t, localized, money } = useLanguage()
+const { locale, t, localized, money } = useLanguage()
 const catalog = useCatalog()
 const storeContent = useStoreContent()
 const page = computed(() => storeContent.value.pages.home)
@@ -37,9 +41,10 @@ const featuredSetAvailable = computed(() =>
 )
 const featuredOffer = computed(() => {
   if (!welcomeDiscount.value || !featuredSetAvailable.value) return ''
-  return t(
-    `${welcomeDiscount.value}% off your first signed-in order. ${featuredSetAvailable.value} sets available now — shop before they sell out.`,
-    `خصم ${welcomeDiscount.value}٪ على أول طلب بعد تسجيل الدخول. المتاح الآن ${featuredSetAvailable.value} سيت — الحق العرض قبل نفاد الكمية.`,
+  return renderHomeWelcomeOffer(
+    localized(shopping.value.welcomeOfferText),
+    `${welcomeDiscount.value}${locale.value === 'ar' ? '٪' : '%'}`,
+    featuredSetAvailable.value,
   )
 })
 const heroDestination = computed(() =>

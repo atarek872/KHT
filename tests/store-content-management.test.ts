@@ -2,7 +2,11 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { testDatabase } from './d1-test-adapter.ts'
-import { DEFAULT_STORE_CONTENT, cloneStoreContent } from '../shared/storeContent.ts'
+import {
+  DEFAULT_STORE_CONTENT,
+  cloneStoreContent,
+  renderHomeWelcomeOffer,
+} from '../shared/storeContent.ts'
 import {
   getAdminStoreContent,
   getPublicStoreContent,
@@ -66,6 +70,23 @@ test('draft stays private until publish and each publish creates a restorable ve
   assert.equal(restored.hasUnpublishedChanges, true)
 })
 
+test('homepage first-order offer uses editable copy with current discount and stock', async () => {
+  const { database } = testDatabase()
+  const content = cloneStoreContent(DEFAULT_STORE_CONTENT)
+  content.pages.home.homeShopping!.welcomeOfferText = {
+    en: 'Your first order: {discount} off · {stock} sets left',
+    ar: 'أول طلب: خصم {discount} · باقي {stock} سيت',
+  }
+  await publishStoreContent(database, content, 'admin@kht-eg.com')
+  const offer = (await getPublicStoreContent(database)).content.pages.home.homeShopping!
+    .welcomeOfferText
+  assert.equal(
+    renderHomeWelcomeOffer(offer.en, '10%', 49),
+    'Your first order: 10% off · 49 sets left',
+  )
+  assert.equal(renderHomeWelcomeOffer(offer.ar, '10٪', 49), 'أول طلب: خصم 10٪ · باقي 49 سيت')
+})
+
 test('content validation rejects unsafe links, images, duplicate navigation, and empty bilingual copy', () => {
   const badLink = cloneStoreContent(DEFAULT_STORE_CONTENT)
   badLink.navigation[0]!.href = 'javascript:alert(1)'
@@ -108,6 +129,13 @@ test('content validation rejects unsafe links, images, duplicate navigation, and
     /Arabic product returns summary/,
   )
 
+  const missingOfferTranslation = cloneStoreContent(DEFAULT_STORE_CONTENT)
+  missingOfferTranslation.pages.home.homeShopping!.welcomeOfferText.ar = ''
+  assert.throws(
+    () => validateStoreContent(missingOfferTranslation),
+    /Arabic homepage first-order offer/,
+  )
+
   const invalidReturnWindow = cloneStoreContent(DEFAULT_STORE_CONTENT)
   invalidReturnWindow.policyHighlights.returnWindowDays = -1
   assert.throws(() => validateStoreContent(invalidReturnWindow), /Return window/)
@@ -139,6 +167,25 @@ test('old published content gains shopping controls without losing customized co
   assert.equal(state.published.pages.home.sections[0]?.ctaUrl, '/drops/001')
   assert.equal(state.published.pages.home.sections[0]?.heading.en, 'SHOP THE LOOK.')
   assert.equal(state.published.pages.home.homeShopping?.cards.length, 3)
+  assert.equal(state.hasUnpublishedChanges, false)
+})
+
+test('existing homepage settings gain editable offer copy without losing edits', async () => {
+  const { database } = testDatabase()
+  const legacy = cloneStoreContent(DEFAULT_STORE_CONTENT)
+  legacy.pages.home.homeShopping!.heroCaption.en = 'CUSTOM HERO CAPTION'
+  delete (legacy.pages.home.homeShopping as Partial<typeof legacy.pages.home.homeShopping>)
+    .welcomeOfferText
+  await database
+    .prepare('UPDATE storefront_content_state SET published_json=?, draft_json=? WHERE id=1')
+    .bind(JSON.stringify(legacy), JSON.stringify(legacy))
+    .run()
+  const state = await getAdminStoreContent(database)
+  assert.equal(state.published.pages.home.homeShopping?.heroCaption.en, 'CUSTOM HERO CAPTION')
+  assert.deepEqual(
+    state.published.pages.home.homeShopping?.welcomeOfferText,
+    DEFAULT_STORE_CONTENT.pages.home.homeShopping?.welcomeOfferText,
+  )
   assert.equal(state.hasUnpublishedChanges, false)
 })
 
