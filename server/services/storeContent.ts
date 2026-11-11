@@ -122,6 +122,27 @@ export function validateStoreContent(input: StorefrontContent) {
   ] as const)
     safeLink(value, label, true)
 
+  const policy = input.policyHighlights
+  if (!policy || typeof policy !== 'object')
+    throw new Error('Store policy highlights are required.')
+  for (const [label, value] of [
+    ['homepage returns message', policy.homeReturnMessage],
+    ['product inspection message', policy.productInspectionMessage],
+    ['product returns message', policy.productReturnMessage],
+    ['product returns summary', policy.productReturnSummary],
+    ['product returns link', policy.productReturnLinkLabel],
+    ['product returns tab', policy.productReturnTabLabel],
+    ['read policy link', policy.productReadPolicyLabel],
+    ['checkout policy link', policy.checkoutPolicyLabel],
+  ] as const)
+    bilingual(value, label, 240)
+  if (
+    !Number.isInteger(policy.returnWindowDays) ||
+    policy.returnWindowDays < 0 ||
+    policy.returnWindowDays > 365
+  )
+    throw new Error('Return window must be between 0 and 365 days.')
+
   if (!Array.isArray(input.navigation) || input.navigation.length > 30)
     throw new Error('Navigation must contain no more than 30 links.')
   const ids = new Set<string>()
@@ -236,6 +257,8 @@ function parseContent(value: string) {
     if (content.brand && content.brand.announcementDurationSeconds === undefined)
       content.brand.announcementDurationSeconds =
         DEFAULT_STORE_CONTENT.brand.announcementDurationSeconds
+    if (!content.policyHighlights)
+      content.policyHighlights = structuredClone(DEFAULT_STORE_CONTENT.policyHighlights)
     // Older published content predates the shoppable homepage. Preserve every existing edit.
     if (content.pages?.home && !('homeShopping' in content.pages.home)) {
       content.pages.home.homeShopping = structuredClone(DEFAULT_HOME_SHOPPING)

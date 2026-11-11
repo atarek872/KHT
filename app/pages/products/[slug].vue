@@ -53,6 +53,7 @@ const setSaving = computed(() =>
 )
 const storeContent = useStoreContent()
 const brand = computed(() => storeContent.value.brand)
+const policy = computed(() => storeContent.value.policyHighlights)
 const contact = computed(() => useStoreContact({ whatsapp: brand.value.contactWhatsApp }))
 const message = ref('')
 const zoom = ref(false)
@@ -371,14 +372,9 @@ useStoreSeo({
         <ul class="product-trust">
           <li>{{ t('Cash on delivery', 'الدفع عند الاستلام') }}</li>
           <li>
-            {{
-              t(
-                'Ask to inspect the parcel at delivery if the courier permits.',
-                'اطلب فحص الطرد عند الاستلام لو شركة الشحن تسمح.',
-              )
-            }}
+            {{ localized(policy.productInspectionMessage) }}
           </li>
-          <li>{{ t('Exchanges and returns within 14 days', 'استبدال واسترجاع خلال 14 يوم') }}</li>
+          <li>{{ localized(policy.productReturnMessage) }}</li>
           <li>
             {{
               t(
@@ -405,7 +401,7 @@ useStoreSeo({
         </p>
         <div class="product-service-links">
           <NuxtLink to="/shipping">{{ t('Delivery information', 'معلومات التوصيل') }}</NuxtLink
-          ><NuxtLink to="/returns">{{ t('Returns & exchanges', 'الاستبدال والاسترجاع') }}</NuxtLink>
+          ><NuxtLink to="/returns">{{ localized(policy.productReturnLinkLabel) }}</NuxtLink>
         </div>
         <div class="product-info-tabs">
           <div role="tablist" :aria-label="t('Product information', 'معلومات المنتج')">
@@ -428,7 +424,7 @@ useStoreSeo({
                     ? t('Details & care', 'التفاصيل والعناية')
                     : tab === 'delivery'
                       ? t('Delivery', 'التوصيل')
-                      : t('Returns', 'الاسترجاع')
+                      : localized(policy.productReturnTabLabel)
               }}
             </button>
           </div>
@@ -453,8 +449,8 @@ useStoreSeo({
               <NuxtLink to="/shipping">{{ t('Delivery information', 'معلومات التوصيل') }}</NuxtLink>
             </p>
             <p v-else>
-              {{ t('Exchanges and returns within 14 days.', 'استبدال واسترجاع خلال 14 يوم.') }}
-              <NuxtLink to="/returns">{{ t('Read the policy', 'اقرأ السياسة') }}</NuxtLink>
+              {{ localized(policy.productReturnSummary) }}
+              <NuxtLink to="/returns">{{ localized(policy.productReadPolicyLabel) }}</NuxtLink>
             </p>
           </div>
         </div>
@@ -479,10 +475,10 @@ useStoreSeo({
           </p>
         </details>
         <details class="detail-accordion">
-          <summary>{{ t('Returns', 'الاسترجاع') }}<span>+</span></summary>
+          <summary>{{ localized(policy.productReturnTabLabel) }}<span>+</span></summary>
           <p>
-            {{ t('Exchanges and returns within 14 days.', 'استبدال واسترجاع خلال 14 يوم.') }}
-            <NuxtLink to="/returns">{{ t('Read the policy', 'اقرأ السياسة') }}</NuxtLink>
+            {{ localized(policy.productReturnSummary) }}
+            <NuxtLink to="/returns">{{ localized(policy.productReadPolicyLabel) }}</NuxtLink>
           </p>
         </details>
         <p class="product-demo-note">

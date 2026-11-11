@@ -39,14 +39,15 @@ test('policies describe actual COD, exchanges, and cart data handling', () => {
   assert.doesNotMatch(page, /Shopify|credit card/i)
 })
 
-test('approved Drop and story images are scoped without changing the homepage hero', () => {
+test('Drop and story images remain scoped while the homepage waits for its published hero', () => {
   const drop = read('../app/components/CollectionView.vue')
   const about = read('../app/pages/about.vue')
   const home = read('../app/pages/index.vue')
   const content = read('../shared/storeContent.ts')
   assert.match(drop, /page\.hero\.imageUrl/)
   assert.match(about, /page\.hero\.imageUrl/)
-  assert.match(home, /page\.hero\.imageUrl/)
+  assert.match(home, /v-if="heroImage"/)
+  assert.doesNotMatch(home, /:src="page\.hero\.imageUrl \|\| '\/images\/campaign\.png'"/)
   assert.match(content, /imageUrl: '\/images\/drop-001-banner\.jpg'/)
   assert.match(content, /imageUrl: '\/images\/our-story-cover\.png'/)
   assert.match(content, /imageUrl: '\/images\/campaign\.png'/)

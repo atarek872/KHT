@@ -10,7 +10,7 @@ import {
 } from '#shared/storeContent'
 import type { Catalog } from '#shared/types'
 
-const props = defineProps<{ view: 'brand' | 'navigation' | 'pages' | 'publishing' }>()
+const props = defineProps<{ view: 'brand' | 'navigation' | 'pages' | 'policy' | 'publishing' }>()
 const { data, error, status, refresh } = await useFetch<AdminStoreContentState>(
   '/api/admin/store-content',
 )
@@ -507,6 +507,127 @@ onBeforeUnmount(() => {
         <AdminButton type="button" variant="quiet" @click="addNavigation"
           >Add navigation link</AdminButton
         >
+      </AdminSection>
+    </template>
+
+    <template v-else-if="props.view === 'policy'">
+      <AdminSection
+        title="Returns and exchanges across the store"
+        description="Edit the homepage strip, every product's policy messages, and the checkout policy link in both languages. Publish changes when ready."
+      >
+        <div class="admin-content-editor__grid">
+          <template
+            v-for="field in [
+              { key: 'homeReturnMessage', label: 'Homepage trust strip' },
+              { key: 'productInspectionMessage', label: 'Product inspection message' },
+              { key: 'productReturnMessage', label: 'Product purchase area' },
+              { key: 'productReturnSummary', label: 'Product details and mobile accordion' },
+              { key: 'productReturnLinkLabel', label: 'Product policy link' },
+              { key: 'productReturnTabLabel', label: 'Product tab and accordion title' },
+              { key: 'productReadPolicyLabel', label: 'Product policy action' },
+              { key: 'checkoutPolicyLabel', label: 'Checkout policy link' },
+            ] as const"
+            :key="field.key"
+          >
+            <AdminInput
+              v-model="form.policyHighlights[field.key].en"
+              :label="`${field.label} · English`"
+              maxlength="240"
+              required
+            />
+            <AdminInput
+              v-model="form.policyHighlights[field.key].ar"
+              :label="`${field.label} · Arabic`"
+              maxlength="240"
+              required
+              dir="rtl"
+            />
+          </template>
+          <div class="admin-field">
+            <label class="admin-field__label" for="return-window-days"
+              >Return window in days for search engines</label
+            >
+            <input
+              id="return-window-days"
+              v-model.number="form.policyHighlights.returnWindowDays"
+              class="admin-field__control"
+              type="number"
+              min="0"
+              max="365"
+              step="1"
+              required
+            />
+            <p class="admin-field__help">
+              Keep this aligned with the written policy. Zero removes the return-window markup.
+            </p>
+          </div>
+        </div>
+      </AdminSection>
+      <AdminSection
+        title="Full shipping and returns page"
+        description="These fields control the public /shipping and /returns pages. Related navigation, contact and terms copy remains editable in Navigation and Pages & SEO."
+      >
+        <div class="admin-content-editor__grid">
+          <AdminInput
+            v-model="form.pages.shipping.hero.title.en"
+            label="English page title"
+            required
+          />
+          <AdminInput
+            v-model="form.pages.shipping.hero.title.ar"
+            label="Arabic page title"
+            required
+            dir="rtl"
+          />
+          <AdminTextarea
+            v-model="form.pages.shipping.hero.body.en"
+            label="English page introduction"
+            required
+          />
+          <AdminTextarea
+            v-model="form.pages.shipping.hero.body.ar"
+            label="Arabic page introduction"
+            required
+            dir="rtl"
+          />
+          <AdminInput
+            v-model="form.pages.shipping.seo.title.en"
+            label="English search title"
+            required
+          />
+          <AdminInput
+            v-model="form.pages.shipping.seo.title.ar"
+            label="Arabic search title"
+            required
+            dir="rtl"
+          />
+          <AdminTextarea
+            v-model="form.pages.shipping.seo.description.en"
+            label="English search description"
+            required
+          />
+          <AdminTextarea
+            v-model="form.pages.shipping.seo.description.ar"
+            label="Arabic search description"
+            required
+            dir="rtl"
+          />
+        </div>
+        <article
+          v-for="section in form.pages.shipping.sections"
+          :key="section.id"
+          class="admin-content-editor__card"
+        >
+          <header>
+            <strong>{{ section.heading.en }}</strong>
+          </header>
+          <div class="admin-content-editor__grid">
+            <AdminInput v-model="section.heading.en" label="English heading" required />
+            <AdminInput v-model="section.heading.ar" label="Arabic heading" required dir="rtl" />
+            <AdminTextarea v-model="section.body.en" label="English text" optional />
+            <AdminTextarea v-model="section.body.ar" label="Arabic text" optional dir="rtl" />
+          </div>
+        </article>
       </AdminSection>
     </template>
 

@@ -100,6 +100,17 @@ test('content validation rejects unsafe links, images, duplicate navigation, and
   const invalidAnnouncementSpeed = cloneStoreContent(DEFAULT_STORE_CONTENT)
   invalidAnnouncementSpeed.brand.announcementDurationSeconds = 5
   assert.throws(() => validateStoreContent(invalidAnnouncementSpeed), /announcement speed/i)
+
+  const missingPolicyTranslation = cloneStoreContent(DEFAULT_STORE_CONTENT)
+  missingPolicyTranslation.policyHighlights.productReturnSummary.ar = ''
+  assert.throws(
+    () => validateStoreContent(missingPolicyTranslation),
+    /Arabic product returns summary/,
+  )
+
+  const invalidReturnWindow = cloneStoreContent(DEFAULT_STORE_CONTENT)
+  invalidReturnWindow.policyHighlights.returnWindowDays = -1
+  assert.throws(() => validateStoreContent(invalidReturnWindow), /Return window/)
   invalidAnnouncementSpeed.brand.announcementDurationSeconds = 20.5
   assert.throws(() => validateStoreContent(invalidAnnouncementSpeed), /announcement speed/i)
 
@@ -146,6 +157,21 @@ test('existing published announcements gain the default motion speed without los
   assert.equal(state.hasUnpublishedChanges, false)
 })
 
+test('older published policy copy remains intact while shared policy controls gain defaults', async () => {
+  const { database } = testDatabase()
+  const legacy = cloneStoreContent(DEFAULT_STORE_CONTENT)
+  legacy.pages.shipping.sections[3]!.body.ar = 'نص سياسة مخصص'
+  delete (legacy as Partial<typeof legacy>).policyHighlights
+  await database
+    .prepare('UPDATE storefront_content_state SET published_json=?, draft_json=? WHERE id=1')
+    .bind(JSON.stringify(legacy), JSON.stringify(legacy))
+    .run()
+  const state = await getAdminStoreContent(database)
+  assert.equal(state.published.pages.shipping.sections[3]!.body.ar, 'نص سياسة مخصص')
+  assert.deepEqual(state.published.policyHighlights, DEFAULT_STORE_CONTENT.policyHighlights)
+  assert.equal(state.hasUnpublishedChanges, false)
+})
+
 test('content APIs protect mutations and expose one public published projection', () => {
   for (const path of [
     '../server/api/admin/store-content.get.ts',
@@ -166,7 +192,14 @@ test('content APIs protect mutations and expose one public published projection'
 test('Settings exposes focused content management tabs and complete controls', () => {
   const settings = read('../app/pages/admin/settings.vue')
   const editor = read('../app/components/admin/settings/StoreContentEditor.vue')
-  for (const label of ['Availability', 'Brand', 'Navigation', 'Pages & SEO', 'Publishing'])
+  for (const label of [
+    'Availability',
+    'Brand',
+    'Navigation',
+    'Pages & SEO',
+    'Returns policy',
+    'Publishing',
+  ])
     assert.match(settings, new RegExp(label.replace('&', '&amp;|&')))
   assert.match(editor, /Save draft/)
   assert.match(editor, /Publish changes/)
@@ -178,6 +211,9 @@ test('Settings exposes focused content management tabs and complete controls', (
   assert.match(editor, /Move up/)
   assert.match(editor, /Add navigation link/)
   assert.match(editor, /\/api\/admin\/media/)
+  assert.match(editor, /homeReturnMessage/)
+  assert.match(editor, /productReturnMessage/)
+  assert.match(editor, /checkoutPolicyLabel/)
 })
 
 test('Drop 001 feature banner has dedicated editable image and bilingual copy controls', () => {

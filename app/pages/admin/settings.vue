@@ -9,7 +9,14 @@ definePageMeta({ layout: 'admin' })
 useSeoMeta({ title: 'Settings — KHT Admin', robots: 'noindex, nofollow' })
 
 const route = useRoute()
-const settingsViews = ['availability', 'brand', 'navigation', 'pages', 'publishing'] as const
+const settingsViews = [
+  'availability',
+  'brand',
+  'navigation',
+  'pages',
+  'policy',
+  'publishing',
+] as const
 type SettingsView = (typeof settingsViews)[number]
 const view = computed<SettingsView>(() => {
   const requested = String(route.query.section || 'availability') as SettingsView
@@ -225,6 +232,11 @@ onBeforeUnmount(() => {
         to="/admin/settings?section=pages"
         :aria-current="view === 'pages' ? 'page' : undefined"
         >Pages &amp; SEO</NuxtLink
+      >
+      <NuxtLink
+        to="/admin/settings?section=policy"
+        :aria-current="view === 'policy' ? 'page' : undefined"
+        >Returns policy</NuxtLink
       >
       <NuxtLink
         to="/admin/settings?section=publishing"

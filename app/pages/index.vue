@@ -11,6 +11,8 @@ const catalog = useCatalog()
 const storeContent = useStoreContent()
 const page = computed(() => storeContent.value.pages.home)
 const brand = computed(() => storeContent.value.brand)
+const policy = computed(() => storeContent.value.policyHighlights)
+const heroImage = computed(() => page.value.hero.imageUrl || page.value.hero.mobileImageUrl)
 const section = (id: string) => computed(() => page.value.sections.find((item) => item.id === id)!)
 const collectionContent = section('collection')
 const shopping = computed(() => page.value.homeShopping || DEFAULT_HOME_SHOPPING)
@@ -76,15 +78,16 @@ const storeStructuredData = computed(() => ({
             availableLanguage: ['Arabic', 'English'],
           }
         : undefined,
-      hasMerchantReturnPolicy: {
-        '@type': 'MerchantReturnPolicy',
-        applicableCountry: 'EG',
-        returnPolicyCountry: 'EG',
-        returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
-        merchantReturnDays: 14,
-        returnMethod: 'https://schema.org/ReturnByMail',
-        returnFees: 'https://schema.org/FreeReturn',
-      },
+      hasMerchantReturnPolicy:
+        policy.value.returnWindowDays > 0
+          ? {
+              '@type': 'MerchantReturnPolicy',
+              applicableCountry: 'EG',
+              returnPolicyCountry: 'EG',
+              returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
+              merchantReturnDays: policy.value.returnWindowDays,
+            }
+          : undefined,
     },
     {
       '@type': 'WebSite',
@@ -111,14 +114,14 @@ useStoreSeo({
   <main id="main">
     <section v-if="page.hero.enabled" class="hero" aria-labelledby="hero-title">
       <div class="hero-image">
-        <picture>
+        <picture v-if="heroImage">
           <source
             v-if="page.hero.mobileImageUrl"
             media="(max-width: 767px)"
             :srcset="page.hero.mobileImageUrl"
           />
           <StoreImage
-            :src="page.hero.imageUrl || '/images/campaign.png'"
+            :src="heroImage"
             sizes="(max-width: 767px) 100vw, 72vw"
             :alt="t(page.hero.imageAlt.en, page.hero.imageAlt.ar)"
             fetchpriority="high"
@@ -196,7 +199,7 @@ useStoreSeo({
       :aria-label="t('Shopping information', 'معلومات التسوق')"
     >
       <span>{{ t('Cash on delivery', 'الدفع عند الاستلام') }}</span>
-      <span>{{ t('14-day exchanges & returns', 'استبدال واسترجاع خلال 14 يوم') }}</span>
+      <span>{{ localized(policy.homeReturnMessage) }}</span>
       <span>{{
         t('Delivery to available Egyptian governorates', 'توصيل للمحافظات المتاحة في مصر')
       }}</span>

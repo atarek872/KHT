@@ -12,6 +12,8 @@ import {
   type CheckoutStep,
 } from '#shared/checkoutSteps'
 const { t, money, localized } = useLanguage()
+const storeContent = useStoreContent()
+const policy = computed(() => storeContent.value.policyHighlights)
 const {
   lines,
   count,
@@ -802,9 +804,7 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
               {{ t('By placing the order, you agree to the', 'بتسجيل الطلب أنت موافق على') }}
               <NuxtLink to="/terms">{{ t('terms', 'الشروط') }}</NuxtLink>
               {{ t('and acknowledge the', 'ومطلع على') }}
-              <NuxtLink to="/shipping">{{
-                t('shipping and exchange policy', 'سياسة الشحن والاستبدال')
-              }}</NuxtLink
+              <NuxtLink to="/shipping">{{ localized(policy.checkoutPolicyLabel) }}</NuxtLink
               >.
             </p>
           </fieldset>

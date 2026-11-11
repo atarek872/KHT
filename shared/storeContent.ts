@@ -123,8 +123,21 @@ export type StoreBrandContent = {
   defaultSocialImageUrl: string
 }
 
+export type StorePolicyHighlights = {
+  homeReturnMessage: ContentText
+  productInspectionMessage: ContentText
+  productReturnMessage: ContentText
+  productReturnSummary: ContentText
+  productReturnLinkLabel: ContentText
+  productReturnTabLabel: ContentText
+  productReadPolicyLabel: ContentText
+  checkoutPolicyLabel: ContentText
+  returnWindowDays: number
+}
+
 export type StorefrontContent = {
   brand: StoreBrandContent
+  policyHighlights: StorePolicyHighlights
   navigation: StoreNavigationItem[]
   pages: Record<StorePageKey, StorePageContent>
 }
@@ -257,6 +270,26 @@ export const DEFAULT_STORE_CONTENT: StorefrontContent = {
     tiktokUrl: '',
     defaultSocialImageUrl: '/images/campaign.png',
   },
+  policyHighlights: {
+    homeReturnMessage: text('14-day exchanges & returns', 'استبدال واسترجاع خلال 14 يوم'),
+    productInspectionMessage: text(
+      'Ask to inspect the parcel at delivery if the courier permits.',
+      'اطلب فحص الطرد عند الاستلام لو شركة الشحن تسمح.',
+    ),
+    productReturnMessage: text(
+      'Exchanges and returns within 14 days',
+      'استبدال واسترجاع خلال 14 يوم',
+    ),
+    productReturnSummary: text(
+      'Exchanges and returns within 14 days.',
+      'استبدال واسترجاع خلال 14 يوم.',
+    ),
+    productReturnLinkLabel: text('Returns & exchanges', 'الاستبدال والاسترجاع'),
+    productReturnTabLabel: text('Returns', 'الاسترجاع'),
+    productReadPolicyLabel: text('Read the policy', 'اقرأ السياسة'),
+    checkoutPolicyLabel: text('shipping and exchange policy', 'سياسة الشحن والاستبدال'),
+    returnWindowDays: 14,
+  },
   navigation: [
     {
       id: 'shop',
@@ -352,7 +385,7 @@ export const DEFAULT_STORE_CONTENT: StorefrontContent = {
         {
           enabled: true,
           eyebrow: text('DROP 001 / THE ORIGIN', 'الإصدار 001 / البداية'),
-          imageUrl: '/images/campaign.png',
+          imageUrl: null,
           imageAlt: text(
             'Two models in black KHT streetwear with signature white lines',
             'موديلان بملابس KHT السوداء وخطوط بيضاء مميزة',

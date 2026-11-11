@@ -8,12 +8,21 @@ const read = (path: string) => readFileSync(new URL(path, import.meta.url), 'utf
 
 test('all SEO-critical storefront route files remain present and dynamic', () => {
   for (const path of [
-    '../app/pages/index.vue', '../app/pages/shop.vue', '../app/pages/search.vue',
-    '../app/pages/cart.vue', '../app/pages/checkout.vue', '../app/pages/about.vue',
-    '../app/pages/track-order.vue', '../app/pages/size-guide.vue', '../app/pages/[info].vue',
-    '../app/pages/products/[slug].vue', '../app/pages/categories/[slug].vue',
-    '../app/pages/drops/[slug].vue', '../app/pages/order-confirmation/[reference].vue',
-  ]) assert.equal(existsSync(new URL(path, import.meta.url)), true, path)
+    '../app/pages/index.vue',
+    '../app/pages/shop.vue',
+    '../app/pages/search.vue',
+    '../app/pages/cart.vue',
+    '../app/pages/checkout.vue',
+    '../app/pages/about.vue',
+    '../app/pages/track-order.vue',
+    '../app/pages/size-guide.vue',
+    '../app/pages/[info].vue',
+    '../app/pages/products/[slug].vue',
+    '../app/pages/categories/[slug].vue',
+    '../app/pages/drops/[slug].vue',
+    '../app/pages/order-confirmation/[reference].vue',
+  ])
+    assert.equal(existsSync(new URL(path, import.meta.url)), true, path)
   assert.match(read('../app/pages/products/[slug].vue'), /route\.params\.slug/)
   assert.match(read('../app/pages/categories/[slug].vue'), /route\.params\.slug/)
 })
@@ -23,22 +32,40 @@ test('default layout preserves storefront navigation, footer, bag, language and 
   const layout = read('../app/layouts/default.vue')
   assert.match(app, /<NuxtRouteAnnouncer \/>/)
   assert.match(app, /<NuxtLayout><NuxtPage \/><\/NuxtLayout>/)
-  for (const value of ['<SiteHeader />', '<SiteFooter />', '<BagDrawer', "useFetch('/api/catalog')", 'useLanguage()', 'useBag()']) {
+  for (const value of [
+    '<SiteHeader />',
+    '<SiteFooter />',
+    '<BagDrawer',
+    "useFetch('/api/catalog')",
+    'useLanguage()',
+    'useBag()',
+  ]) {
     assert.match(layout, new RegExp(value.replace(/[<>/()]/g, '\\$&')), value)
   }
 })
 
 test('standalone catalog preserves original categories, products, prices, images and variants', async () => {
   const catalog = await getCatalog(undefined, true)
-  assert.deepEqual(catalog.categories.map((category) => category.name.en), [
-    'T-shirts', 'Tracksuits', 'Trousers',
-  ])
-  assert.deepEqual(catalog.products.map((product) => product.id), ['kht-001', 'kht-002', 'kht-003'])
-  assert.deepEqual(catalog.products.map((product) => product.price), [890, 2390, 1290])
-  assert.deepEqual(catalog.products.map((product) => product.image), [
-    '/images/tee.png', '/images/tracksuit.png', '/images/pants.png',
-  ])
-  assert.deepEqual(catalog.products[0]?.sizes.map((size) => size.name), ['S', 'M', 'L', 'XL', 'XXL'])
+  assert.deepEqual(
+    catalog.categories.map((category) => category.name.en),
+    ['T-shirts', 'Tracksuits', 'Trousers'],
+  )
+  assert.deepEqual(
+    catalog.products.map((product) => product.id),
+    ['kht-001', 'kht-002', 'kht-003'],
+  )
+  assert.deepEqual(
+    catalog.products.map((product) => product.price),
+    [890, 2390, 1290],
+  )
+  assert.deepEqual(
+    catalog.products.map((product) => product.image),
+    ['/images/tee.png', '/images/tracksuit.png', '/images/pants.png'],
+  )
+  assert.deepEqual(
+    catalog.products[0]?.sizes.map((size) => size.name),
+    ['S', 'M', 'L', 'XL', 'XXL'],
+  )
 })
 
 test('a configured D1 catalog is never labelled as demo data', async () => {
@@ -87,7 +114,10 @@ test('product imagery stays clean and product codes appear below product names',
   assert.doesNotMatch(detailImage, /product-code|zoom-label/)
   assert.doesNotMatch(card, /product-image-action|product-hover-line/)
   assert.ok(card.indexOf('{{ localized(product.name) }}') < card.indexOf('class="product-code"'))
-  assert.ok(detail.indexOf('<h1>{{ localized(product.name) }}</h1>') < detail.indexOf('class="detail-product-code"'))
+  assert.ok(
+    detail.indexOf('<h1>{{ localized(product.name) }}</h1>') <
+      detail.indexOf('class="detail-product-code"'),
+  )
 })
 
 test('homepage exposes an absolute hero image for social sharing', () => {
@@ -111,7 +141,10 @@ test('cart remains cookie-persisted and tracking is non-blocking without D1', ()
 })
 
 test('checkout submits durable guest COD orders with server-owned totals', async () => {
-  assert.deepEqual(demoShippingZones.map((zone) => zone.rate), [60, 70, 90])
+  assert.deepEqual(
+    demoShippingZones.map((zone) => zone.rate),
+    [60, 70, 90],
+  )
   assert.equal((await getStorefrontShippingRate(undefined, 'Cairo')).rate, 60)
   const page = read('../app/pages/checkout.vue')
   const endpoint = read('../server/api/checkout.post.ts')
@@ -145,10 +178,12 @@ test('storefront presents sale pricing and an accessible ordered product gallery
   assert.match(detail, /selectedImageIndex\.value = 0/)
 })
 
-test('Drop and story campaign replacements do not alter the homepage hero', () => {
+test('Drop and story campaign assets never flash as a homepage fallback', () => {
   assert.match(read('../app/components/CollectionView.vue'), /\/images\/drop-001-banner\.jpg/)
   assert.match(read('../app/pages/about.vue'), /\/images\/our-story-cover\.png/)
-  assert.match(read('../app/pages/index.vue'), /\/images\/campaign\.png/)
+  const home = read('../app/pages/index.vue')
+  assert.match(home, /v-if="heroImage"/)
+  assert.doesNotMatch(home, /:src="[^\"]*campaign/)
 })
 
 test('Drop 001 image letterboxing matches the image background', () => {
@@ -160,7 +195,10 @@ test('Drop 001 image letterboxing matches the image background', () => {
 test('admin styles remain isolated from storefront visual selectors', () => {
   const adminCss = read('../app/assets/css/admin.css')
   const mainCss = read('../app/assets/css/main.css')
-  assert.doesNotMatch(adminCss, /(?:^|\n)\s*\.(?:site-header|hero|product-page|collection-page|bag-drawer)\b/)
+  assert.doesNotMatch(
+    adminCss,
+    /(?:^|\n)\s*\.(?:site-header|hero|product-page|collection-page|bag-drawer)\b/,
+  )
   assert.doesNotMatch(mainCss, /\.kht-admin\b/)
   assert.match(mainCss, /@media \(max-width: 767px\)/)
   assert.match(mainCss, /@media \(max-width: 359px\)/)
@@ -171,7 +209,8 @@ test('storefront has no shared account route and no Paymob authority or secrets'
   assert.equal(existsSync(new URL('../app/pages/login.vue', import.meta.url)), false)
   assert.equal(existsSync(new URL('../app/pages/account.vue', import.meta.url)), false)
   const appSources = [
-    read('../app/pages/checkout.vue'), read('../app/pages/order-confirmation/[reference].vue'),
+    read('../app/pages/checkout.vue'),
+    read('../app/pages/order-confirmation/[reference].vue'),
   ].join('\n')
   assert.doesNotMatch(appSources, /PAYMOB_|api[_-]?key|hmac|paymentStatus\s*=|payment_status\s*=/i)
 })
