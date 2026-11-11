@@ -276,24 +276,24 @@ export const DEFAULT_STORE_CONTENT: StorefrontContent = {
     defaultSocialImageUrl: '/images/campaign.png',
   },
   policyHighlights: {
-    homeReturnMessage: text('14-day exchanges & returns', 'استبدال واسترجاع خلال 14 يوم'),
+    homeReturnMessage: text('Inspect your order at the door', 'افحص طلبك مع المندوب عند الباب'),
     productInspectionMessage: text(
       'Ask to inspect the parcel at delivery if the courier permits.',
       'اطلب فحص الطرد عند الاستلام لو شركة الشحن تسمح.',
     ),
     productReturnMessage: text(
-      'Exchanges and returns within 14 days',
-      'استبدال واسترجاع خلال 14 يوم',
+      'Inspect your order before accepting delivery',
+      'افحص طلبك قبل الاستلام مع المندوب',
     ),
     productReturnSummary: text(
-      'Exchanges and returns within 14 days.',
-      'استبدال واسترجاع خلال 14 يوم.',
+      'Inspect the product at the door. You can decline delivery if it is not right for you. Your legal rights remain protected.',
+      'افحص المنتج عند الباب. لو مش مناسب لك، تقدر ترفض الاستلام وترجعه للمندوب. حقوقك القانونية محفوظة.',
     ),
     productReturnLinkLabel: text('Returns & exchanges', 'الاستبدال والاسترجاع'),
     productReturnTabLabel: text('Returns', 'الاسترجاع'),
     productReadPolicyLabel: text('Read the policy', 'اقرأ السياسة'),
     checkoutPolicyLabel: text('shipping and exchange policy', 'سياسة الشحن والاستبدال'),
-    returnWindowDays: 14,
+    returnWindowDays: 0,
   },
   navigation: [
     {
@@ -604,8 +604,8 @@ export const DEFAULT_STORE_CONTENT: StorefrontContent = {
       seo: seo(
         text('Shipping, Exchanges & Returns — KHT', 'سياسة الشحن والاستبدال والاسترجاع — KHT'),
         text(
-          'KHT shipping, 14-day exchanges and returns, 30-day defect claims and refund policy for Egypt.',
-          'سياسة الشحن والاستبدال والاسترجاع خلال 14 يومًا، وعيوب التصنيع خلال 30 يومًا، واسترداد المبلغ من KHT.',
+          'Inspect your KHT order with the courier at delivery. See how to decline a parcel and contact us about an issue.',
+          'افحص طلب KHT مع المندوب عند التسليم. اعرف كيفية رفض الشحنة والتواصل معنا عند وجود مشكلة.',
         ),
       ),
       sections: [
@@ -637,8 +637,8 @@ export const DEFAULT_STORE_CONTENT: StorefrontContent = {
           'returns',
           text('1. Exchanges and returns', '1. الاستبدال والاسترجاع'),
           text(
-            'You can exchange or return a product within 14 days of receiving it, without giving a reason or paying any fees. The product must be in its original condition, unused and unwashed, with its original tags and labels. Size exchanges depend on available stock. If the size you need is unavailable, you can request a refund.',
-            'يمكنك استبدال أو استرجاع المنتج خلال 14 يومًا من تاريخ الاستلام، دون الحاجة لإبداء أي سبب ودون تحمل أي رسوم. يُشترط أن يكون المنتج بحالته الأصلية، دون استخدام أو غسيل، مع الاحتفاظ بالتاجات والملصقات الأصلية. استبدال المقاسات متاح حسب توافر المخزون. وفي حالة عدم توافر المقاس المطلوب، يمكنك استرداد المبلغ.',
+            'Ask to inspect the product while the courier waits at your door. Check the size, colour and condition before accepting it. If it is not right for you, decline delivery and give the parcel back to the courier, then contact KHT with your order number. If the courier does not allow inspection, contact us so we can help. This doorstep option does not limit your rights under applicable consumer law.',
+            'اطلب فحص المنتج والمندوب منتظر عند الباب. اتأكد من المقاس واللون والحالة قبل الاستلام. لو المنتج مش مناسب لك، ارفض استلام الشحنة ورجّعها للمندوب، وبعدها تواصل مع KHT برقم الطلب. لو شركة الشحن لا تسمح بالفحص، تواصل معانا علشان نساعدك. الفحص عند الباب لا يحد من حقوقك المقررة بقانون حماية المستهلك.',
           ),
         ),
         section(

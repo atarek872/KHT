@@ -27,14 +27,16 @@ test('storefront no longer claims checkout is a concept preview', () => {
   )
 })
 
-test('policies describe actual COD, exchanges, and cart data handling', () => {
+test('policies describe COD, doorstep inspection, legal rights, and cart data handling', () => {
   const page = read('../shared/storeContent.ts')
   assert.match(page, /cash on delivery|الدفع عند الاستلام/i)
-  assert.match(page, /14 (?:calendar )?days|14 يومًا|أربعة عشر يوم/i)
+  assert.doesNotMatch(page, /14[- ]day|14 (?:calendar )?days|14 يوم|١٤ يوم/i)
   assert.match(page, /30 (?:calendar )?days|30 يومًا|ثلاثين يوم/i)
   assert.match(page, /cart contents|محتويات السلة/i)
   assert.match(page, /request inspection at your door|اطلب فحص الطلب عند الباب/i)
   assert.match(page, /does not waive your statutory exchange or return rights/i)
+  assert.match(page, /decline delivery and give the parcel back to the courier/i)
+  assert.match(page, /returnWindowDays: 0/)
   assert.doesNotMatch(page, /19588/)
   assert.doesNotMatch(page, /Shopify|credit card/i)
 })
