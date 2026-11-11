@@ -4,7 +4,7 @@ import { DEFAULT_SOCIAL_IMAGE, STORE_ORIGIN } from '#shared/storefrontSeo'
 import { DEFAULT_HOME_SHOPPING, type HomeShoppingCard } from '#shared/storeContent'
 import { hasSizePriceRange, startingPrice } from '#shared/productPricing'
 import type { Product } from '#shared/types'
-import { fullSetDiscountPercent } from '#shared/setOffer'
+import type { PublicWelcomeCampaign } from '#shared/welcomeCampaign'
 
 const { t, localized, money } = useLanguage()
 const catalog = useCatalog()
@@ -18,7 +18,30 @@ const collectionContent = section('collection')
 const shopping = computed(() => page.value.homeShopping || DEFAULT_HOME_SHOPPING)
 const productFor = (slug: string) => catalog.value.products.find((product) => product.slug === slug)
 const heroProduct = computed(() => productFor(shopping.value.heroProductSlug))
-const fullSetSaving = computed(() => fullSetDiscountPercent(catalog.value))
+const { data: welcomeCampaignData } = await useFetch<{ campaign: PublicWelcomeCampaign | null }>(
+  '/api/storefront/welcome-campaign',
+  { key: 'welcome-campaign' },
+)
+const welcomeDiscount = computed(() => {
+  const campaign = welcomeCampaignData.value?.campaign
+  return campaign?.firstOrderOnly &&
+    campaign.loginRequired &&
+    campaign.discount.type === 'percentage'
+    ? campaign.discount.value
+    : 0
+})
+const featuredSetAvailable = computed(() =>
+  heroProduct.value?.slug === DEFAULT_HOME_SHOPPING.heroProductSlug
+    ? heroProduct.value.sizes.reduce((total, size) => total + Math.max(0, size.stock), 0)
+    : 0,
+)
+const featuredOffer = computed(() => {
+  if (!welcomeDiscount.value || !featuredSetAvailable.value) return ''
+  return t(
+    `${welcomeDiscount.value}% off your first signed-in order. ${featuredSetAvailable.value} sets available now — shop before they sell out.`,
+    `خصم ${welcomeDiscount.value}٪ على أول طلب بعد تسجيل الدخول. المتاح الآن ${featuredSetAvailable.value} سيت — الحق العرض قبل نفاد الكمية.`,
+  )
+})
 const heroDestination = computed(() =>
   shopping.value.heroUseProductLink && heroProduct.value
     ? `/products/${heroProduct.value.slug}`
@@ -130,15 +153,7 @@ useStoreSeo({
           />
         </picture>
         <div v-if="page.hero.ctaEnabled" class="hero-mobile-offer">
-          <span
-            v-if="heroProduct?.slug === DEFAULT_HOME_SHOPPING.heroProductSlug && fullSetSaving"
-            >{{
-              t(
-                `Save around ${fullSetSaving}% with the Full Set`,
-                `وفّر حوالي ${fullSetSaving}٪ مع الطقم الكامل`,
-              )
-            }}</span
-          >
+          <span v-if="featuredOffer">{{ featuredOffer }}</span>
           <NuxtLink :to="heroDestination" class="button button-white"
             >{{ t(page.hero.ctaLabel.en, page.hero.ctaLabel.ar) }}<KhtIcon name="arrow"
           /></NuxtLink>
@@ -159,17 +174,7 @@ useStoreSeo({
           <span>{{ t(shopping.heroPricePrefix.en, shopping.heroPricePrefix.ar) }}</span>
           <strong>{{ money(startingPrice(heroProduct)) }}</strong>
         </div>
-        <p
-          v-if="heroProduct?.slug === DEFAULT_HOME_SHOPPING.heroProductSlug && fullSetSaving"
-          class="hero-set-saving"
-        >
-          {{
-            t(
-              `Choose the Full Set and save around ${fullSetSaving}%`,
-              `اختار الطقم الكامل ووفر حوالي ${fullSetSaving}٪`,
-            )
-          }}
-        </p>
+        <p v-if="featuredOffer" class="hero-set-saving">{{ featuredOffer }}</p>
         <div class="hero-actions">
           <NuxtLink v-if="page.hero.ctaEnabled" :to="heroDestination" class="button button-white"
             >{{ t(page.hero.ctaLabel.en, page.hero.ctaLabel.ar) }}<KhtIcon name="arrow"
