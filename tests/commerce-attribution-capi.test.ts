@@ -16,6 +16,7 @@ import {
 import {
   deliverGa4Outbox,
   ga4ClientId,
+  ga4SessionId,
   purchaseGa4Payload,
 } from '../server/services/ga4Purchase.ts'
 import { campaignFromQuery } from '../shared/campaignAttribution.ts'
@@ -129,10 +130,14 @@ test('Meta purchase uses server merchandise value and normalized SHA-256 custome
 
 test('GA4 purchase separates discount-adjusted item value and shipping', () => {
   assert.equal(ga4ClientId('GA1.1.123456.789012', 'fallback'), '123456.789012')
+  assert.equal(ga4SessionId('GS2.1.s1760000000$o1$g1'), 'GS2.1.s1760000000$o1$g1')
+  assert.equal(ga4SessionId('GS1.1.1760000000.1.1.1760000020.0.0.0'), 'GS1.1.1760000000.1.1.1760000020.0.0.0')
+  assert.equal(ga4SessionId('bad\nvalue'), undefined)
   const payload = purchaseGa4Payload({
     reference: 'KHT-REF-1',
     createdAt: '2026-11-13T12:00:00.000Z',
     clientId: '123456.789012',
+    sessionId: ga4SessionId('GS2.1.s1760000000$o1$g1'),
     subtotal: 2000,
     discount: 200,
     shipping: 85,
@@ -159,6 +164,7 @@ test('GA4 purchase separates discount-adjusted item value and shipping', () => {
   assert.equal(params.value, 1800)
   assert.equal(params.shipping, 85)
   assert.equal(params.coupon, 'WELCOME10')
+  assert.equal(params.session_id, 'GS2.1.s1760000000$o1$g1')
   assert.equal(params.items[0].discount, 100)
 })
 
@@ -171,6 +177,7 @@ test('successful UTM order atomically queues one Purchase per platform across re
       ip: '203.0.113.4',
       userAgent: 'Test Browser',
       gaCookie: 'GA1.1.123456.789012',
+      gaSessionCookie: 'GS2.1.s1760000000$o1$g1',
     }
     const first = await createStorefrontOrder(database, input, context)
     const retry = await createStorefrontOrder(database, input, context)
@@ -221,6 +228,7 @@ test('successful UTM order atomically queues one Purchase per platform across re
     assert.equal(meta.custom_data.value, first.subtotal - first.discount)
     assert.equal(ga4.events[0].params.transaction_id, first.reference)
     assert.equal(ga4.events[0].params.value, first.subtotal - first.discount)
+    assert.equal(ga4.events[0].params.session_id, 'GS2.1.s1760000000$o1$g1')
     const orderId = (sqlite.prepare('SELECT id FROM orders').get() as { id: string }).id
     const adminDetail = (await getAdminOrder(orderId, database)).order
     assert.equal(adminDetail?.publicReference, first.reference)

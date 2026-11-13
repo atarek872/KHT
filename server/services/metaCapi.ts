@@ -10,6 +10,7 @@ export interface MetaRequestContext {
   fbp?: string
   fbc?: string
   gaCookie?: string
+  gaSessionCookie?: string
   ga4Debug?: boolean
   testEventCode?: string
 }

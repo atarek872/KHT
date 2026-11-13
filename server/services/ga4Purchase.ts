@@ -40,6 +40,11 @@ export function ga4ClientId(cookie: string | undefined, fallback: string) {
   return `${hash >>> 0}.${Math.floor(Date.now() / 1000)}`
 }
 
+export function ga4SessionId(cookie: string | undefined) {
+  if (!cookie || cookie.length > 200) return undefined
+  return /^GS[12]\.\d\.[A-Za-z0-9.$-]+$/.test(cookie) ? cookie : undefined
+}
+
 export function purchaseGa4Payload(input: {
   reference: string
   createdAt: string

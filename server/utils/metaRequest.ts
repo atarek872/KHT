@@ -26,6 +26,12 @@ export function metaRequestContext(
   const allowedTestCode = (event.context.cloudflare as CloudflareMetaContext | undefined)?.env
     ?.META_CAPI_TEST_ALLOWED_CODE
   const providedTestCode = getHeader(event, 'x-kht-meta-test-code')
+  const measurementId = (event.context.cloudflare as CloudflareMetaContext | undefined)?.env
+    ?.NUXT_PUBLIC_GOOGLE_TAG_ID
+  const gaSessionCookieName =
+    typeof measurementId === 'string' && /^G-[A-Z0-9]+$/.test(measurementId)
+      ? `_ga_${measurementId.slice(2)}`
+      : null
   return {
     eventSourceUrl: `${getRequestURL(event).origin}${safePath}`,
     ...(ip && /^[a-fA-F0-9:.]{3,45}$/.test(ip) ? { ip } : {}),
@@ -35,6 +41,7 @@ export function metaRequestContext(
       ? attribution.fbc || `fb.1.${Date.now()}.${attribution.fbclid}`
       : fbcCookie || attribution?.fbc,
     gaCookie: getCookie(event, '_ga'),
+    gaSessionCookie: gaSessionCookieName ? getCookie(event, gaSessionCookieName) : undefined,
     ga4Debug:
       (event.context.cloudflare as CloudflareMetaContext | undefined)?.env?.GA4_DEBUG_MODE ===
       'true',

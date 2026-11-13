@@ -13,7 +13,7 @@ import { listShippingZones, requireShippingRate } from './shipping.ts'
 import { resolveCustomerDiscountCode } from './welcomeOffer.ts'
 import { sanitizeCampaignAttribution } from '../../shared/campaignAttribution.ts'
 import { enqueueMetaStatement, purchaseMetaEvent, type MetaRequestContext } from './metaCapi.ts'
-import { enqueueGa4Statement, ga4ClientId, purchaseGa4Payload } from './ga4Purchase.ts'
+import { enqueueGa4Statement, ga4ClientId, ga4SessionId, purchaseGa4Payload } from './ga4Purchase.ts'
 
 const sources: OrderSource[] = [
   'website',
@@ -205,6 +205,7 @@ export async function createDurableOrder(
         reference: publicReference,
         createdAt,
         clientId: ga4ClientId(options.metaContext.gaCookie, publicReference),
+        sessionId: ga4SessionId(options.metaContext.gaSessionCookie),
         lines: priced.lines,
         subtotal: priced.subtotal,
         discount: priced.discount,
