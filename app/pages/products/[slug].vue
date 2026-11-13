@@ -345,6 +345,13 @@ useStoreSeo({
                   )
             }}
           </p>
+          <p
+            v-if="product.modelMeasurements?.en && product.modelMeasurements?.ar"
+            class="product-size-help"
+          >
+            <strong>{{ t('Model measurements', 'قياسات الموديل') }}:</strong>
+            {{ localized(product.modelMeasurements) }}
+          </p>
         </div>
         <div ref="buyElement" class="product-actions">
           <button
@@ -384,6 +391,23 @@ useStoreSeo({
             }}
           </li>
         </ul>
+        <dl
+          v-if="product.fabric?.en || product.stitching?.en || product.embroidery?.en"
+          class="product-proof"
+        >
+          <template v-if="product.fabric?.en && product.fabric?.ar">
+            <dt>{{ t('Fabric', 'القماش') }}</dt>
+            <dd>{{ localized(product.fabric) }}</dd>
+          </template>
+          <template v-if="product.stitching?.en && product.stitching?.ar">
+            <dt>{{ t('Stitching', 'الخياطة') }}</dt>
+            <dd>{{ localized(product.stitching) }}</dd>
+          </template>
+          <template v-if="product.embroidery?.en && product.embroidery?.ar">
+            <dt>{{ t('Embroidery', 'التطريز') }}</dt>
+            <dd>{{ localized(product.embroidery) }}</dd>
+          </template>
+        </dl>
         <p class="product-size-help">
           <a
             v-if="contact.whatsappHref"

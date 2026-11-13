@@ -22,6 +22,10 @@ export interface AdminProductInput {
   description: Localized
   detail: Localized
   fit: Localized
+  fabric?: Localized
+  stitching?: Localized
+  embroidery?: Localized
+  modelMeasurements?: Localized
   active: boolean
   variants: AdminProductVariant[]
 }

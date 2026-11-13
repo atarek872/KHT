@@ -380,6 +380,67 @@ useSeoMeta({
               </div>
             </dl>
           </AdminSection>
+
+          <AdminSection
+            v-if="order.publicReference"
+            title="Attribution & measurement"
+            description="Compare this reference and merchandise value with Meta and GA4. Delivery state records the server request."
+          >
+            <dl class="admin-order-facts">
+              <div>
+                <dt>Transaction ID</dt>
+                <dd dir="ltr">{{ order.publicReference }}</dd>
+              </div>
+              <div>
+                <dt>Merchandise value</dt>
+                <dd>{{ money(order.subtotal - order.discount) }}</dd>
+              </div>
+              <div>
+                <dt>Meta CAPI</dt>
+                <dd>{{ order.metaDeliveryStatus || 'Not queued' }}</dd>
+              </div>
+              <div>
+                <dt>GA4 backup</dt>
+                <dd>{{ order.ga4DeliveryStatus || 'Not queued' }}</dd>
+              </div>
+              <div v-if="order.attribution?.source">
+                <dt>Source</dt>
+                <dd>{{ order.attribution.source }}</dd>
+              </div>
+              <div v-if="order.attribution?.medium">
+                <dt>Medium</dt>
+                <dd>{{ order.attribution.medium }}</dd>
+              </div>
+              <div v-if="order.attribution?.campaign">
+                <dt>Campaign</dt>
+                <dd>{{ order.attribution.campaign }}</dd>
+              </div>
+              <div v-if="order.attribution?.utmId">
+                <dt>UTM ID</dt>
+                <dd>{{ order.attribution.utmId }}</dd>
+              </div>
+              <div v-if="order.attribution?.campaignId">
+                <dt>Campaign ID</dt>
+                <dd>{{ order.attribution.campaignId }}</dd>
+              </div>
+              <div v-if="order.attribution?.adsetId">
+                <dt>Ad set ID</dt>
+                <dd>{{ order.attribution.adsetId }}</dd>
+              </div>
+              <div v-if="order.attribution?.adId">
+                <dt>Ad ID</dt>
+                <dd>{{ order.attribution.adId }}</dd>
+              </div>
+              <div v-if="order.attribution?.content">
+                <dt>Content</dt>
+                <dd>{{ order.attribution.content }}</dd>
+              </div>
+              <div v-if="order.attribution?.term">
+                <dt>Term</dt>
+                <dd>{{ order.attribution.term }}</dd>
+              </div>
+            </dl>
+          </AdminSection>
         </aside>
       </div>
     </template>

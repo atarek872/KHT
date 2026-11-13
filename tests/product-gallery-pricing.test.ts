@@ -17,6 +17,7 @@ const migrationNames = [
   '0008_product_gallery_sale_pricing.sql',
   '0013_store_curtain.sql',
   '0014_storefront_content.sql',
+  '0017_shipping_product_proof.sql',
 ]
 
 const migrationUrls = migrationNames.map(
@@ -33,8 +34,10 @@ test('gallery migration backfills every existing product image in position zero'
   try {
     applyMigrations(sqlite)
     const rows = sqlite
-      .prepare(`SELECT product_id AS productId, url, sort_order AS sortOrder
-        FROM product_images ORDER BY product_id, sort_order`)
+      .prepare(
+        `SELECT product_id AS productId, url, sort_order AS sortOrder
+        FROM product_images ORDER BY product_id, sort_order`,
+      )
       .all()
       .map((row) => ({ ...row }))
 
@@ -94,7 +97,9 @@ test('product save persists ordered images and compare price while orders use si
     const existing = await getProduct(database, 'kht-001')
     assert.ok(existing)
 
-    const saved = await saveProduct(database, {
+    const saved = await saveProduct(
+      database,
+      {
         ...existing,
         price: 800,
         compareAtPrice: 1000,
@@ -103,11 +108,16 @@ test('product save persists ordered images and compare price while orders use si
           price: variant.size === 'L' ? 950 : 800,
         })),
         images: ['/images/tee-back.webp', '/images/tee-front.webp'],
-      }, existing.id)
+        fabric: { en: 'Confirmed cotton blend', ar: 'خليط قطن مؤكد' },
+        modelMeasurements: { en: 'Model wears M', ar: 'الموديل يرتدي M' },
+      },
+      existing.id,
+    )
 
     assert.deepEqual(saved.images, ['/images/tee-back.webp', '/images/tee-front.webp'])
     assert.equal(saved.image, '/images/tee-back.webp')
     assert.equal(saved.compareAtPrice, 1000)
+    assert.equal(saved.fabric?.en, 'Confirmed cotton blend')
     assert.equal(saved.variants.find(({ size }) => size === 'M')?.price, 800)
     assert.equal(saved.variants.find(({ size }) => size === 'L')?.price, 950)
 
@@ -117,6 +127,8 @@ test('product save persists ordered images and compare price while orders use si
     assert.deepEqual(product.images, ['/images/tee-back.webp', '/images/tee-front.webp'])
     assert.equal(product.image, '/images/tee-back.webp')
     assert.equal(product.compareAtPrice, 1000)
+    assert.equal(product.fabric?.ar, 'خليط قطن مؤكد')
+    assert.equal(product.modelMeasurements?.en, 'Model wears M')
     assert.equal(product.sizes.find(({ name }) => name === 'M')?.price, 800)
     assert.equal(product.sizes.find(({ name }) => name === 'L')?.price, 950)
     assert.equal(priceOrder([{ id: product.id, size: 'M', quantity: 1 }], catalog).subtotal, 800)

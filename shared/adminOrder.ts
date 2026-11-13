@@ -1,3 +1,5 @@
+import type { CampaignAttribution } from './campaignAttribution.ts'
+
 export type OrderPaymentMethod = 'cod'
 export type OrderPaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded'
 export type OrderFulfillmentStatus =
@@ -56,6 +58,10 @@ export interface OrderEvent {
 }
 
 export interface AdminOrderDetail extends AdminOrderSummary {
+  publicReference?: string
+  attribution?: CampaignAttribution | null
+  metaDeliveryStatus?: string | null
+  ga4DeliveryStatus?: string | null
   customerEmail?: string
   address: string
   notes?: string

@@ -10,17 +10,38 @@ const uploadError = ref('')
 const { data: categories } = await useFetch<AdminCategory[]>('/api/admin/categories')
 const initialImage = props.initial?.image || ''
 const emptyProduct: AdminProductInput = {
-  slug: '', code: '', category: 'tees', price: 0, compareAtPrice: null, image: '', images: [], active: true,
-  name: { en: '', ar: '' }, description: { en: '', ar: '' }, detail: { en: '', ar: '' },
-  fit: { en: '', ar: '' }, variants: [],
+  slug: '',
+  code: '',
+  category: 'tees',
+  price: 0,
+  compareAtPrice: null,
+  image: '',
+  images: [],
+  active: true,
+  name: { en: '', ar: '' },
+  description: { en: '', ar: '' },
+  detail: { en: '', ar: '' },
+  fit: { en: '', ar: '' },
+  variants: [],
 }
 const startingProduct = clone(props.initial || emptyProduct)
 startingProduct.compareAtPrice = props.initial?.compareAtPrice ?? null
 startingProduct.images = props.initial?.images || (initialImage ? [initialImage] : [])
+startingProduct.fabric ||= { en: '', ar: '' }
+startingProduct.stitching ||= { en: '', ar: '' }
+startingProduct.embroidery ||= { en: '', ar: '' }
+startingProduct.modelMeasurements ||= { en: '', ar: '' }
 const form = reactive<AdminProductInput>(startingProduct)
 
 function addVariant() {
-  form.variants.push({ sku: '', size: '', color: 'Black', price: form.price, stock: 0, active: true })
+  form.variants.push({
+    sku: '',
+    size: '',
+    color: 'Black',
+    price: form.price,
+    stock: 0,
+    active: true,
+  })
 }
 
 async function uploadImage(event: Event) {
@@ -30,7 +51,8 @@ async function uploadImage(event: Event) {
   const remaining = Math.max(0, 8 - form.images.length)
   const selected = files.slice(0, remaining)
   const failures: string[] = []
-  if (files.length > remaining) failures.push(`Only ${remaining} more image${remaining === 1 ? '' : 's'} can be added.`)
+  if (files.length > remaining)
+    failures.push(`Only ${remaining} more image${remaining === 1 ? '' : 's'} can be added.`)
   uploading.value = true
   uploadError.value = ''
   for (const file of selected) {
@@ -42,7 +64,9 @@ async function uploadImage(event: Event) {
       else failures.push(`${file.name}: this image is already in the gallery.`)
     } catch (cause: unknown) {
       const failure = cause as { data?: { statusMessage?: string } }
-      failures.push(`${file.name}: ${failure.data?.statusMessage || 'the image could not be uploaded.'}`)
+      failures.push(
+        `${file.name}: ${failure.data?.statusMessage || 'the image could not be uploaded.'}`,
+      )
     }
   }
   form.image = form.images[0] || ''
@@ -63,8 +87,11 @@ async function removeImage(index: number) {
   form.image = form.images[0] || ''
   const initialImages = props.initial?.images || (props.initial?.image ? [props.initial.image] : [])
   if (!image.startsWith('/api/media/') || initialImages.includes(image)) return
-  try { await $fetch('/api/admin/media', { method: 'DELETE', query: { url: image } }) }
-  catch { uploadError.value = 'The unused upload could not be deleted.' }
+  try {
+    await $fetch('/api/admin/media', { method: 'DELETE', query: { url: image } })
+  } catch {
+    uploadError.value = 'The unused upload could not be deleted.'
+  }
 }
 
 function submitForm() {
@@ -81,7 +108,12 @@ function submitForm() {
       <div class="admin-product-form__grid">
         <AdminInput v-model="form.name.en" label="Name — English" required />
         <AdminInput v-model="form.name.ar" label="Name — Arabic" required dir="rtl" />
-        <AdminInput v-model="form.slug" label="URL slug" required help="Lowercase letters, numbers, and hyphens." />
+        <AdminInput
+          v-model="form.slug"
+          label="URL slug"
+          required
+          help="Lowercase letters, numbers, and hyphens."
+        />
         <AdminInput v-model="form.code" label="Product code" required />
         <AdminSelect v-model="form.category" label="Category" required>
           <option v-for="category in categories || []" :key="category.id" :value="category.slug">
@@ -90,7 +122,12 @@ function submitForm() {
         </AdminSelect>
         <AdminCheckbox v-model="form.active" label="Available on storefront" />
         <AdminTextarea v-model="form.description.en" label="Description — English" required />
-        <AdminTextarea v-model="form.description.ar" label="Description — Arabic" required dir="rtl" />
+        <AdminTextarea
+          v-model="form.description.ar"
+          label="Description — Arabic"
+          required
+          dir="rtl"
+        />
         <AdminTextarea v-model="form.detail.en" label="Details — English" required />
         <AdminTextarea v-model="form.detail.ar" label="Details — Arabic" required dir="rtl" />
         <AdminTextarea v-model="form.fit.en" label="Fit — English" required />
@@ -98,61 +135,235 @@ function submitForm() {
       </div>
     </AdminSection>
 
-    <AdminSection title="Media" description="Add up to eight images. The first image is the storefront primary image.">
+    <AdminSection
+      title="Verified product details"
+      description="Add only confirmed facts. Empty fields stay hidden on the storefront."
+    >
+      <div class="admin-product-form__grid">
+        <AdminTextarea
+          v-model="form.fabric!.en"
+          label="Fabric — English"
+          optional
+          maxlength="500"
+        />
+        <AdminTextarea
+          v-model="form.fabric!.ar"
+          label="Fabric — Arabic"
+          optional
+          maxlength="500"
+          dir="rtl"
+        />
+        <AdminTextarea
+          v-model="form.stitching!.en"
+          label="Stitching — English"
+          optional
+          maxlength="500"
+        />
+        <AdminTextarea
+          v-model="form.stitching!.ar"
+          label="Stitching — Arabic"
+          optional
+          maxlength="500"
+          dir="rtl"
+        />
+        <AdminTextarea
+          v-model="form.embroidery!.en"
+          label="Embroidery — English"
+          optional
+          maxlength="500"
+        />
+        <AdminTextarea
+          v-model="form.embroidery!.ar"
+          label="Embroidery — Arabic"
+          optional
+          maxlength="500"
+          dir="rtl"
+        />
+        <AdminTextarea
+          v-model="form.modelMeasurements!.en"
+          label="Model measurements and worn size — English"
+          optional
+          maxlength="500"
+        />
+        <AdminTextarea
+          v-model="form.modelMeasurements!.ar"
+          label="Model measurements and worn size — Arabic"
+          optional
+          maxlength="500"
+          dir="rtl"
+        />
+      </div>
+    </AdminSection>
+
+    <AdminSection
+      title="Media"
+      description="Add up to eight images, including close-up fabric, stitching, or embroidery shots when available. The first image is the storefront primary image."
+    >
       <div class="admin-product-gallery" :aria-busy="uploading || undefined">
         <div class="admin-product-gallery__toolbar">
           <label class="admin-product-media__upload">
             <span>{{ uploading ? 'Uploading images' : 'Upload product images' }}</span>
-            <input type="file" multiple accept="image/jpeg,image/png,image/webp" :disabled="uploading || form.images.length >= 8" @change="uploadImage" />
+            <input
+              type="file"
+              multiple
+              accept="image/jpeg,image/png,image/webp"
+              :disabled="uploading || form.images.length >= 8"
+              @change="uploadImage"
+            />
           </label>
           <p>{{ form.images.length }} / 8 images · JPG, PNG, or WebP · Maximum 5 MB each.</p>
         </div>
         <ol v-if="form.images.length" class="admin-product-gallery__list">
-          <li v-for="(image, index) in form.images" :key="image" class="admin-product-gallery__item">
+          <li
+            v-for="(image, index) in form.images"
+            :key="image"
+            class="admin-product-gallery__item"
+          >
             <div class="admin-product-media__preview">
-              <StoreImage :src="image" sizes="220px" :alt="`${form.name.en || 'Product'} image ${index + 1}`" />
+              <StoreImage
+                :src="image"
+                sizes="220px"
+                :alt="`${form.name.en || 'Product'} image ${index + 1}`"
+              />
               <span v-if="index === 0" class="admin-product-gallery__primary">Primary</span>
             </div>
             <div class="admin-product-gallery__actions">
-              <button type="button" class="admin-product-gallery__action" :disabled="index === 0" :aria-label="`Move previous image ${index + 1}`" @click="moveImage(index, -1)">Move previous</button>
-              <button type="button" class="admin-product-gallery__action" :disabled="index === form.images.length - 1" :aria-label="`Move next image ${index + 1}`" @click="moveImage(index, 1)">Move next</button>
-              <button type="button" class="admin-product-gallery__action" :aria-label="`Remove image ${index + 1}`" @click="removeImage(index)">Remove image</button>
+              <button
+                type="button"
+                class="admin-product-gallery__action"
+                :disabled="index === 0"
+                :aria-label="`Move previous image ${index + 1}`"
+                @click="moveImage(index, -1)"
+              >
+                Move previous
+              </button>
+              <button
+                type="button"
+                class="admin-product-gallery__action"
+                :disabled="index === form.images.length - 1"
+                :aria-label="`Move next image ${index + 1}`"
+                @click="moveImage(index, 1)"
+              >
+                Move next
+              </button>
+              <button
+                type="button"
+                class="admin-product-gallery__action"
+                :aria-label="`Remove image ${index + 1}`"
+                @click="removeImage(index)"
+              >
+                Remove image
+              </button>
             </div>
           </li>
         </ol>
-        <p v-else class="admin-product-gallery__empty">No images selected. Add at least one image before saving.</p>
+        <p v-else class="admin-product-gallery__empty">
+          No images selected. Add at least one image before saving.
+        </p>
         <p v-if="uploadError" class="admin-field__error" role="alert">{{ uploadError }}</p>
       </div>
     </AdminSection>
 
-    <AdminSection title="Pricing" description="This price is the default for new sizes. Set each size's checkout price below.">
+    <AdminSection
+      title="Pricing"
+      description="This price is the default for new sizes. Set each size's checkout price below."
+    >
       <div class="admin-product-form__pricing">
         <div class="admin-field">
           <label class="admin-field__label" for="admin-product-price">Current price (EGP)</label>
-          <input id="admin-product-price" v-model.number="form.price" class="admin-field__control" type="number" min="0" step="1" required />
+          <input
+            id="admin-product-price"
+            v-model.number="form.price"
+            class="admin-field__control"
+            type="number"
+            min="0"
+            step="1"
+            required
+          />
         </div>
         <div class="admin-field">
-          <label class="admin-field__label" for="admin-product-compare-price">Previous price (EGP) — optional</label>
-          <input id="admin-product-compare-price" v-model.number="form.compareAtPrice" class="admin-field__control" type="number" :min="form.price + 1" step="1" aria-describedby="admin-product-compare-price-help" />
-          <p id="admin-product-compare-price-help" class="admin-field__help">Leave empty when the product is not on sale. Must be higher than the current price.</p>
+          <label class="admin-field__label" for="admin-product-compare-price"
+            >Previous price (EGP) — optional</label
+          >
+          <input
+            id="admin-product-compare-price"
+            v-model.number="form.compareAtPrice"
+            class="admin-field__control"
+            type="number"
+            :min="form.price + 1"
+            step="1"
+            aria-describedby="admin-product-compare-price-help"
+          />
+          <p id="admin-product-compare-price-help" class="admin-field__help">
+            Leave empty when the product is not on sale. Must be higher than the current price.
+          </p>
         </div>
       </div>
     </AdminSection>
 
-    <AdminSection title="Variants & inventory" description="Set a price for every size in EGP. Update existing stock from Inventory to prevent conflicting writes.">
-      <template v-if="initial" #actions><NuxtLink to="/admin/inventory" class="admin-button admin-button--quiet">Manage inventory</NuxtLink></template>
+    <AdminSection
+      title="Variants & inventory"
+      description="Set a price for every size in EGP. Update existing stock from Inventory to prevent conflicting writes."
+    >
+      <template v-if="initial" #actions
+        ><NuxtLink to="/admin/inventory" class="admin-button admin-button--quiet"
+          >Manage inventory</NuxtLink
+        ></template
+      >
       <div class="admin-product-variants">
-        <button type="button" class="admin-button admin-button--quiet" @click="form.variants.forEach((variant) => { variant.price = form.price })">Apply default price to all sizes</button>
-        <div v-for="(variant, index) in form.variants" :key="variant.id || index" class="admin-product-variant">
+        <button
+          type="button"
+          class="admin-button admin-button--quiet"
+          @click="
+            form.variants.forEach((variant) => {
+              variant.price = form.price
+            })
+          "
+        >
+          Apply default price to all sizes
+        </button>
+        <div
+          v-for="(variant, index) in form.variants"
+          :key="variant.id || index"
+          class="admin-product-variant"
+        >
           <AdminInput v-model="variant.sku" label="SKU" required />
           <AdminInput v-model="variant.size" label="Size" required />
           <AdminInput v-model="variant.color" label="Color" required />
-          <div class="admin-field"><label class="admin-field__label" :for="`variant-price-${index}`">Price (EGP)</label>
-            <input :id="`variant-price-${index}`" v-model.number="variant.price" class="admin-field__control" type="number" min="0" step="1" required /></div>
-          <div class="admin-field"><label class="admin-field__label" :for="`variant-stock-${index}`">Stock</label>
-            <input :id="`variant-stock-${index}`" v-model.number="variant.stock" class="admin-field__control" type="number" min="0" step="1" required :disabled="!!variant.id" /></div>
+          <div class="admin-field">
+            <label class="admin-field__label" :for="`variant-price-${index}`">Price (EGP)</label>
+            <input
+              :id="`variant-price-${index}`"
+              v-model.number="variant.price"
+              class="admin-field__control"
+              type="number"
+              min="0"
+              step="1"
+              required
+            />
+          </div>
+          <div class="admin-field">
+            <label class="admin-field__label" :for="`variant-stock-${index}`">Stock</label>
+            <input
+              :id="`variant-stock-${index}`"
+              v-model.number="variant.stock"
+              class="admin-field__control"
+              type="number"
+              min="0"
+              step="1"
+              required
+              :disabled="!!variant.id"
+            />
+          </div>
           <AdminCheckbox v-model="variant.active" label="Active" />
-          <button type="button" class="admin-product-variant__remove" :aria-label="`Remove ${variant.sku || 'variant'}`" @click="form.variants.splice(index, 1)"><KhtIcon name="close" /></button>
+          <button
+            type="button"
+            class="admin-product-variant__remove"
+            :aria-label="`Remove ${variant.sku || 'variant'}`"
+            @click="form.variants.splice(index, 1)"
+          >
+            <KhtIcon name="close" />
+          </button>
         </div>
         <AdminButton variant="secondary" @click="addVariant">Add variant</AdminButton>
       </div>
@@ -161,7 +372,13 @@ function submitForm() {
     <p v-if="error" class="admin-create-order__error" role="alert">{{ error }}</p>
     <footer class="admin-product-form__actions">
       <NuxtLink to="/admin/products" class="admin-button admin-button--quiet">Cancel</NuxtLink>
-      <AdminButton type="submit" :loading="busy" :disabled="busy || uploading" loading-label="Saving product">Save product</AdminButton>
+      <AdminButton
+        type="submit"
+        :loading="busy"
+        :disabled="busy || uploading"
+        loading-label="Saving product"
+        >Save product</AdminButton
+      >
     </footer>
   </form>
 </template>

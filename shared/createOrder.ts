@@ -26,6 +26,8 @@ export interface CreateOrderInput {
 export interface OrderVariantOption {
   id: string
   productId: string
+  productCode?: string
+  productCategory?: string
   productName: string
   sku: string
   size: string

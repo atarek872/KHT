@@ -8,6 +8,7 @@ import type {
 import type { AdminOrderDetail, AdminOrderLine, AdminOrderSummary } from '../../shared/adminOrder'
 import type { D1Database } from '../utils/d1'
 import { allowedFulfillmentTransitions } from './orderTransitions.ts'
+import { sanitizeCampaignAttribution } from '../../shared/campaignAttribution.ts'
 
 type AdminOrderRow = Omit<
   AdminOrderDetail,
@@ -17,7 +18,12 @@ type AdminOrderRow = Omit<
   | 'canRestockReturned'
   | 'canDelete'
   | 'deleteBlockReason'
-> & { inventoryRestoredAt?: string | null; returnedRestockedAt?: string | null }
+  | 'attribution'
+> & {
+  inventoryRestoredAt?: string | null
+  returnedRestockedAt?: string | null
+  campaignAttributionJson?: string | null
+}
 
 type AdminOrderListRow = Omit<AdminOrderSummary, 'canDelete' | 'deleteBlockReason'> & {
   inventoryRestoredAt?: string | null
@@ -78,14 +84,18 @@ const capabilities: AdminOrderCapabilities = {
 
 export async function listAdminOrders(database?: D1Database): Promise<AdminOrderListResponse> {
   if (database) {
-    const result = await database.prepare(`SELECT o.id, o.number, c.name AS customerName,
+    const result = await database
+      .prepare(
+        `SELECT o.id, o.number, c.name AS customerName,
       c.phone AS customerPhone, o.total, o.payment_method AS paymentMethod,
       o.payment_status AS paymentStatus, o.fulfillment_status AS fulfillmentStatus,
       o.source, o.created_at AS createdAt,
       o.inventory_restored_at AS inventoryRestoredAt,
       o.returned_restocked_at AS returnedRestockedAt
       FROM orders o JOIN customers c ON c.id = o.customer_id
-      ORDER BY o.created_at DESC LIMIT 100`).all<AdminOrderListRow>()
+      ORDER BY o.created_at DESC LIMIT 100`,
+      )
+      .all<AdminOrderListRow>()
     const items = (result.results || []).map(
       ({ inventoryRestoredAt, returnedRestockedAt, ...item }) => ({
         ...item,
@@ -96,54 +106,93 @@ export async function listAdminOrders(database?: D1Database): Promise<AdminOrder
         }),
       }),
     )
-    return { availability: items.length ? 'available' : 'empty', message: '', capabilities,
-      items, total: items.length }
+    return {
+      availability: items.length ? 'available' : 'empty',
+      message: '',
+      capabilities,
+      items,
+      total: items.length,
+    }
   }
   return {
     availability: 'unavailable',
-    message: 'Persistent orders are not enabled. Demo order previews remain in the customer tab only.',
+    message:
+      'Persistent orders are not enabled. Demo order previews remain in the customer tab only.',
     capabilities: unavailableCapabilities,
     items: [],
     total: 0,
   }
 }
 
-export async function getAdminOrder(id: string, database?: D1Database): Promise<AdminOrderDetailResponse> {
+export async function getAdminOrder(
+  id: string,
+  database?: D1Database,
+): Promise<AdminOrderDetailResponse> {
   if (database) {
-    const order = await database.prepare(`SELECT o.id, o.number, c.name AS customerName,
+    const order = await database
+      .prepare(
+        `SELECT o.id, o.number, c.name AS customerName,
       c.phone AS customerPhone, c.email AS customerEmail,
       c.address || ', ' || c.city || ', ' || c.governorate AS address,
       o.subtotal, o.shipping, o.discount, o.discount_code AS discountCode, o.total, o.payment_method AS paymentMethod,
       o.payment_status AS paymentStatus, o.fulfillment_status AS fulfillmentStatus,
       o.source, o.notes, o.created_at AS createdAt,
+      o.public_reference AS publicReference,
+      o.campaign_attribution AS campaignAttributionJson,
+      (SELECT state FROM meta_event_outbox WHERE event_name='Purchase'
+        AND event_id=o.public_reference) AS metaDeliveryStatus,
+      (SELECT state FROM ga4_purchase_outbox WHERE transaction_id=o.public_reference)
+        AS ga4DeliveryStatus,
       o.inventory_restored_at AS inventoryRestoredAt,
       o.returned_restocked_at AS returnedRestockedAt
-      FROM orders o JOIN customers c ON c.id = o.customer_id WHERE o.id = ?`)
-      .bind(id).first<AdminOrderRow>()
-    if (!order) return { availability: 'not-found', message: 'Order not found.', capabilities, order: null }
-    const lines = await database.prepare(`SELECT id, product_name AS productName, variant,
-      quantity, unit_price AS unitPrice, total FROM order_items WHERE order_id = ? ORDER BY rowid`)
-      .bind(id).all<AdminOrderLine>()
-    const events = await database.prepare(`SELECT id, event_type AS eventType,
+      FROM orders o JOIN customers c ON c.id = o.customer_id WHERE o.id = ?`,
+      )
+      .bind(id)
+      .first<AdminOrderRow>()
+    if (!order)
+      return { availability: 'not-found', message: 'Order not found.', capabilities, order: null }
+    const lines = await database
+      .prepare(
+        `SELECT id, product_name AS productName, variant,
+      quantity, unit_price AS unitPrice, total FROM order_items WHERE order_id = ? ORDER BY rowid`,
+      )
+      .bind(id)
+      .all<AdminOrderLine>()
+    const events = await database
+      .prepare(
+        `SELECT id, event_type AS eventType,
       from_value AS fromValue, to_value AS toValue, note, actor_email AS actorEmail,
       created_at AS createdAt FROM order_events WHERE order_id = ?
-      ORDER BY created_at DESC, rowid DESC`)
-      .bind(id).all<OrderEvent>()
-    const { inventoryRestoredAt, returnedRestockedAt, ...details } = order
-    return { availability: 'available', message: '', capabilities,
+      ORDER BY created_at DESC, rowid DESC`,
+      )
+      .bind(id)
+      .all<OrderEvent>()
+    const { inventoryRestoredAt, returnedRestockedAt, campaignAttributionJson, ...details } = order
+    let attribution = null
+    try {
+      if (campaignAttributionJson)
+        attribution = sanitizeCampaignAttribution(JSON.parse(campaignAttributionJson))
+    } catch {
+      // Older malformed attribution must not hide the order.
+    }
+    return {
+      availability: 'available',
+      message: '',
+      capabilities,
       order: {
         ...details,
+        attribution,
         lines: lines.results || [],
         events: events.results || [],
         allowedFulfillmentTransitions: allowedFulfillmentTransitions(details.fulfillmentStatus),
-        canRestockReturned:
-          details.fulfillmentStatus === 'returned' && !returnedRestockedAt,
+        canRestockReturned: details.fulfillmentStatus === 'returned' && !returnedRestockedAt,
         ...orderDeletionState({
           fulfillmentStatus: details.fulfillmentStatus,
           inventoryRestoredAt,
           returnedRestockedAt,
         }),
-      } }
+      },
+    }
   }
   return {
     availability: 'unavailable',
@@ -153,11 +202,7 @@ export async function getAdminOrder(id: string, database?: D1Database): Promise<
   }
 }
 
-export async function deleteAdminOrder(
-  database: D1Database,
-  id: string,
-  expectedNumber: string,
-) {
+export async function deleteAdminOrder(database: D1Database, id: string, expectedNumber: string) {
   const cleanId = id.trim()
   const cleanNumber = expectedNumber.trim()
   if (!cleanId || !cleanNumber) throw new Error('ORDER_DELETE_INVALID')

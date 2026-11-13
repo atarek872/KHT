@@ -6,6 +6,7 @@ import type {
 import type { D1Database } from '../utils/d1.ts'
 import { createDurableOrder, normalizeEgyptianPhone } from './createOrder.ts'
 import { sanitizeCampaignAttribution } from '../../shared/campaignAttribution.ts'
+import type { MetaRequestContext } from './metaCapi.ts'
 
 function requireText(value: unknown, label: string, maximum: number) {
   if (typeof value !== 'string' || !value.trim()) throw new Error(`${label} is required.`)
@@ -66,6 +67,7 @@ async function resolveStorefrontVariants(database: D1Database, input: Storefront
 export async function createStorefrontOrder(
   database: D1Database,
   input: StorefrontCheckoutInput,
+  metaContext?: MetaRequestContext,
 ): Promise<StorefrontOrderConfirmation> {
   validateCheckout(input)
   const orderInput: CreateOrderInput = {
@@ -91,9 +93,11 @@ export async function createStorefrontOrder(
     actorEmail: 'storefront@kht.local',
     userId: null,
     automaticWelcome: false,
+    metaContext,
   })
   return {
     reference: publicReference,
+    number: order.number,
     customerName: order.customerName,
     customerPhone: order.customerPhone,
     deliveryAddress: order.address,

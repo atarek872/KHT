@@ -5,14 +5,14 @@ import { sendOnce } from '../shared/analyticsOnce.ts'
 import { fullSetDiscountPercent, setSavingsForLines } from '../shared/setOffer.ts'
 import type { Catalog, Product } from '../shared/types.ts'
 
-test('campaign values survive navigation without accepting contact details or tracking IDs', () => {
+test('campaign values survive navigation without accepting contact details', () => {
   assert.deepEqual(
     campaignFromQuery({
       utm_source: 'facebook',
       utm_campaign: 'drop_001',
       fbclid: 'private-click-id',
     }),
-    { source: 'facebook', campaign: 'drop_001' },
+    { source: 'facebook', campaign: 'drop_001', fbclid: 'private-click-id' },
   )
   assert.equal(sanitizeCampaignAttribution({ source: 'customer@example.com' }), null)
 })

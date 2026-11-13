@@ -44,9 +44,19 @@ export function useStoreAnalytics() {
     if (!import.meta.client || !googleEnabled) return false
     const gtag = (window as Window & { gtag?: (...args: unknown[]) => void }).gtag
     if (typeof gtag !== 'function') return false
+    let debugMode = false
+    try {
+      if (new URLSearchParams(location.search).get('analytics_debug') === '1') {
+        sessionStorage.setItem('kht-analytics-debug', '1')
+      }
+      debugMode = sessionStorage.getItem('kht-analytics-debug') === '1'
+    } catch {
+      // Analytics still works when storage is unavailable.
+    }
     gtag('event', event, {
       ...parameters,
       language: locale.value,
+      ...(debugMode ? { debug_mode: true } : {}),
       ...(attribution.value?.source
         ? { source_campaign: attribution.value.source, campaign_name: attribution.value.campaign }
         : {}),
@@ -73,13 +83,47 @@ export function useStoreAnalytics() {
     return true
   }
 
+  function sendCommerceMeta(
+    eventName: 'ViewContent' | 'AddToCart' | 'InitiateCheckout',
+    parameters: Record<string, unknown>,
+    details: Record<string, unknown>,
+  ) {
+    if (!import.meta.client) return false
+    const eventId = crypto.randomUUID()
+    const pixelSent = sendMeta(eventName, parameters, eventId)
+    let testCode = ''
+    try {
+      const queryCode = new URLSearchParams(location.search).get('meta_test') || ''
+      if (/^TEST[0-9A-Za-z]{4,20}$/.test(queryCode))
+        sessionStorage.setItem('kht-meta-test-code', queryCode)
+      testCode = sessionStorage.getItem('kht-meta-test-code') || ''
+    } catch {
+      // Analytics still works when storage is unavailable.
+    }
+    void $fetch('/api/analytics/meta', {
+      method: 'POST',
+      ...(testCode ? { headers: { 'x-kht-meta-test-code': testCode } } : {}),
+      body: {
+        eventName,
+        eventId,
+        path: location.pathname,
+        attribution: attribution.value,
+        ...details,
+      },
+    }).catch(() => undefined)
+    return pixelSent
+  }
+
   function trackViewItem(product: Product) {
     const googleSent = send('view_item', {
       currency: 'EGP',
       value: startingPrice(product),
       items: [analyticsItem(product)],
     })
-    return sendMeta('ViewContent', metaProductPayload(product)) || googleSent
+    return (
+      sendCommerceMeta('ViewContent', metaProductPayload(product), { productId: product.id }) ||
+      googleSent
+    )
   }
 
   function trackAddToCart(product: Product, size: string) {
@@ -88,7 +132,12 @@ export function useStoreAnalytics() {
       value: sizePrice(product, size),
       items: [analyticsItem(product, size)],
     })
-    return sendMeta('AddToCart', metaProductPayload(product, size)) || googleSent
+    return (
+      sendCommerceMeta('AddToCart', metaProductPayload(product, size), {
+        productId: product.id,
+        size,
+      }) || googleSent
+    )
   }
 
   function trackBeginCheckout(items: AnalyticsLine[], value: number, coupon?: string) {
@@ -98,7 +147,11 @@ export function useStoreAnalytics() {
       ...(coupon ? { coupon } : {}),
       items: items.map((line) => analyticsItem(line.product, line.size, line.quantity)),
     })
-    return sendMeta('InitiateCheckout', metaCartPayload(items, value)) || googleSent
+    return (
+      sendCommerceMeta('InitiateCheckout', metaCartPayload(items, value), {
+        items: items.map(({ id, size, quantity }) => ({ id, size, quantity })),
+      }) || googleSent
+    )
   }
 
   function trackPurchase(order: PurchaseEvent) {
@@ -134,7 +187,7 @@ export function useStoreAnalytics() {
         })
         const metaSent = sendMeta(
           'Purchase',
-          metaPurchasePayload(order.items, order.value, order.transactionId),
+          metaPurchasePayload(order.items, merchandiseValue, order.transactionId),
           order.transactionId,
         )
         return metaSent || googleSent

@@ -6,16 +6,81 @@ const form = reactive<ShippingZoneInput>({
   governorate: props.initial?.governorate || '',
   rate: props.initial?.rate ?? 0,
   enabled: props.initial?.enabled ?? true,
+  etaMinDays: props.initial?.etaMinDays ?? null,
+  etaMaxDays: props.initial?.etaMaxDays ?? null,
 })
+function submitForm() {
+  emit('submit', {
+    ...form,
+    etaMinDays: String(form.etaMinDays ?? '') === '' ? null : Number(form.etaMinDays),
+    etaMaxDays: String(form.etaMaxDays ?? '') === '' ? null : Number(form.etaMaxDays),
+  })
+}
 </script>
-<template><form class="admin-shipping-form" @submit.prevent="emit('submit', { ...form })">
-  <AdminSection title="Shipping zone" description="One flat rate for a supported zone or governorate.">
-    <div class="admin-shipping-form__fields"><AdminInput v-model="form.governorate" label="Zone / governorate" required placeholder="Cairo" />
-      <div class="admin-field"><label class="admin-field__label" for="shipping-rate">Rate (EGP)</label>
-        <input id="shipping-rate" v-model.number="form.rate" class="admin-field__control" type="number" min="0" step="1" required /></div>
-      <AdminCheckbox v-model="form.enabled" label="Available at checkout" /></div>
-  </AdminSection>
-  <p v-if="error" class="admin-create-order__error" role="alert">{{ error }}</p>
-  <footer class="admin-product-form__actions"><NuxtLink to="/admin/shipping" class="admin-button admin-button--quiet">Cancel</NuxtLink>
-    <AdminButton type="submit" :loading="busy" loading-label="Saving rate">Save shipping rate</AdminButton></footer>
-</form></template>
+<template>
+  <form class="admin-shipping-form" @submit.prevent="submitForm">
+    <AdminSection
+      title="Shipping zone"
+      description="One flat rate for a supported zone or governorate."
+    >
+      <div class="admin-shipping-form__fields">
+        <AdminInput
+          v-model="form.governorate"
+          label="Zone / governorate"
+          required
+          placeholder="Cairo"
+        />
+        <div class="admin-field">
+          <label class="admin-field__label" for="shipping-rate">Rate (EGP)</label>
+          <input
+            id="shipping-rate"
+            v-model.number="form.rate"
+            class="admin-field__control"
+            type="number"
+            min="0"
+            step="1"
+            required
+          />
+        </div>
+        <div class="admin-field">
+          <label class="admin-field__label" for="shipping-eta-min"
+            >Earliest delivery (days, optional)</label
+          >
+          <input
+            id="shipping-eta-min"
+            v-model.number="form.etaMinDays"
+            class="admin-field__control"
+            type="number"
+            min="1"
+            max="30"
+            step="1"
+            placeholder="Set after confirming with courier"
+          />
+        </div>
+        <div class="admin-field">
+          <label class="admin-field__label" for="shipping-eta-max"
+            >Latest delivery (days, optional)</label
+          >
+          <input
+            id="shipping-eta-max"
+            v-model.number="form.etaMaxDays"
+            class="admin-field__control"
+            type="number"
+            min="1"
+            max="30"
+            step="1"
+            placeholder="Set after confirming with courier"
+          />
+        </div>
+        <AdminCheckbox v-model="form.enabled" label="Available at checkout" />
+      </div>
+    </AdminSection>
+    <p v-if="error" class="admin-create-order__error" role="alert">{{ error }}</p>
+    <footer class="admin-product-form__actions">
+      <NuxtLink to="/admin/shipping" class="admin-button admin-button--quiet">Cancel</NuxtLink>
+      <AdminButton type="submit" :loading="busy" loading-label="Saving rate"
+        >Save shipping rate</AdminButton
+      >
+    </footer>
+  </form>
+</template>

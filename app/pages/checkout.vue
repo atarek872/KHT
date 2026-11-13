@@ -313,7 +313,16 @@ async function submit() {
   try {
     if (user.value) {
       await flush()
-      const accountOrder = await $fetch<{ id: string; number: string }>('/api/checkout/order', {
+      const accountOrder = await $fetch<{
+        id: string
+        number: string
+        reference: string
+        subtotal: number
+        shipping: number
+        discount: number
+        total: number
+        discountCode?: string
+      }>('/api/checkout/order', {
         method: 'POST',
         body: {
           ...form.value,
@@ -331,11 +340,11 @@ async function submit() {
         },
       })
       trackPurchase({
-        transactionId: accountOrder.number,
-        value: couponQuote.value?.total ?? total.value + shipping.value,
-        shipping: couponQuote.value?.shipping ?? shipping.value,
-        discount: couponQuote.value?.discount ?? 0,
-        coupon: couponQuote.value?.couponCode,
+        transactionId: accountOrder.reference,
+        value: accountOrder.total,
+        shipping: accountOrder.shipping,
+        discount: accountOrder.discount,
+        coupon: accountOrder.discountCode,
         items: lines.value,
       })
       resetLocal()
@@ -389,6 +398,8 @@ async function submit() {
         'We could not place your order. Your bag and details are saved. Review the message and try again.',
       'تعذر تسجيل طلبك. السلة والبيانات محفوظة؛ راجع الرسالة وحاول تاني.',
     )
+    await nextTick()
+    document.getElementById('checkout-error')?.focus()
   } finally {
     busy.value = false
   }
@@ -450,25 +461,6 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
             <p v-if="!user" class="checkout-guest-note">
               {{ t('Checkout as a guest — no account needed.', 'كمّل كضيف — مش محتاج تعمل حساب.') }}
             </p>
-            <aside
-              v-if="!user && welcomeCampaign?.loginRequired"
-              class="checkout-welcome-offer"
-              aria-labelledby="checkout-welcome-title"
-            >
-              <div>
-                <p class="eyebrow">{{ localized(welcomeCampaign.eyebrow) }}</p>
-                <h2 id="checkout-welcome-title">{{ localized(welcomeCampaign.title) }}</h2>
-                <p>{{ localized(welcomeCampaign.body) }}</p>
-              </div>
-              <div class="checkout-welcome-links">
-                <NuxtLink :to="campaignRedirect(welcomeCampaign.primaryRedirect)">{{
-                  localized(welcomeCampaign.primaryLabel)
-                }}</NuxtLink>
-                <NuxtLink :to="campaignRedirect(welcomeCampaign.secondaryRedirect)">{{
-                  localized(welcomeCampaign.secondaryLabel)
-                }}</NuxtLink>
-              </div>
-            </aside>
             <div class="form-grid">
               <label class="full-field"
                 >{{ t('Full name', 'الاسم بالكامل') }}
@@ -678,10 +670,16 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
               <span class="selected-indicator" />
               <div>
                 <strong>{{ t('Standard delivery', 'توصيل عادي') }}</strong
-                ><span>{{
+                ><span v-if="selectedShipping.etaMinDays && selectedShipping.etaMaxDays">{{
                   t(
-                    'The courier will contact you to coordinate delivery.',
-                    'شركة الشحن هتتواصل معاك لتنسيق التوصيل.',
+                    `Estimated delivery: ${selectedShipping.etaMinDays}–${selectedShipping.etaMaxDays} days. The courier will confirm the timing.`,
+                    `التوصيل المتوقع: من ${selectedShipping.etaMinDays} إلى ${selectedShipping.etaMaxDays} أيام. شركة الشحن هتأكد الموعد.`,
+                  )
+                }}</span
+                ><span v-else>{{
+                  t(
+                    'The courier will contact you to confirm delivery timing.',
+                    'شركة الشحن هتتواصل معاك لتأكيد موعد التوصيل.',
                   )
                 }}</span>
               </div>
@@ -790,6 +788,12 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
                 </p>
               </div>
             </details>
+            <p v-if="!user && welcomeCampaign?.loginRequired" class="checkout-guest-note">
+              {{ t('Want the first-order offer?', 'عاوز عرض أول طلب؟') }}
+              <NuxtLink :to="campaignRedirect(welcomeCampaign.primaryRedirect)">{{
+                t('Create an account (optional)', 'أنشئ حسابًا (اختياري)')
+              }}</NuxtLink>
+            </p>
             <details class="checkout-optional" :open="Boolean(form.notes)">
               <summary>
                 {{ t('Add delivery notes (optional)', 'أضف ملاحظات للتوصيل (اختياري)') }}
@@ -799,7 +803,9 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
                 }}<textarea v-model="form.notes" name="notes" maxlength="500" rows="3" />
               </label>
             </details>
-            <p v-if="error" class="form-error" role="alert">{{ error }}</p>
+            <p v-if="error" id="checkout-error" class="form-error" role="alert" tabindex="-1">
+              {{ error }}
+            </p>
             <p class="small-copy muted checkout-terms">
               {{ t('By placing the order, you agree to the', 'بتسجيل الطلب أنت موافق على') }}
               <NuxtLink to="/terms">{{ t('terms', 'الشروط') }}</NuxtLink>

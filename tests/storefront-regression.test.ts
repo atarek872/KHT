@@ -156,7 +156,8 @@ test('checkout submits durable guest COD orders with server-owned totals', async
   assert.match(page, /paymentMethod: 'cod'/)
   assert.doesNotMatch(page, /demoAcknowledged|sampleDetails|kht-demo-order/)
   assert.match(endpoint, /requireDatabase\(event\)/)
-  assert.match(endpoint, /createStorefrontOrder\(database, input\)/)
+  assert.match(endpoint, /createStorefrontOrder\(/)
+  assert.match(endpoint, /metaRequestContext\(event, '\/checkout'/)
   assert.doesNotMatch(endpoint, /payment_status|paymob|card details/i)
 })
 

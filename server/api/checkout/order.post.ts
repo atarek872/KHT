@@ -7,10 +7,11 @@ import {
   validateCartItems,
   writeSavedCart,
 } from '../../services/customerCarts'
-import { createOrder } from '../../services/createOrder'
+import { createDurableOrder } from '../../services/createOrder'
 import { field, normalizeEmail } from '../../services/customerAccounts'
 import { digest } from '../../utils/password'
 import { sanitizeCampaignAttribution } from '../../../shared/campaignAttribution'
+import { metaRequestContext, scheduleMetaDelivery } from '../../utils/metaRequest'
 
 export default defineEventHandler(async (event) => {
   const body = await accountBody(event)
@@ -28,9 +29,21 @@ export default defineEventHandler(async (event) => {
   const requestId = await digest(`website:${user?.id || guestHash}:${body.requestId}`)
   // Retries resolve before reading the now-converted cart; the idempotency key is owner scoped.
   const existing = await database
-    .prepare('SELECT id,number FROM orders WHERE idempotency_key=?')
+    .prepare(
+      `SELECT id,number,public_reference AS reference,subtotal,shipping,discount,total,
+      discount_code AS discountCode FROM orders WHERE idempotency_key=?`,
+    )
     .bind(requestId)
-    .first<{ id: string; number: string }>()
+    .first<{
+      id: string
+      number: string
+      reference: string
+      subtotal: number
+      shipping: number
+      discount: number
+      total: number
+      discountCode?: string
+    }>()
   if (existing) return existing
   try {
     const name = field(body.name, 'name', 100)
@@ -60,7 +73,7 @@ export default defineEventHandler(async (event) => {
       if (!variant) throw new Error('An item is unavailable. Review your bag.')
       return { variantId: variant.id, quantity: line.quantity }
     })
-    const order = await createOrder(
+    const { order, publicReference } = await createDurableOrder(
       database,
       {
         requestId,
@@ -77,15 +90,42 @@ export default defineEventHandler(async (event) => {
         cartId: cart.id,
         cartVersion: cart.version,
         expectedTotal: Number(body.expectedTotal),
+        metaContext: metaRequestContext(
+          event,
+          '/checkout',
+          sanitizeCampaignAttribution(body.attribution),
+        ),
       },
     )
-    return { id: order.id, number: order.number }
+    scheduleMetaDelivery(event, database, 'Purchase', publicReference)
+    return {
+      id: order.id,
+      number: order.number,
+      reference: publicReference,
+      subtotal: order.subtotal,
+      shipping: order.shipping,
+      discount: order.discount,
+      total: order.total,
+      discountCode: order.discountCode,
+    }
   } catch (error) {
     // Concurrent double submissions may lose the unique-key race after the first request commits.
     const duplicate = await database
-      .prepare('SELECT id,number FROM orders WHERE idempotency_key=?')
+      .prepare(
+        `SELECT id,number,public_reference AS reference,subtotal,shipping,discount,total,
+        discount_code AS discountCode FROM orders WHERE idempotency_key=?`,
+      )
       .bind(requestId)
-      .first<{ id: string; number: string }>()
+      .first<{
+        id: string
+        number: string
+        reference: string
+        subtotal: number
+        shipping: number
+        discount: number
+        total: number
+        discountCode?: string
+      }>()
     if (duplicate) return duplicate
     const message = error instanceof Error ? error.message : ''
     throw createError({

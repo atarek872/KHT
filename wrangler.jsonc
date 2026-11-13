@@ -42,6 +42,7 @@
     },
     "production": {
       "name": "kht-commerce-production",
+      "triggers": { "crons": ["*/5 * * * *"] },
       "workers_dev": false,
       "preview_urls": false,
       "routes": [
@@ -89,6 +90,7 @@
         "NUXT_PUBLIC_STORE_WHATSAPP": "",
         "NUXT_PUBLIC_GOOGLE_TAG_ID": "G-YHQBDWSBKG",
         "NUXT_PUBLIC_META_PIXEL_ID": "1603918338193891",
+        "META_GRAPH_API_VERSION": "v27.0",
       },
     },
   },

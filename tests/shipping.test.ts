@@ -11,10 +11,23 @@ import type { Catalog } from '../shared/types.ts'
 
 const read = (path: string) => readFileSync(new URL(path, import.meta.url), 'utf8')
 const catalog: Catalog = {
-  demo: true, categories: [], products: [{ id: 'tee', slug: 'tee', code: 'TEE', category: 'tees',
-    price: 890, image: '/tee.png', name: { en: 'Tee', ar: 'تيشرت' },
-    description: { en: '', ar: '' }, detail: { en: '', ar: '' }, fit: { en: '', ar: '' },
-    sizes: [{ name: 'M', stock: 3 }] }],
+  demo: true,
+  categories: [],
+  products: [
+    {
+      id: 'tee',
+      slug: 'tee',
+      code: 'TEE',
+      category: 'tees',
+      price: 890,
+      image: '/tee.png',
+      name: { en: 'Tee', ar: 'تيشرت' },
+      description: { en: '', ar: '' },
+      detail: { en: '', ar: '' },
+      fit: { en: '', ar: '' },
+      sizes: [{ name: 'M', stock: 3 }],
+    },
+  ],
 }
 
 test('configured Cairo, Giza and another governorate produce server-owned totals', () => {
@@ -26,16 +39,55 @@ test('configured Cairo, Giza and another governorate produce server-owned totals
 test('shipping validation accepts zero-rate pickup and rejects invalid rates', () => {
   assert.doesNotThrow(() => validateShippingZone({ governorate: 'Cairo', rate: 60, enabled: true }))
   assert.doesNotThrow(() => validateShippingZone({ governorate: 'Pickup', rate: 0, enabled: true }))
-  assert.throws(() => validateShippingZone({ governorate: '', rate: 60, enabled: true }), /required/)
-  assert.throws(() => validateShippingZone({ governorate: 'Delta', rate: -1, enabled: true }), /non-negative/)
-  assert.throws(() => validateShippingZone({ governorate: 'Delta', rate: 50.5, enabled: true }), /whole EGP/)
+  assert.doesNotThrow(() =>
+    validateShippingZone({
+      governorate: 'Cairo',
+      rate: 60,
+      enabled: true,
+      etaMinDays: 2,
+      etaMaxDays: 4,
+    }),
+  )
+  assert.throws(
+    () => validateShippingZone({ governorate: 'Cairo', rate: 60, enabled: true, etaMinDays: 4 }),
+    /both estimated/,
+  )
+  assert.throws(
+    () =>
+      validateShippingZone({
+        governorate: 'Cairo',
+        rate: 60,
+        enabled: true,
+        etaMinDays: 5,
+        etaMaxDays: 2,
+      }),
+    /both estimated/,
+  )
+  assert.throws(
+    () => validateShippingZone({ governorate: '', rate: 60, enabled: true }),
+    /required/,
+  )
+  assert.throws(
+    () => validateShippingZone({ governorate: 'Delta', rate: -1, enabled: true }),
+    /non-negative/,
+  )
+  assert.throws(
+    () => validateShippingZone({ governorate: 'Delta', rate: 50.5, enabled: true }),
+    /whole EGP/,
+  )
 })
 
 test('disabled or unknown shipping zones are rejected by the shared service', async () => {
   const database = {
     prepare() {
-      return { bind(governorate: unknown) { return { first: async () => governorate === 'Cairo'
-        ? { governorate: 'Cairo', rate: 60, enabled: 1 } : null } } }
+      return {
+        bind(governorate: unknown) {
+          return {
+            first: async () =>
+              governorate === 'Cairo' ? { governorate: 'Cairo', rate: 60, enabled: 1 } : null,
+          }
+        },
+      }
     },
   }
   assert.equal((await requireShippingRate(database as never, 'Cairo')).rate, 60)
@@ -51,11 +103,17 @@ test('standalone storefront retains original demo shipping without D1', async ()
 
 test('shipping APIs are protected for admin and public options expose enabled zones only', () => {
   for (const path of [
-    '../server/api/admin/shipping/index.get.ts', '../server/api/admin/shipping/index.post.ts',
-    '../server/api/admin/shipping/[governorate].get.ts', '../server/api/admin/shipping/[governorate].patch.ts',
-  ]) assert.match(read(path), /requireAdmin\(event\)/, path)
+    '../server/api/admin/shipping/index.get.ts',
+    '../server/api/admin/shipping/index.post.ts',
+    '../server/api/admin/shipping/[governorate].get.ts',
+    '../server/api/admin/shipping/[governorate].patch.ts',
+  ])
+    assert.match(read(path), /requireAdmin\(event\)/, path)
   const publicOptions = read('../server/api/shipping/options.get.ts')
-  assert.match(publicOptions, /database \? await listShippingZones\(database, true\) : demoShippingZones/)
+  assert.match(
+    publicOptions,
+    /database \? await listShippingZones\(database, true\) : demoShippingZones/,
+  )
 })
 
 test('storefront checkout and admin order use the same shipping source', () => {
@@ -66,7 +124,8 @@ test('storefront checkout and admin order use the same shipping source', () => {
   assert.match(checkoutPage, /\/api\/shipping\/options/)
   assert.match(checkoutPage, /shippingGovernorate: form\.value\.governorate/)
   assert.doesNotMatch(checkoutPage, /const shipping = 60/)
-  assert.match(checkoutApi, /createStorefrontOrder\(database, input\)/)
+  assert.match(checkoutApi, /createStorefrontOrder\(/)
+  assert.match(checkoutApi, /metaRequestContext\(event, '\/checkout'/)
   assert.match(discountQuote, /getStorefrontShippingRate\(database/)
   assert.match(adminOrder, /listShippingZones\(database, true\)/)
   assert.match(adminOrder, /requireShippingRate\(database, input\.shippingGovernorate\)/)
@@ -75,8 +134,10 @@ test('storefront checkout and admin order use the same shipping source', () => {
 test('shipping admin exposes list, create, edit, enable and disable states', () => {
   const list = read('../app/pages/admin/shipping/index.vue')
   const form = read('../app/components/admin/shipping/ShippingZoneForm.vue')
-  for (const label of ['New zone', 'Edit', 'Disable', 'Enable', 'Rate', 'Enabled', 'Disabled']) assert.match(list, new RegExp(label))
-  for (const field of ['Zone / governorate', 'Rate (EGP)', 'Available at checkout']) assert.match(form, new RegExp(field.replace(/[()]/g, '\\$&')))
+  for (const label of ['New zone', 'Edit', 'Disable', 'Enable', 'Rate', 'Enabled', 'Disabled'])
+    assert.match(list, new RegExp(label))
+  for (const field of ['Zone / governorate', 'Rate (EGP)', 'Available at checkout'])
+    assert.match(form, new RegExp(field.replace(/[()]/g, '\\$&')))
   assert.match(list, /status === 'pending'/)
   assert.match(list, /v-else-if="error"/)
   assert.match(list, /v-else-if="!data\?\.items\.length"/)

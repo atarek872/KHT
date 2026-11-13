@@ -37,6 +37,7 @@ export interface StorefrontOrderLine {
 
 export interface StorefrontOrderConfirmation {
   reference: string
+  number: string
   customerName: string
   customerPhone: string
   deliveryAddress: string

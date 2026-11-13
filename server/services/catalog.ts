@@ -35,7 +35,12 @@ export async function getCatalog(
         p.compare_at_price AS compareAtPrice, p.image,
         p.name_en AS nameEn, p.name_ar AS nameAr, p.description_en AS descriptionEn,
         p.description_ar AS descriptionAr, p.detail_en AS detailEn, p.detail_ar AS detailAr,
-        p.fit_en AS fitEn, p.fit_ar AS fitAr FROM products p
+        p.fit_en AS fitEn, p.fit_ar AS fitAr,
+        p.fabric_en AS fabricEn, p.fabric_ar AS fabricAr,
+        p.stitching_en AS stitchingEn, p.stitching_ar AS stitchingAr,
+        p.embroidery_en AS embroideryEn, p.embroidery_ar AS embroideryAr,
+        p.model_measurements_en AS modelMeasurementsEn,
+        p.model_measurements_ar AS modelMeasurementsAr FROM products p
         JOIN categories c ON c.slug = p.category
         WHERE p.active = 1 AND c.active = 1 ORDER BY p.rowid`,
       )
@@ -69,21 +74,28 @@ export async function getCatalog(
         .map((image) => image.url)
       if (!images.length) images.push(String(product.image))
       return {
-      id: String(product.id),
-      slug: String(product.slug),
-      code: String(product.code),
-      category: String(product.category),
-      price: Number(product.price),
-      compareAtPrice: product.compareAtPrice === null ? null : Number(product.compareAtPrice),
-      image: images[0]!,
-      images,
-      name: { en: String(product.nameEn), ar: String(product.nameAr) },
-      description: { en: String(product.descriptionEn), ar: String(product.descriptionAr) },
-      detail: { en: String(product.detailEn), ar: String(product.detailAr) },
-      fit: { en: String(product.fitEn), ar: String(product.fitAr) },
-      sizes: (variantsResult.results || [])
-        .filter((variant) => variant.productId === product.id)
-        .map((variant) => ({ name: variant.size, stock: variant.stock, price: variant.price })),
+        id: String(product.id),
+        slug: String(product.slug),
+        code: String(product.code),
+        category: String(product.category),
+        price: Number(product.price),
+        compareAtPrice: product.compareAtPrice === null ? null : Number(product.compareAtPrice),
+        image: images[0]!,
+        images,
+        name: { en: String(product.nameEn), ar: String(product.nameAr) },
+        description: { en: String(product.descriptionEn), ar: String(product.descriptionAr) },
+        detail: { en: String(product.detailEn), ar: String(product.detailAr) },
+        fit: { en: String(product.fitEn), ar: String(product.fitAr) },
+        fabric: { en: String(product.fabricEn), ar: String(product.fabricAr) },
+        stitching: { en: String(product.stitchingEn), ar: String(product.stitchingAr) },
+        embroidery: { en: String(product.embroideryEn), ar: String(product.embroideryAr) },
+        modelMeasurements: {
+          en: String(product.modelMeasurementsEn),
+          ar: String(product.modelMeasurementsAr),
+        },
+        sizes: (variantsResult.results || [])
+          .filter((variant) => variant.productId === product.id)
+          .map((variant) => ({ name: variant.size, stock: variant.stock, price: variant.price })),
       }
     }),
   }

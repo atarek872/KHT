@@ -17,6 +17,10 @@ export interface Product {
   description: Localized
   detail: Localized
   fit: Localized
+  fabric?: Localized
+  stitching?: Localized
+  embroidery?: Localized
+  modelMeasurements?: Localized
   sizes: { name: string; stock: number; price?: number }[]
   code: string
 }

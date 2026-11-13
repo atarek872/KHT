@@ -1521,6 +1521,23 @@ summary:focus-visible {
   font-size: 0.8rem;
   line-height: 1.5;
 }
+.product-proof {
+  display: grid;
+  grid-template-columns: minmax(85px, 0.35fr) 1fr;
+  gap: 8px 16px;
+  border-block: 1px solid var(--mist);
+  padding-block: 16px;
+  margin-block: 18px;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+.product-proof dt {
+  font-weight: 600;
+}
+.product-proof dd {
+  margin: 0;
+  color: var(--description);
+}
 .product-size-help a {
   text-decoration: underline;
   text-underline-offset: 4px;

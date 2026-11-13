@@ -11,6 +11,9 @@ import { getAdminOrder } from './adminOrders.ts'
 import { quoteDiscount } from './discounts.ts'
 import { listShippingZones, requireShippingRate } from './shipping.ts'
 import { resolveCustomerDiscountCode } from './welcomeOffer.ts'
+import { sanitizeCampaignAttribution } from '../../shared/campaignAttribution.ts'
+import { enqueueMetaStatement, purchaseMetaEvent, type MetaRequestContext } from './metaCapi.ts'
+import { enqueueGa4Statement, ga4ClientId, purchaseGa4Payload } from './ga4Purchase.ts'
 
 const sources: OrderSource[] = [
   'website',
@@ -87,8 +90,11 @@ export async function getCreateOrderResources(database: D1Database): Promise<Cre
   const [variantsResult, shipping] = await Promise.all([
     database
       .prepare(
-        `SELECT id, product_id AS productId, product_name AS productName, sku, size,
-      color, unit_price AS unitPrice, stock FROM inventory_variants WHERE active = 1 ORDER BY product_name, size`,
+        `SELECT v.id, v.product_id AS productId, p.code AS productCode,
+      p.category AS productCategory,
+      v.product_name AS productName, v.sku, v.size, v.color,
+      v.unit_price AS unitPrice, v.stock FROM inventory_variants v
+      JOIN products p ON p.id=v.product_id WHERE v.active = 1 ORDER BY v.product_name, v.size`,
       )
       .all<OrderVariantOption>(),
     listShippingZones(database, true),
@@ -136,6 +142,7 @@ interface DurableOrderOptions {
   expectedTotal?: number
   actorEmail?: string
   automaticWelcome?: boolean
+  metaContext?: MetaRequestContext
 }
 
 export async function createDurableOrder(
@@ -181,6 +188,31 @@ export async function createDurableOrder(
   const publicReference = `KHT-${crypto.randomUUID().replaceAll('-', '').slice(0, 20).toUpperCase()}`
   const createdAt = new Date().toISOString()
   const createdEventId = crypto.randomUUID()
+  const campaignAttribution = sanitizeCampaignAttribution(input.attribution)
+  const metaEvent = options.metaContext
+    ? await purchaseMetaEvent({
+        reference: publicReference,
+        createdAt,
+        lines: priced.lines,
+        subtotal: priced.subtotal,
+        discount: priced.discount,
+        customer: input.customer,
+        context: options.metaContext,
+      })
+    : null
+  const ga4Payload = options.metaContext
+    ? purchaseGa4Payload({
+        reference: publicReference,
+        createdAt,
+        clientId: ga4ClientId(options.metaContext.gaCookie, publicReference),
+        lines: priced.lines,
+        subtotal: priced.subtotal,
+        discount: priced.discount,
+        shipping: priced.shipping,
+        couponCode: priced.couponCode,
+        debug: options.metaContext.ga4Debug,
+      })
+    : null
   const customerStatement =
     existingCustomer && options.cartVersion !== undefined
       ? database.prepare('SELECT 1 FROM customers WHERE id = ?').bind(customerId)
@@ -223,8 +255,9 @@ export async function createDurableOrder(
             `INSERT INTO orders
       (id, number, public_reference, idempotency_key, customer_id, subtotal, shipping,
        shipping_governorate, discount, total, payment_method, source, notes, created_at,
-       discount_id, discount_code, campaign_attribution)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'cod', ?, ?, ?, ?, ?, ?)`,
+       discount_id, discount_code, campaign_attribution, attribution_source,
+       attribution_campaign_id, attribution_adset_id, attribution_ad_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'cod', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           )
           .bind(
             orderId,
@@ -242,15 +275,21 @@ export async function createDurableOrder(
             createdAt,
             priced.discountId || null,
             priced.couponCode || null,
-            input.attribution ? JSON.stringify(input.attribution) : null,
+            campaignAttribution ? JSON.stringify(campaignAttribution) : null,
+            campaignAttribution?.source || null,
+            campaignAttribution?.campaignId || null,
+            campaignAttribution?.adsetId || null,
+            campaignAttribution?.adId || null,
           )
       : database
           .prepare(
             `INSERT INTO orders
       (id, number, public_reference, idempotency_key, customer_id, subtotal, shipping,
        shipping_governorate, discount, total, payment_method, source, notes, created_at,
-       discount_id, discount_code, user_id, cart_id, cart_version, shipping_snapshot, campaign_attribution)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'cod', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       discount_id, discount_code, user_id, cart_id, cart_version, shipping_snapshot,
+       campaign_attribution, attribution_source, attribution_campaign_id,
+       attribution_adset_id, attribution_ad_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'cod', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           )
           .bind(
             orderId,
@@ -279,7 +318,11 @@ export async function createDurableOrder(
               city: input.customer.city.trim(),
               governorate: input.customer.governorate.trim(),
             }),
-            input.attribution ? JSON.stringify(input.attribution) : null,
+            campaignAttribution ? JSON.stringify(campaignAttribution) : null,
+            campaignAttribution?.source || null,
+            campaignAttribution?.campaignId || null,
+            campaignAttribution?.adsetId || null,
+            campaignAttribution?.adId || null,
           )
   const statements = [
     customerStatement,
@@ -310,6 +353,8 @@ export async function createDurableOrder(
       VALUES (?, ?, 'created', 'pending', ?, ?)`,
       )
       .bind(createdEventId, orderId, options.actorEmail || 'system@kht.local', createdAt),
+    ...(metaEvent ? [enqueueMetaStatement(database, metaEvent)] : []),
+    ...(ga4Payload ? [enqueueGa4Statement(database, publicReference, ga4Payload)] : []),
   ]
   if (options.cartId) {
     const cartEventId = crypto.randomUUID()
