@@ -11,6 +11,10 @@ export interface AbandonedCartSummary {
   createdAt: string
   contactCapturedAt?: string
   recoveryState: CartRecoveryState
+  marketingConsentAt?: string | null
+  marketingConsentSource?: string | null
+  firstEmailState?: string | null
+  secondEmailState?: string | null
 }
 
 export interface CartRecoveryEvent {

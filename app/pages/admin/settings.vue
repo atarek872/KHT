@@ -16,6 +16,7 @@ const settingsViews = [
   'pages',
   'policy',
   'publishing',
+  'recovery',
 ] as const
 type SettingsView = (typeof settingsViews)[number]
 const view = computed<SettingsView>(() => {
@@ -243,9 +244,15 @@ onBeforeUnmount(() => {
         :aria-current="view === 'publishing' ? 'page' : undefined"
         >Publishing</NuxtLink
       >
+      <NuxtLink
+        to="/admin/settings?section=recovery"
+        :aria-current="view === 'recovery' ? 'page' : undefined"
+        >Recovery email</NuxtLink
+      >
     </nav>
 
-    <AdminSettingsStoreContentEditor v-if="view !== 'availability'" :view="view" />
+    <AdminSettingsRecoveryEmail v-if="view === 'recovery'" />
+    <AdminSettingsStoreContentEditor v-else-if="view !== 'availability'" :view="view" />
 
     <template v-else>
       <div v-if="status === 'pending' && !data" class="admin-orders-loading" role="status">

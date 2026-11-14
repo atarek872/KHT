@@ -91,6 +91,8 @@ test('persisted dashboard reports real COD commerce and inventory data', async (
       '0005_abandoned_carts.sql',
       '0006_commerce_safety.sql',
       '0007_production_commerce.sql',
+      '0019_cart_recovery_email.sql',
+      '0020_recovery_admin_settings.sql',
     ]) {
       sqlite.exec(read(`../server/db/migrations/${name}`))
     }

@@ -1,7 +1,11 @@
 import { deliverMetaOutbox, metaConfiguration } from '../services/metaCapi.ts'
 import { deliverGa4Outbox } from '../services/ga4Purchase.ts'
-import { captureAdminNotifications, deliverAdminNotifications } from '../services/adminEmailNotifications.ts'
+import {
+  captureAdminNotifications,
+  deliverAdminNotifications,
+} from '../services/adminEmailNotifications.ts'
 import { captureRecoveryEmails, deliverRecoveryEmails } from '../services/cartRecoveryEmails.ts'
+import { loadRecoveryMailConfig } from '../services/recoveryAdminSettings.ts'
 import type { D1Database } from '../utils/d1.ts'
 
 export default defineNitroPlugin((nitroApp) => {
@@ -20,13 +24,21 @@ export default defineNitroPlugin((nitroApp) => {
         await deliverAdminNotifications(database, env || {})
       })(),
       (async () => {
-        await captureRecoveryEmails(database)
-        await deliverRecoveryEmails(database, env || {})
+        const config = await loadRecoveryMailConfig(
+          database,
+          String(env?.RECOVERY_SETTINGS_KEY || ''),
+        )
+        if (config.BREVO_API_KEY) {
+          await captureRecoveryEmails(database, config.firstDelayMinutes, config.secondDelayHours)
+          await deliverRecoveryEmails(database, config)
+        }
       })(),
     ])
     jobs.forEach((job, index) => {
       if (job.status === 'rejected')
-        console.warn('KHT scheduled delivery failed', { job: ['meta', 'ga4', 'admin-email', 'cart-recovery'][index] })
+        console.warn('KHT scheduled delivery failed', {
+          job: ['meta', 'ga4', 'admin-email', 'cart-recovery'][index],
+        })
     })
   })
 })

@@ -44,6 +44,18 @@ test('production migration backfills public references and adds workflow records
     `)
 
     sqlite.exec(readFileSync(migrationUrl, 'utf8'))
+    sqlite.exec(
+      readFileSync(
+        new URL('../server/db/migrations/0019_cart_recovery_email.sql', import.meta.url),
+        'utf8',
+      ),
+    )
+    sqlite.exec(
+      readFileSync(
+        new URL('../server/db/migrations/0020_recovery_admin_settings.sql', import.meta.url),
+        'utf8',
+      ),
+    )
 
     const order = sqlite
       .prepare(
@@ -199,6 +211,18 @@ test('abandoned cart reads use the persisted production recovery state', async (
   try {
     applyBaseMigrations(sqlite)
     sqlite.exec(readFileSync(migrationUrl, 'utf8'))
+    sqlite.exec(
+      readFileSync(
+        new URL('../server/db/migrations/0019_cart_recovery_email.sql', import.meta.url),
+        'utf8',
+      ),
+    )
+    sqlite.exec(
+      readFileSync(
+        new URL('../server/db/migrations/0020_recovery_admin_settings.sql', import.meta.url),
+        'utf8',
+      ),
+    )
     sqlite.exec(`INSERT INTO abandoned_carts
       (id, customer_name, phone, subtotal, items_count, state, recovery_state, last_activity)
       VALUES ('contacted-cart', 'Contacted Customer', '01000000000', 890, 1, 'active',

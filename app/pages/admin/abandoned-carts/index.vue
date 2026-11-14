@@ -40,6 +40,10 @@ function requestDelete(cart: AbandonedCartSummary) {
   deleteSuccess.value = ''
   pendingDeleteCart.value = cart
 }
+async function recoverySent(message: string) {
+  deleteSuccess.value = message
+  await refresh()
+}
 
 function closeDeleteDialog() {
   if (!deleteBusy.value) pendingDeleteCart.value = null
@@ -146,6 +150,7 @@ function relative(value: string) {
               </td>
               <td>{{ date(cart.createdAt) }}</td>
               <td>
+                <AdminCartRecoverySend :cart="cart" @sent="recoverySent" />
                 <button
                   type="button"
                   class="admin-delete-action"
@@ -171,9 +176,18 @@ function relative(value: string) {
           </header>
           <p>{{ cart.phone || cart.email || 'No contact captured' }}</p>
           <dl>
-            <div><dt>Items</dt><dd>{{ cart.itemsCount }}</dd></div>
-            <div><dt>Last activity</dt><dd>{{ relative(cart.lastActivity) }}</dd></div>
-            <div><dt>Recovery</dt><dd>{{ cart.recoveryState }}</dd></div>
+            <div>
+              <dt>Items</dt>
+              <dd>{{ cart.itemsCount }}</dd>
+            </div>
+            <div>
+              <dt>Last activity</dt>
+              <dd>{{ relative(cart.lastActivity) }}</dd>
+            </div>
+            <div>
+              <dt>Recovery</dt>
+              <dd>{{ cart.recoveryState }}</dd>
+            </div>
           </dl>
           <time :datetime="cart.createdAt">Created {{ date(cart.createdAt) }}</time>
           <div class="admin-abandoned-card__actions">
@@ -183,6 +197,7 @@ function relative(value: string) {
             >
               View cart
             </NuxtLink>
+            <AdminCartRecoverySend :cart="cart" @sent="recoverySent" />
             <button
               type="button"
               class="admin-delete-action"

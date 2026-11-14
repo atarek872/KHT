@@ -155,7 +155,11 @@ export async function listAbandonedCarts(database: D1Database) {
     .prepare(
       `SELECT id, customer_name AS customerName, phone, email,
     subtotal, items_count AS itemsCount, last_activity AS lastActivity, created_at AS createdAt,
-    contact_captured_at AS contactCapturedAt, ${recoveryExpression} AS recoveryState
+    contact_captured_at AS contactCapturedAt, marketing_consent_at AS marketingConsentAt,
+    marketing_consent_source AS marketingConsentSource,
+    (SELECT state FROM cart_recovery_emails e WHERE e.cart_id=abandoned_carts.id AND e.stage='hour_1') AS firstEmailState,
+    (SELECT state FROM cart_recovery_emails e WHERE e.cart_id=abandoned_carts.id AND e.stage='hour_24') AS secondEmailState,
+    ${recoveryExpression} AS recoveryState
     FROM abandoned_carts WHERE state = 'active'
     AND recovery_state IN ('active', 'contacted')
     AND datetime(last_activity) <= datetime('now', '-${abandonmentMinutes} minutes')
@@ -173,7 +177,11 @@ export async function getAbandonedCart(
     .prepare(
       `SELECT id, customer_name AS customerName, phone, email,
     subtotal, items_count AS itemsCount, last_activity AS lastActivity, created_at AS createdAt,
-    contact_captured_at AS contactCapturedAt, ${recoveryExpression} AS recoveryState
+    contact_captured_at AS contactCapturedAt, marketing_consent_at AS marketingConsentAt,
+    marketing_consent_source AS marketingConsentSource,
+    (SELECT state FROM cart_recovery_emails e WHERE e.cart_id=abandoned_carts.id AND e.stage='hour_1') AS firstEmailState,
+    (SELECT state FROM cart_recovery_emails e WHERE e.cart_id=abandoned_carts.id AND e.stage='hour_24') AS secondEmailState,
+    ${recoveryExpression} AS recoveryState
     FROM abandoned_carts WHERE id = ?`,
     )
     .bind(id)
