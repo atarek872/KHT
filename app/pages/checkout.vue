@@ -45,6 +45,11 @@ const newCheckoutDraft = () => ({
   notes: '',
 })
 const form = useState('checkout-draft', newCheckoutDraft)
+const recoveryConsent = ref(false)
+const recoveryConsentTouched = ref(false)
+const recoveryConsentError = ref('')
+let recoveryConsentTimer: ReturnType<typeof setTimeout> | undefined
+let recoveryConsentReadTimer: ReturnType<typeof setTimeout> | undefined
 const busy = ref(false)
 const requestId = ref(crypto.randomUUID())
 const confirmationAddress = useState('checkout-confirmation-address', () => ({
@@ -104,6 +109,9 @@ const {
 const { data: welcomeCampaignData } = await useFetch<{
   campaign: PublicWelcomeCampaign | null
 }>('/api/storefront/welcome-campaign', { key: 'welcome-campaign' })
+const { data: recoveryStatus } = await useFetch<{ enabled: boolean }>(
+  '/api/storefront/cart-recovery-status',
+)
 const { data: checkoutOptions } = await useFetch<{ paymentMethods: string[] }>(
   '/api/checkout/options',
 )
@@ -251,6 +259,42 @@ watch(
   },
 )
 onBeforeUnmount(() => clearTimeout(contactSnapshotTimer))
+watch(() => [form.value.email, recoveryConsent.value, recoveryConsentTouched.value], () => {
+  clearTimeout(recoveryConsentTimer)
+  if (!import.meta.client) return
+  if (!recoveryConsentTouched.value || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.value.email.trim())) return
+  recoveryConsentTimer = setTimeout(async () => {
+    try {
+      await flush()
+      await $fetch('/api/cart/recovery-consent', {
+        method: 'POST',
+        body: { email: form.value.email, consent: recoveryConsent.value },
+      })
+      recoveryConsentError.value = ''
+    } catch {
+      recoveryConsentError.value = t(
+        'We could not save your email choice. Try again before leaving.',
+        'ماقدرناش نحفظ اختيار البريد. حاول تاني قبل ما تسيب الصفحة.',
+      )
+    }
+  }, 1200)
+})
+onBeforeUnmount(() => clearTimeout(recoveryConsentTimer))
+watch(() => [form.value.email, recoveryStatus.value?.enabled], () => {
+  clearTimeout(recoveryConsentReadTimer)
+  if (!import.meta.client) return
+  if (recoveryConsentTouched.value || !recoveryStatus.value?.enabled ||
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.value.email.trim())) return
+  recoveryConsentReadTimer = setTimeout(async () => {
+    try {
+      const result = await $fetch<{ consented: boolean }>('/api/cart/recovery-consent', {
+        query: { email: form.value.email },
+      })
+      if (!recoveryConsentTouched.value) recoveryConsent.value = result.consented
+    } catch { /* Choosing a new opt-in remains available. */ }
+  }, 600)
+}, { immediate: true })
+onBeforeUnmount(() => clearTimeout(recoveryConsentReadTimer))
 function clearFieldError(field: CheckoutField) {
   fieldErrors.value = fieldErrors.value.filter((item) => item !== field)
 }
@@ -545,6 +589,14 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
                 >
               </label>
             </div>
+            <label v-if="recoveryStatus?.enabled && form.email" class="checkout-recovery-consent">
+              <input v-model="recoveryConsent" type="checkbox" @change="recoveryConsentTouched = true" />
+              <span>{{ t(
+                'Email me up to two reminders about this bag if I leave checkout. I can unsubscribe anytime.',
+                'ابعتولي تذكيرين بحد أقصى لو سبت السلة، وأقدر ألغي الاشتراك في أي وقت.',
+              ) }}</span>
+            </label>
+            <p v-if="recoveryConsentError" class="field-error" role="alert">{{ recoveryConsentError }}</p>
           </fieldset>
 
           <fieldset v-else-if="step === 2" id="checkout-step-2" tabindex="-1">

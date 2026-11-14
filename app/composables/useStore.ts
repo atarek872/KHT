@@ -188,6 +188,26 @@ export function useBag() {
     open.value = true
     return true
   }
+  function recover(selections: CartLine[]) {
+    const merged = lines.value.map(({ id, size, quantity }) => ({ id, size, quantity }))
+    let changed = false
+    for (const selection of selections) {
+      const product = catalog.value.products.find((item) => item.id === selection.id)
+      const stock = product?.sizes.find((size) => size.name === selection.size)?.stock || 0
+      if (!stock || !Number.isInteger(selection.quantity) || selection.quantity < 1) continue
+      const existing = merged.find((item) => item.id === selection.id && item.size === selection.size)
+      if (!existing && merged.length >= 12) continue
+      if (existing) existing.quantity = Math.min(10, stock, existing.quantity + selection.quantity)
+      else merged.push({ id: selection.id, size: selection.size, quantity: Math.min(10, stock, selection.quantity) })
+      changed = true
+    }
+    if (changed) {
+      raw.value = merged
+      track(merged)
+      announcement.value = t('Your selection is back in your bag.', 'اختياراتك رجعت لسلتك.')
+    }
+    return changed
+  }
   function update(id: string, size: string, quantity: number) {
     const next = lines.value.flatMap((line) => {
       if (line.id !== id || line.size !== size)
@@ -233,6 +253,7 @@ export function useBag() {
     open,
     announcement,
     add,
+    recover,
     update,
     changeSize,
     clear,

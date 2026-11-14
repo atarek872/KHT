@@ -1862,6 +1862,23 @@ thead {
   font-size: 0.875rem;
   font-weight: 600;
 }
+.checkout-recovery-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  max-width: 620px;
+  margin-top: 18px;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  cursor: pointer;
+}
+.checkout-recovery-consent input {
+  width: 20px;
+  height: 20px;
+  margin: 1px 0 0;
+  flex: 0 0 auto;
+  accent-color: var(--ink);
+}
 .demo-banner {
   padding: 24px 28px;
   border: 1px solid var(--description);
