@@ -5,6 +5,7 @@ import { enforceRateLimit } from '../utils/rateLimit.ts'
 import { requireJsonBody, requireSameOrigin } from '../utils/requestGuards.ts'
 import { sanitizeCampaignAttribution } from '../../shared/campaignAttribution.ts'
 import { metaRequestContext, scheduleMetaDelivery } from '../utils/metaRequest.ts'
+import { scheduleAdminOrderNotification } from '../utils/adminNotification.ts'
 
 export default defineEventHandler(async (event) => {
   requireSameOrigin(event)
@@ -18,6 +19,7 @@ export default defineEventHandler(async (event) => {
       metaRequestContext(event, '/checkout', sanitizeCampaignAttribution(input.attribution)),
     )
     scheduleMetaDelivery(event, database, 'Purchase', result.reference)
+    scheduleAdminOrderNotification(event, database, { reference: result.reference })
     return result
   } catch (error) {
     // A simultaneous submit may commit after our idempotency check and win the unique-key race.
@@ -30,6 +32,7 @@ export default defineEventHandler(async (event) => {
       if (duplicate) {
         const result = await createStorefrontOrder(database, input)
         scheduleMetaDelivery(event, database, 'Purchase', result.reference)
+        scheduleAdminOrderNotification(event, database, { reference: result.reference })
         return result
       }
     }

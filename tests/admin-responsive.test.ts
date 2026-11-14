@@ -71,7 +71,9 @@ test('inventory guidance and abandoned-cart time remain useful on long mobile se
   const abandoned = read('../app/pages/admin/abandoned-carts/index.vue')
   assert.match(inventory, /Whole numbers, minimum 0/)
   assert.match(abandoned, /setInterval\([\s\S]*60000/)
-  assert.match(abandoned, /onBeforeUnmount\(\(\) => clearInterval\(clockTimer\)\)/)
+  assert.match(abandoned, /clearInterval\(clockTimer\)/)
+  assert.match(abandoned, /clearInterval\(refreshTimer\)/)
+  assert.match(abandoned, /removeEventListener\('visibilitychange', refreshIfVisible\)/)
 })
 
 test('product gallery uses responsive cards with full-size touch actions', () => {

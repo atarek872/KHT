@@ -12,6 +12,7 @@ import { field, normalizeEmail } from '../../services/customerAccounts'
 import { digest } from '../../utils/password'
 import { sanitizeCampaignAttribution } from '../../../shared/campaignAttribution'
 import { metaRequestContext, scheduleMetaDelivery } from '../../utils/metaRequest'
+import { scheduleAdminOrderNotification } from '../../utils/adminNotification'
 
 export default defineEventHandler(async (event) => {
   const body = await accountBody(event)
@@ -98,6 +99,7 @@ export default defineEventHandler(async (event) => {
       },
     )
     scheduleMetaDelivery(event, database, 'Purchase', publicReference)
+    scheduleAdminOrderNotification(event, database, { id: order.id })
     return {
       id: order.id,
       number: order.number,

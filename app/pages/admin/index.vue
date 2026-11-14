@@ -12,6 +12,19 @@ const { data, error, status, refresh } = await useFetch<DashboardSnapshot>('/api
   watch: [range],
 })
 
+let refreshTimer: ReturnType<typeof setInterval> | undefined
+function refreshIfVisible() {
+  if (document.visibilityState === 'visible') void refresh()
+}
+onMounted(() => {
+  refreshTimer = setInterval(refreshIfVisible, 300000)
+  document.addEventListener('visibilitychange', refreshIfVisible)
+})
+onBeforeUnmount(() => {
+  clearInterval(refreshTimer)
+  document.removeEventListener('visibilitychange', refreshIfVisible)
+})
+
 const ranges: { label: string; value: DashboardRange }[] = [
   { label: 'Today', value: 'today' },
   { label: '7 days', value: '7d' },

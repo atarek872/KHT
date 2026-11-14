@@ -16,13 +16,24 @@ const deleteSuccess = ref(
 )
 const clock = ref(Date.now())
 let clockTimer: ReturnType<typeof setInterval> | undefined
+let refreshTimer: ReturnType<typeof setInterval> | undefined
+
+function refreshIfVisible() {
+  if (document.visibilityState === 'visible') void refresh()
+}
 
 onMounted(() => {
   clockTimer = setInterval(() => {
     clock.value = Date.now()
   }, 60000)
+  refreshTimer = setInterval(refreshIfVisible, 300000)
+  document.addEventListener('visibilitychange', refreshIfVisible)
 })
-onBeforeUnmount(() => clearInterval(clockTimer))
+onBeforeUnmount(() => {
+  clearInterval(clockTimer)
+  clearInterval(refreshTimer)
+  document.removeEventListener('visibilitychange', refreshIfVisible)
+})
 
 function requestDelete(cart: AbandonedCartSummary) {
   deleteError.value = ''
@@ -82,7 +93,7 @@ function relative(value: string) {
     <AdminPageHeader
       eyebrow="KHT / Operations"
       title="Abandoned carts"
-      description="Carts inactive for at least 30 minutes."
+      description="Carts inactive for at least 5 minutes. Refreshes every 5 minutes."
     />
 
     <p v-if="deleteError" class="admin-create-order__error" role="alert">{{ deleteError }}</p>
@@ -101,7 +112,7 @@ function relative(value: string) {
     <AdminEmptyState
       v-else-if="!data?.items.length"
       title="No abandoned carts"
-      description="Inactive carts will appear here after 30 minutes."
+      description="Inactive carts will appear here after 5 minutes."
     />
     <template v-else-if="data">
       <div class="admin-abandoned-desktop">

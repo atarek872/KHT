@@ -22,9 +22,9 @@ test('cart snapshots are server-priced and store exact validated variants', () =
   assert.match(service, /await database\.batch\(/)
 })
 
-test('abandoned carts use one 30-minute threshold and exclude cleared carts', () => {
+test('abandoned carts use one 5-minute threshold and exclude cleared carts', () => {
   const service = read('../server/services/abandonedCarts.ts')
-  assert.match(service, /abandonmentMinutes = 30/)
+  assert.match(service, /abandonmentMinutes = 5/)
   assert.match(service, /state = 'active'/)
   assert.match(
     service,

@@ -11,7 +11,7 @@ import { assertAvailableStock, groupOrderLines } from '../../shared/order.ts'
 import type { D1Database } from '../utils/d1'
 import { normalizeEgyptianPhone } from './createOrder.ts'
 
-export const abandonmentMinutes = 30
+export const abandonmentMinutes = 5
 
 type CartRow = Omit<AbandonedCartSummary, 'recoveryState'> & {
   recoveryState: CartRecoveryState

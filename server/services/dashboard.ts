@@ -194,7 +194,7 @@ export async function buildPersistedDashboardSnapshot(
         ...metric,
         value: recoveryMetrics.abandonedCount,
         availability: 'available' as const,
-        note: 'Inactive for at least 30 minutes.',
+        note: 'Inactive for at least 5 minutes.',
       }
     }
     if (metric.key === 'recoveredCarts') {

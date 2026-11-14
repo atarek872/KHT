@@ -82,6 +82,10 @@
           "name": "EMAIL",
           "remote": true,
         },
+        {
+          "name": "ALERT_EMAIL",
+          "remote": true,
+        },
       ],
       "vars": {
         "NUXT_PUBLIC_STORE_INDEXING_ENABLED": "true",
