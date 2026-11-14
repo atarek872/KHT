@@ -198,7 +198,9 @@ test('a mixed-size order keeps both variants on the admin order used by the ship
 test('shipping label reserves visible room for product rows and prints after rendering', () => {
   const label = read('../app/pages/admin/orders/[id]/print.vue')
   assert.match(label, /v-for="line in order\.lines"/)
-  assert.match(label, /grid-template-rows:\s*auto auto minmax\(25mm, 1fr\) auto auto auto/)
+  assert.match(label, /\.shipping-label\s*\{[^}]*display:\s*flex;[^}]*flex-direction:\s*column/s)
+  assert.match(label, /\.shipping-label__summary\s*\{[^}]*margin-top:\s*auto/s)
+  assert.doesNotMatch(label, /grid-template-rows:\s*auto auto minmax\(/)
   assert.doesNotMatch(label, /\.shipping-label__items\s*\{[^}]*overflow:\s*hidden/s)
   assert.match(label, /document\.fonts\.ready/)
 })

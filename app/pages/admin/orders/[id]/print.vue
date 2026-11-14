@@ -311,10 +311,10 @@ useSeoMeta({
   width: 100mm;
   height: 150mm;
   box-sizing: border-box;
-  display: grid;
-  grid-template-rows: auto auto minmax(25mm, 1fr) auto auto auto;
-  gap: 2mm;
-  padding: 4mm;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2mm;
+  padding: 3.5mm;
   color: #0a0a0a;
   background: #fff;
   border: 0.35mm solid #0a0a0a;
@@ -336,8 +336,8 @@ useSeoMeta({
 .shipping-label__header {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 4mm;
-  padding-bottom: 3mm;
+  gap: 3mm;
+  padding-bottom: 2mm;
   border-bottom: 0.6mm solid #0a0a0a;
 }
 
@@ -383,6 +383,10 @@ useSeoMeta({
   letter-spacing: 0.08em;
 }
 
+.shipping-label__brand > span {
+  white-space: nowrap;
+}
+
 .shipping-label__reference {
   display: grid;
   justify-items: end;
@@ -393,10 +397,12 @@ useSeoMeta({
 
 .shipping-label__reference strong {
   font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif;
-  padding: 1.5mm 2mm;
+  max-width: 58mm;
+  padding: 1.2mm 1.5mm;
   border: 0.35mm solid #0a0a0a;
-  font-size: 20pt;
+  font-size: 14pt;
   line-height: 1;
+  overflow-wrap: anywhere;
 }
 
 .shipping-label__reference time {
@@ -406,9 +412,9 @@ useSeoMeta({
 
 .shipping-label__recipient {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 1.3mm 3mm;
-  padding: 3mm;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.8mm;
+  padding: 2mm;
   border: 0.35mm solid #0a0a0a;
 }
 
@@ -419,20 +425,20 @@ useSeoMeta({
 }
 
 .shipping-label__recipient > strong {
-  font-size: 14pt;
+  font-size: 12pt;
   line-height: 1.05;
   overflow-wrap: anywhere;
 }
 
 .shipping-label__recipient a {
   color: #0a0a0a;
-  font-size: 12pt;
+  font-size: 10.5pt;
   font-weight: 700;
   text-decoration: none;
 }
 
 .shipping-label__recipient p {
-  font-size: 9.5pt;
+  font-size: 8.5pt;
   line-height: 1.35;
   overflow-wrap: anywhere;
 }
@@ -444,8 +450,7 @@ useSeoMeta({
 }
 
 .shipping-label__items {
-  min-height: 0;
-  overflow: visible;
+  flex: 0 0 auto;
 }
 
 .shipping-label__section-title {
@@ -469,7 +474,7 @@ useSeoMeta({
 
 .shipping-label__items th,
 .shipping-label__items td {
-  padding: 1.2mm 0;
+  padding: 0.8mm 0;
   border-bottom: 0.2mm solid #a8a8a4;
   text-align: left;
   vertical-align: top;
@@ -495,6 +500,10 @@ useSeoMeta({
   break-inside: avoid;
 }
 
+.shipping-label__items tr {
+  break-inside: avoid;
+}
+
 .shipping-label__items td strong,
 .shipping-label__items td span {
   display: block;
@@ -509,9 +518,10 @@ useSeoMeta({
 
 .shipping-label__summary {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 4mm;
-  padding-top: 2mm;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+  gap: 2mm;
+  margin-top: auto;
+  padding-top: 1.5mm;
   border-top: 0.6mm solid #0a0a0a;
 }
 
@@ -523,7 +533,7 @@ useSeoMeta({
 }
 
 .shipping-label__summary dl:first-child {
-  padding-right: 4mm;
+  padding-right: 2mm;
   border-right: 0.2mm solid #a8a8a4;
 }
 
@@ -541,6 +551,7 @@ useSeoMeta({
 .shipping-label__summary dd {
   font-weight: 700;
   text-align: right;
+  white-space: nowrap;
 }
 
 .shipping-label__summary dl:first-child div:last-child {
@@ -550,7 +561,7 @@ useSeoMeta({
 }
 
 .shipping-label__summary dl:first-child div:last-child :is(dt, dd) {
-  font-size: 11pt;
+  font-size: 10pt;
 }
 
 .shipping-label__payment-method {
@@ -581,7 +592,7 @@ useSeoMeta({
   place-items: center;
   gap: 0.7mm;
   min-width: 0;
-  padding: 1.5mm 1mm;
+  padding: 1mm;
   text-align: center;
 }
 
@@ -606,13 +617,11 @@ useSeoMeta({
 .shipping-label__footer {
   display: grid;
   gap: 1.5mm;
-  padding-top: 2mm;
+  padding-top: 1mm;
   border-top: 0.2mm solid #0a0a0a;
 }
 
 .shipping-label__footer p {
-  max-height: 8mm;
-  overflow: hidden;
   font-size: 7pt;
 }
 
@@ -625,25 +634,33 @@ useSeoMeta({
 }
 
 .shipping-label--dense {
-  gap: 2mm;
-  padding-block: 4mm;
+  gap: 0.8mm;
+  padding: 2.5mm;
+}
+
+.shipping-label--dense .shipping-label__header {
+  padding-bottom: 1mm;
+}
+
+.shipping-label--dense .shipping-label__recipient {
+  padding: 1.4mm;
 }
 
 .shipping-label--dense .shipping-label__items :is(th, td) {
-  padding-block: 0.8mm;
+  padding-block: 0.3mm;
 }
 
 .shipping-label--dense .shipping-label__items td {
-  font-size: 7.6pt;
+  font-size: 7.2pt;
 }
 
 .shipping-label--dense .shipping-label__items td span {
-  font-size: 6.8pt;
+  font-size: 6.5pt;
 }
 
 .shipping-label--extra-dense {
-  gap: 1.5mm;
-  font-size: 8.5pt;
+  gap: 0.6mm;
+  font-size: 8pt;
 }
 
 .shipping-label--extra-dense .shipping-label__recipient {
@@ -651,7 +668,7 @@ useSeoMeta({
 }
 
 .shipping-label--extra-dense .shipping-label__items :is(th, td) {
-  padding-block: 0.45mm;
+  padding-block: 0.2mm;
 }
 
 @media (max-width: 480px) {
