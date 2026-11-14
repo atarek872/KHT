@@ -1,7 +1,9 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { getAdminOrder, listAdminOrders } from '../server/services/adminOrders.ts'
+import { createStorefrontOrder } from '../server/services/storefrontCheckout.ts'
+import { createTestD1 } from './helpers/sqliteD1.ts'
 
 const read = (path: string) => readFileSync(new URL(path, import.meta.url), 'utf8')
 
@@ -133,18 +135,70 @@ test('every order has a protected 10 by 15 centimetre shipping label', () => {
   assert.doesNotMatch(label, />Order status</)
 })
 
-test('eligible orders expose exact-confirmation deletion on list and detail', () => {
+test('eligible orders expose visible deletion with a simple confirmation for cancelled orders', () => {
   const list = read('../app/pages/admin/orders/index.vue')
   const detail = read('../app/pages/admin/orders/[id]/index.vue')
   for (const page of [list, detail]) {
     assert.match(page, /method:\s*'DELETE'/)
     assert.match(page, /AdminConfirmDialog/)
     assert.match(page, /required-confirmation/)
+    assert.match(page, /fulfillmentStatus === 'cancelled'\s*\?\s*''/)
     assert.match(page, /orderNumber/)
   }
   assert.match(list, /order\.canDelete/)
-  assert.match(list, /admin-orders-desktop[\s\S]*admin-delete-action/)
-  assert.match(list, /admin-orders-mobile[\s\S]*admin-delete-action/)
+  assert.match(list, /admin-orders-desktop[\s\S]*admin-order-delete-action/)
+  assert.match(list, /admin-orders-mobile[\s\S]*admin-order-delete-action/)
   assert.match(detail, /order\.deleteBlockReason/)
   assert.match(detail, /navigateTo\(`\/admin\/orders/)
+})
+
+test('a mixed-size order keeps both variants on the admin order used by the shipping label', async () => {
+  const fixture = createTestD1()
+  try {
+    const migrationDirectory = new URL('../server/db/migrations/', import.meta.url)
+    for (const name of readdirSync(migrationDirectory)
+      .filter((file) => file.endsWith('.sql'))
+      .sort())
+      fixture.sqlite.exec(readFileSync(new URL(name, migrationDirectory), 'utf8'))
+    const created = await createStorefrontOrder(fixture.database, {
+      requestId: crypto.randomUUID(),
+      cartId: crypto.randomUUID(),
+      customer: {
+        name: 'Label Test',
+        phone: '01010000022',
+        address: '12 Test Street',
+        governorate: 'Cairo',
+        city: 'Cairo',
+      },
+      items: [
+        { id: 'kht-001', size: 'M', quantity: 1 },
+        { id: 'kht-001', size: 'L', quantity: 1 },
+      ],
+      shippingGovernorate: 'Cairo',
+      paymentMethod: 'cod',
+    })
+    const saved = fixture.sqlite
+      .prepare('SELECT id FROM orders WHERE number=?')
+      .get(created.number) as { id: string }
+    const detail = await getAdminOrder(saved.id, fixture.database)
+    assert.equal(detail.order?.lines.length, 2)
+    assert.deepEqual(
+      detail.order?.lines.map((line) => line.variant),
+      ['Black / M', 'Black / L'],
+    )
+    assert.deepEqual(
+      detail.order?.lines.map((line) => line.quantity),
+      [1, 1],
+    )
+  } finally {
+    fixture.close()
+  }
+})
+
+test('shipping label reserves visible room for product rows and prints after rendering', () => {
+  const label = read('../app/pages/admin/orders/[id]/print.vue')
+  assert.match(label, /v-for="line in order\.lines"/)
+  assert.match(label, /grid-template-rows:\s*auto auto minmax\(25mm, 1fr\) auto auto auto/)
+  assert.doesNotMatch(label, /\.shipping-label__items\s*\{[^}]*overflow:\s*hidden/s)
+  assert.match(label, /document\.fonts\.ready/)
 })

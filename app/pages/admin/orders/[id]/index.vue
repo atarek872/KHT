@@ -205,12 +205,12 @@ useSeoMeta({
           <button
             v-if="order.canDelete"
             type="button"
-            class="admin-delete-action"
+            class="admin-button admin-button--quiet admin-order-delete-action"
             :aria-label="`Delete ${order.number} permanently`"
             :disabled="mutationBusy || deleteBusy"
             @click="requestDelete"
           >
-            <KhtIcon name="trash" />
+            <KhtIcon name="trash" /> Delete
           </button>
         </template>
       </AdminPageHeader>
@@ -460,7 +460,7 @@ useSeoMeta({
       title="Delete this order permanently?"
       :description="`This removes ${order?.number || 'this order'}, its history, and its discount redemption. This cannot be undone.`"
       confirm-label="Delete permanently"
-      :required-confirmation="order?.number || ''"
+      :required-confirmation="order?.fulfillmentStatus === 'cancelled' ? '' : order?.number || ''"
       :confirmation-prompt="`Type ${order?.number || ''} to confirm.`"
       danger
       :busy="deleteBusy"

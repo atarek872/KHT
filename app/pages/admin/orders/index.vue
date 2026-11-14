@@ -10,7 +10,9 @@ const route = useRoute()
 const pendingDeleteOrder = ref<AdminOrderSummary | null>(null)
 const deleteBusy = ref(false)
 const deleteError = ref('')
-const deletedQuery = Array.isArray(route.query.deleted) ? route.query.deleted[0] : route.query.deleted
+const deletedQuery = Array.isArray(route.query.deleted)
+  ? route.query.deleted[0]
+  : route.query.deleted
 const deleteSuccess = ref(
   typeof deletedQuery === 'string' && deletedQuery
     ? `${deletedQuery} was permanently deleted.`
@@ -152,27 +154,29 @@ const date = (value: string) =>
               </td>
               <td>{{ order.source }}</td>
               <td>{{ date(order.createdAt) }}</td>
-              <td><div class="admin-order-row__actions">
-                <NuxtLink
-                  :to="`/admin/orders/${order.id}/print`"
-                  target="_blank"
-                  rel="noopener"
-                  class="admin-order-print-link"
-                  :aria-label="`Print 10 by 15 centimetre label for ${order.number}`"
-                >
-                  Print label
-                </NuxtLink>
-                <button
-                  v-if="order.canDelete"
-                  type="button"
-                  class="admin-delete-action"
-                  :aria-label="`Delete ${order.number} permanently`"
-                  :disabled="deleteBusy"
-                  @click="requestOrderDelete(order)"
-                >
-                  <KhtIcon name="trash" />
-                </button>
-              </div></td>
+              <td>
+                <div class="admin-order-row__actions">
+                  <NuxtLink
+                    :to="`/admin/orders/${order.id}/print`"
+                    target="_blank"
+                    rel="noopener"
+                    class="admin-order-print-link"
+                    :aria-label="`Print 10 by 15 centimetre label for ${order.number}`"
+                  >
+                    Print label
+                  </NuxtLink>
+                  <button
+                    v-if="order.canDelete"
+                    type="button"
+                    class="admin-button admin-button--quiet admin-order-delete-action"
+                    :aria-label="`Delete ${order.number} permanently`"
+                    :disabled="deleteBusy"
+                    @click="requestOrderDelete(order)"
+                  >
+                    <KhtIcon name="trash" /> Delete
+                  </button>
+                </div>
+              </td>
             </tr>
           </tbody>
         </AdminTable>
@@ -225,12 +229,12 @@ const date = (value: string) =>
             <button
               v-if="order.canDelete"
               type="button"
-              class="admin-delete-action"
+              class="admin-button admin-button--quiet admin-order-delete-action"
               :aria-label="`Delete ${order.number} permanently`"
               :disabled="deleteBusy"
               @click="requestOrderDelete(order)"
             >
-              <KhtIcon name="trash" />
+              <KhtIcon name="trash" /> Delete
             </button>
           </div>
         </article>
@@ -242,7 +246,11 @@ const date = (value: string) =>
       title="Delete this order permanently?"
       :description="`This removes ${pendingDeleteOrder?.number}, its history, and its discount redemption. This cannot be undone.`"
       confirm-label="Delete permanently"
-      :required-confirmation="pendingDeleteOrder?.number || ''"
+      :required-confirmation="
+        pendingDeleteOrder?.fulfillmentStatus === 'cancelled'
+          ? ''
+          : pendingDeleteOrder?.number || ''
+      "
       :confirmation-prompt="`Type ${pendingDeleteOrder?.number || ''} to confirm.`"
       danger
       :busy="deleteBusy"

@@ -12,6 +12,8 @@ const order = computed(() => data.value?.order || null)
 const storeContent = useStoreContent()
 const brand = computed(() => storeContent.value.brand)
 const printedAutomatically = ref(false)
+const printing = ref(false)
+const labelElement = ref<HTMLElement | null>(null)
 
 const money = (value: number) =>
   new Intl.NumberFormat('en-EG', {
@@ -37,8 +39,20 @@ const densityClass = computed(() => ({
   'shipping-label--extra-dense': (order.value?.lines.length || 0) > 7,
 }))
 
-function printLabel() {
-  if (import.meta.client) window.print()
+async function printLabel() {
+  if (!import.meta.client || !order.value || printing.value) return
+  printing.value = true
+  try {
+    await nextTick()
+    await document.fonts.ready
+    const logo = labelElement.value?.querySelector('img')
+    if (logo && !logo.complete) await logo.decode().catch(() => undefined)
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+    window.print()
+  } finally {
+    printing.value = false
+  }
 }
 
 watch(
@@ -46,8 +60,7 @@ watch(
   async (value) => {
     if (!import.meta.client || !value || printedAutomatically.value) return
     printedAutomatically.value = true
-    await nextTick()
-    window.setTimeout(() => window.print(), 250)
+    await printLabel()
   },
   { immediate: true },
 )
@@ -94,6 +107,7 @@ useSeoMeta({
 
       <article
         v-else
+        ref="labelElement"
         class="shipping-label"
         :class="densityClass"
         :aria-label="`Shipping label for order ${order.number}`"
@@ -296,11 +310,11 @@ useSeoMeta({
 .shipping-label {
   width: 100mm;
   height: 150mm;
+  box-sizing: border-box;
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr) auto auto auto;
-  gap: 3mm;
-  padding: 5mm;
-  overflow: hidden;
+  grid-template-rows: auto auto minmax(25mm, 1fr) auto auto auto;
+  gap: 2mm;
+  padding: 4mm;
   color: #0a0a0a;
   background: #fff;
   border: 0.35mm solid #0a0a0a;
@@ -431,7 +445,7 @@ useSeoMeta({
 
 .shipping-label__items {
   min-height: 0;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .shipping-label__section-title {
@@ -478,6 +492,7 @@ useSeoMeta({
 
 .shipping-label__items td {
   font-size: 8.2pt;
+  break-inside: avoid;
 }
 
 .shipping-label__items td strong,

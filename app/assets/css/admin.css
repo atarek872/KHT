@@ -460,6 +460,14 @@
   cursor: not-allowed;
 }
 
+.kht-admin .admin-order-delete-action {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
 .kht-admin .admin-confirm-dialog__field {
   display: grid;
   gap: 8px;
