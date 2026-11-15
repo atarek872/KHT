@@ -5,6 +5,7 @@ import type { ShippingZone } from '../../shared/shipping'
 import type { CustomerAddress } from '../../shared/account'
 import type { PublicWelcomeCampaign } from '../../shared/welcomeCampaign'
 import { sizePrice } from '#shared/productPricing'
+import { discountErrorArabic } from '#shared/discountErrors'
 import {
   invalidCheckoutFields,
   normalizeCheckoutPhone,
@@ -57,11 +58,12 @@ const confirmationAddress = useState('checkout-confirmation-address', () => ({
   address: '',
 }))
 const error = ref('')
-const couponCode = ref('')
+const carriedCouponCode = useState('kht-checkout-coupon', () => '')
+const couponCode = ref(carriedCouponCode.value)
 const couponBusy = ref(false)
 const couponError = ref('')
 const couponQuote = ref<OrderQuote | null>(null)
-const appliedCouponCode = ref('')
+const appliedCouponCode = ref(carriedCouponCode.value)
 const welcomeBusy = ref(false)
 let quoteRequestId = 0
 let requestedCouponCode = ''
@@ -88,7 +90,8 @@ watch(addressId, (id, previousId) => {
 })
 onMounted(async () => {
   if (count.value) trackBeginCheckout(lines.value, total.value)
-  await refreshAutomaticOffer()
+  if (appliedCouponCode.value) await applyCoupon(appliedCouponCode.value)
+  else await refreshAutomaticOffer()
   if (!user.value) return
   form.value.name ||= user.value.name
   form.value.email ||= user.value.email
@@ -137,7 +140,7 @@ watch(
 )
 
 async function applyCoupon(code = couponCode.value) {
-  if (!code.trim() || !count.value || !selectedShipping.value) return
+  if (!code.trim() || !count.value) return
   const requestId = ++quoteRequestId
   requestedCouponCode = code.trim().toUpperCase()
   couponBusy.value = true
@@ -155,14 +158,18 @@ async function applyCoupon(code = couponCode.value) {
     if (requestId !== quoteRequestId) return
     couponQuote.value = quote
     appliedCouponCode.value = quote.couponCode || code.toUpperCase()
+    carriedCouponCode.value = appliedCouponCode.value
     couponCode.value = appliedCouponCode.value
   } catch (cause: unknown) {
     if (requestId !== quoteRequestId) return
     const failure = cause as { data?: { statusMessage?: string } }
     couponQuote.value = null
     appliedCouponCode.value = ''
-    couponError.value =
-      failure.data?.statusMessage || t('Coupon could not be applied.', 'تعذر تطبيق الكوبون.')
+    carriedCouponCode.value = ''
+    couponError.value = t(
+      failure.data?.statusMessage || 'Coupon could not be applied.',
+      discountErrorArabic(failure.data?.statusMessage || 'Coupon could not be applied.'),
+    )
     couponBusy.value = false
     void refreshAutomaticOffer()
   } finally {
@@ -171,7 +178,7 @@ async function applyCoupon(code = couponCode.value) {
 }
 
 async function refreshAutomaticOffer() {
-  if (!count.value || !selectedShipping.value || appliedCouponCode.value) return
+  if (!count.value || appliedCouponCode.value) return
   if (!user.value && welcomeCampaign.value?.loginRequired) return
   const requestId = ++quoteRequestId
   welcomeBusy.value = true
@@ -225,6 +232,7 @@ watch(couponCode, (value) => {
   if (appliedCouponCode.value && value.trim().toUpperCase() !== appliedCouponCode.value) {
     quoteRequestId++
     appliedCouponCode.value = ''
+    carriedCouponCode.value = ''
     couponBusy.value = false
     welcomeBusy.value = false
     couponQuote.value = null
@@ -259,41 +267,58 @@ watch(
   },
 )
 onBeforeUnmount(() => clearTimeout(contactSnapshotTimer))
-watch(() => [form.value.email, recoveryConsent.value, recoveryConsentTouched.value], () => {
-  clearTimeout(recoveryConsentTimer)
-  if (!import.meta.client) return
-  if (!recoveryConsentTouched.value || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.value.email.trim())) return
-  recoveryConsentTimer = setTimeout(async () => {
-    try {
-      await flush()
-      await $fetch('/api/cart/recovery-consent', {
-        method: 'POST',
-        body: { email: form.value.email, consent: recoveryConsent.value },
-      })
-      recoveryConsentError.value = ''
-    } catch {
-      recoveryConsentError.value = t(
-        'We could not save your email choice. Try again before leaving.',
-        'ماقدرناش نحفظ اختيار البريد. حاول تاني قبل ما تسيب الصفحة.',
-      )
-    }
-  }, 1200)
-})
+watch(
+  () => [form.value.email, recoveryConsent.value, recoveryConsentTouched.value],
+  () => {
+    clearTimeout(recoveryConsentTimer)
+    if (!import.meta.client) return
+    if (
+      !recoveryConsentTouched.value ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.value.email.trim())
+    )
+      return
+    recoveryConsentTimer = setTimeout(async () => {
+      try {
+        await flush()
+        await $fetch('/api/cart/recovery-consent', {
+          method: 'POST',
+          body: { email: form.value.email, consent: recoveryConsent.value },
+        })
+        recoveryConsentError.value = ''
+      } catch {
+        recoveryConsentError.value = t(
+          'We could not save your email choice. Try again before leaving.',
+          'ماقدرناش نحفظ اختيار البريد. حاول تاني قبل ما تسيب الصفحة.',
+        )
+      }
+    }, 1200)
+  },
+)
 onBeforeUnmount(() => clearTimeout(recoveryConsentTimer))
-watch(() => [form.value.email, recoveryStatus.value?.enabled], () => {
-  clearTimeout(recoveryConsentReadTimer)
-  if (!import.meta.client) return
-  if (recoveryConsentTouched.value || !recoveryStatus.value?.enabled ||
-    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.value.email.trim())) return
-  recoveryConsentReadTimer = setTimeout(async () => {
-    try {
-      const result = await $fetch<{ consented: boolean }>('/api/cart/recovery-consent', {
-        query: { email: form.value.email },
-      })
-      if (!recoveryConsentTouched.value) recoveryConsent.value = result.consented
-    } catch { /* Choosing a new opt-in remains available. */ }
-  }, 600)
-}, { immediate: true })
+watch(
+  () => [form.value.email, recoveryStatus.value?.enabled],
+  () => {
+    clearTimeout(recoveryConsentReadTimer)
+    if (!import.meta.client) return
+    if (
+      recoveryConsentTouched.value ||
+      !recoveryStatus.value?.enabled ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.value.email.trim())
+    )
+      return
+    recoveryConsentReadTimer = setTimeout(async () => {
+      try {
+        const result = await $fetch<{ consented: boolean }>('/api/cart/recovery-consent', {
+          query: { email: form.value.email },
+        })
+        if (!recoveryConsentTouched.value) recoveryConsent.value = result.consented
+      } catch {
+        /* Choosing a new opt-in remains available. */
+      }
+    }, 600)
+  },
+  { immediate: true },
+)
 onBeforeUnmount(() => clearTimeout(recoveryConsentReadTimer))
 function clearFieldError(field: CheckoutField) {
   fieldErrors.value = fieldErrors.value.filter((item) => item !== field)
@@ -392,6 +417,7 @@ async function submit() {
         items: lines.value,
       })
       resetLocal()
+      carriedCouponCode.value = ''
       form.value = newCheckoutDraft()
       requestId.value = crypto.randomUUID()
       if (user.value) await restore(false).catch(() => undefined)
@@ -432,6 +458,7 @@ async function submit() {
       address: `${form.value.address}, ${form.value.city}, ${form.value.governorate}`,
     }
     completeCheckout()
+    carriedCouponCode.value = ''
     requestId.value = crypto.randomUUID()
     form.value = newCheckoutDraft()
     await navigateTo(`/order-confirmation/${order.reference}`)
@@ -590,13 +617,21 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
               </label>
             </div>
             <label v-if="recoveryStatus?.enabled && form.email" class="checkout-recovery-consent">
-              <input v-model="recoveryConsent" type="checkbox" @change="recoveryConsentTouched = true" />
-              <span>{{ t(
-                'Email me up to two reminders about this bag if I leave checkout. I can unsubscribe anytime.',
-                'ابعتولي تذكيرين بحد أقصى لو سبت السلة، وأقدر ألغي الاشتراك في أي وقت.',
-              ) }}</span>
+              <input
+                v-model="recoveryConsent"
+                type="checkbox"
+                @change="recoveryConsentTouched = true"
+              />
+              <span>{{
+                t(
+                  'Email me up to two reminders about this bag if I leave checkout. I can unsubscribe anytime.',
+                  'ابعتولي تذكيرين بحد أقصى لو سبت السلة، وأقدر ألغي الاشتراك في أي وقت.',
+                )
+              }}</span>
             </label>
-            <p v-if="recoveryConsentError" class="field-error" role="alert">{{ recoveryConsentError }}</p>
+            <p v-if="recoveryConsentError" class="field-error" role="alert">
+              {{ recoveryConsentError }}
+            </p>
           </fieldset>
 
           <fieldset v-else-if="step === 2" id="checkout-step-2" tabindex="-1">
@@ -824,7 +859,7 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
                     id="checkout-coupon"
                     v-model.trim="couponCode"
                     autocomplete="off"
-                    placeholder="WELCOME10"
+                    :placeholder="t('Enter code', 'اكتب الكود')"
                   /><button
                     type="button"
                     class="button button-outline"
@@ -887,7 +922,7 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
             </div>
             <button
               class="button button-dark checkout-primary-action"
-              :disabled="busy || (step === 3 && !codAvailable)"
+              :disabled="busy || (step === 3 && (!codAvailable || couponBusy || welcomeBusy))"
             >
               {{
                 busy

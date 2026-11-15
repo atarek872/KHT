@@ -1808,6 +1808,81 @@ thead {
 .order-summary > p {
   margin-top: 22px;
 }
+.bag-offer-applied {
+  display: grid;
+  gap: 6px;
+  margin-top: 18px;
+  padding: 16px 18px;
+  color: var(--white);
+  background: var(--ink);
+}
+.bag-offer-applied .eyebrow {
+  color: inherit;
+  margin: 0 0 2px;
+  font-size: 0.6875rem;
+}
+.bag-offer-applied strong {
+  font-size: 1rem;
+}
+.bag-offer-applied > span:last-child {
+  font-size: 0.8125rem;
+}
+.bag-coupon {
+  display: grid;
+  gap: 10px;
+  margin-top: 22px;
+  padding-top: 20px;
+  border-top: 1px solid var(--mist);
+}
+.bag-coupon label {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.bag-coupon > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+.bag-coupon input {
+  min-width: 0;
+  min-height: 48px;
+  padding: 10px 12px;
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid var(--description);
+}
+.bag-coupon input[aria-invalid='true'] {
+  border-color: var(--ink);
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.bag-coupon .button {
+  min-width: 92px;
+  min-height: 48px;
+  margin: 0;
+  padding-inline: 16px;
+}
+.bag-coupon > p,
+.bag-login-offer {
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+.bag-coupon .remove-link {
+  justify-self: start;
+}
+.bag-login-offer a {
+  display: inline-block;
+  margin-inline-start: 6px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.bag-discount-row {
+  font-weight: 700;
+}
+.bag-discount-row strong {
+  white-space: nowrap;
+}
 .summary-total {
   border-top: 1px solid var(--mist);
   margin-top: 16px;

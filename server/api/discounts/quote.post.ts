@@ -18,11 +18,13 @@ export default defineEventHandler(async (event) => {
   try {
     const database = requireDatabase(event)
     const user = await getCustomer(event)
-    const zone = await getStorefrontShippingRate(database, String(body?.shippingGovernorate || ''))
+    const governorate =
+      typeof body?.shippingGovernorate === 'string' ? body.shippingGovernorate.trim() : ''
+    const shipping = governorate ? (await getStorefrontShippingRate(database, governorate)).rate : 0
     const priced = priceOrder(
       body?.items,
       await getCatalog(getDatabase(event), import.meta.dev),
-      zone.rate,
+      shipping,
     )
     const discountCode = await resolveCustomerDiscountCode(database, {
       userId: user?.id,
