@@ -43,9 +43,19 @@ function increase(line: (typeof lines.value)[number]) {
             </option>
           </select>
         </label>
-        <span class="bag-unit-price"
-          >{{ t('Each', 'سعر القطعة') }}: {{ money(sizePrice(line.product, line.size)) }}</span
-        >
+        <div class="bag-unit-price">
+          {{ t('Each', 'سعر القطعة') }}:
+          <ProductPrice
+            :price="sizePrice(line.product, line.size)"
+            :compare-at-price="line.product.compareAtPrice"
+            compact
+          />
+        </div>
+        <WelcomePriceHint
+          :price="sizePrice(line.product, line.size)"
+          :product-slug="line.product.slug"
+          compact
+        />
         <strong
           >{{ t('Line total', 'إجمالي القطعة') }}:
           {{ money(sizePrice(line.product, line.size) * line.quantity) }}</strong

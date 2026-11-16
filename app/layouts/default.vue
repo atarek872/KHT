@@ -11,10 +11,22 @@ import {
   storeCurtainHttpStatus,
   type PublicStoreCurtainPayload,
 } from '#shared/storeCurtain'
+import type { PublicWelcomeCampaignResponse } from '#shared/welcomeCampaign'
 
 const { locale } = useLanguage()
 const catalog = useCatalog()
 const route = useRoute()
+const { user } = useCustomer()
+const { refresh: refreshWelcomeCampaign } = await useFetch<PublicWelcomeCampaignResponse>(
+  '/api/storefront/welcome-campaign',
+  { key: 'welcome-campaign' },
+)
+watch(
+  () => user.value?.id,
+  () => {
+    if (import.meta.client) void refreshWelcomeCampaign()
+  },
+)
 const { capture: captureCampaign } = useCampaignAttribution()
 watch(
   () => route.query,

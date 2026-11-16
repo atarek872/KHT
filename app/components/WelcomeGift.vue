@@ -129,6 +129,9 @@ onBeforeUnmount(() => {
     <p class="eyebrow">{{ localized(campaign.eyebrow) }}</p>
     <h2 :id="titleId">{{ localized(campaign.title) }}</h2>
     <p>{{ localized(campaign.body) }}</p>
+    <p v-if="campaign.discount.code === 'WELCOME10'" class="welcome-gift-code">
+      {{ t('Your code', 'كود الخصم') }} <strong>WELCOME10</strong>
+    </p>
     <div class="welcome-gift-actions">
       <NuxtLink
         :to="campaignRedirect(campaign.primaryRedirect)"

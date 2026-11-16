@@ -726,6 +726,56 @@ summary:focus-visible {
   max-width: 46%;
   justify-content: flex-end;
 }
+.welcome-price-hint {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 3px 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--mist);
+  color: var(--ink);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+.welcome-price-hint b {
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+.welcome-price-hint strong {
+  font-weight: 700;
+  white-space: nowrap;
+}
+.welcome-price-hint a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-weight: 600;
+}
+.welcome-price-hint small {
+  flex-basis: 100%;
+  color: var(--description);
+  font-size: 0.7rem;
+}
+.welcome-price-hint--compact {
+  margin-top: 8px;
+  padding-top: 7px;
+  font-size: 0.72rem;
+}
+.bag-unit-price .product-price-display {
+  white-space: normal;
+}
+.welcome-gift-code {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 7px 12px;
+  border: 1px solid var(--ink);
+  font-size: 0.875rem;
+}
+.welcome-gift-code strong {
+  letter-spacing: 0.06em;
+}
 .collection-footnote {
   display: flex;
   justify-content: space-between;
@@ -2753,6 +2803,12 @@ thead {
   font-size: 0.75rem;
   margin-top: 8px;
 }
+.checkout-line > div > .product-price-display {
+  display: inline-flex;
+  margin-top: 4px;
+  color: var(--ink);
+  white-space: normal;
+}
 .checkout-line > span {
   font-size: 0.75rem;
   white-space: nowrap;
@@ -4405,12 +4461,25 @@ a {
   font-size: 0.82rem;
   letter-spacing: 0.03em;
 }
-.hero-shop-price span {
+.hero-shop-price > span {
   color: var(--muted);
 }
-.hero-shop-price strong {
+.hero-shop-price .product-price-display__current {
   font-size: 1.12rem;
   font-weight: 600;
+  color: var(--white);
+}
+.hero-shop-price .product-price-display__discount {
+  border-color: var(--white);
+}
+.hero-shop-price .welcome-price-hint {
+  flex-basis: 100%;
+  margin-top: 0;
+  border-color: rgb(255 255 255 / 0.35);
+  color: var(--white);
+}
+.hero-shop-price .welcome-price-hint small {
+  color: var(--muted);
 }
 .hero-actions {
   display: flex;

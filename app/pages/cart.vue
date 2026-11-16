@@ -3,6 +3,7 @@ import { setSavingsForLines } from '#shared/setOffer'
 import type { OrderQuote } from '#shared/discount'
 import type { PublicWelcomeCampaign } from '#shared/welcomeCampaign'
 import { discountErrorArabic } from '#shared/discountErrors'
+import { firstOrderWelcomePrice } from '#shared/welcomePrice'
 const { t, money } = useLanguage()
 const { count, total, lines, recover, flush } = useBag()
 const { user } = useCustomer()
@@ -20,6 +21,7 @@ const { data: welcomeCampaignData } = await useFetch<{ campaign: PublicWelcomeCa
   { key: 'welcome-campaign' },
 )
 const welcomeCampaign = computed(() => welcomeCampaignData.value?.campaign || null)
+const guestWelcomePrice = computed(() => firstOrderWelcomePrice(total.value, welcomeCampaign.value))
 const quotedSubtotal = computed(() => quote.value?.subtotal ?? total.value)
 const discountedSubtotal = computed(() => quotedSubtotal.value - (quote.value?.discount || 0))
 
@@ -168,14 +170,18 @@ useSeoMeta({ title: () => t('Your bag — KHT', 'سلتك — KHT') })
             {{ t('Remove code', 'إزالة الكود') }}
           </button>
         </form>
-        <p v-if="!user && welcomeCampaign?.loginRequired" class="bag-login-offer">
+        <p v-if="!user && guestWelcomePrice !== null" class="bag-login-offer">
+          <b>WELCOME10</b> · {{ t('First signed-in order:', 'أول طلب بعد تسجيل حساب:') }}
+          <strong>{{ money(guestWelcomePrice) }}</strong>
           {{
             t(
-              'First-order offer? Sign in to check your eligibility and see the exact saving here.',
-              'عندك عرض أول طلب؟ سجّل دخولك علشان نتحقق منه ونظهر قيمة الخصم هنا.',
+              'before delivery, if eligible. Your exact total is confirmed at checkout.',
+              'قبل الشحن، إذا كنت مؤهلاً. الإجمالي النهائي يتأكد عند إتمام الطلب.',
             )
           }}
-          <NuxtLink to="/account/login?returnTo=/cart">{{ t('Sign in', 'تسجيل الدخول') }}</NuxtLink>
+          <NuxtLink to="/account/register?returnTo=/cart">{{
+            t('Create account', 'اعمل حساب')
+          }}</NuxtLink>
         </p>
         <div class="summary-row muted">
           <span>{{ t('Delivery', 'التوصيل') }}</span

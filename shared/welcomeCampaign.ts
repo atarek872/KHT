@@ -44,7 +44,18 @@ export interface PublicWelcomeCampaign {
   loginRequired: boolean
   oncePerCustomer: boolean
   firstOrderOnly: boolean
-  discount: { type: DiscountType; value: number }
+  discount: {
+    code: string
+    type: DiscountType
+    value: number
+    minimumOrder: number | null
+    maximumDiscount: number | null
+  }
+}
+
+export interface PublicWelcomeCampaignResponse {
+  campaign: PublicWelcomeCampaign | null
+  eligibleForSignedInCustomer: boolean | null
 }
 
 export interface WelcomeCampaignAdminPayload {

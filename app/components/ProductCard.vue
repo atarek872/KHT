@@ -26,7 +26,13 @@ const { t, localized } = useLanguage()
         ><span class="product-code">{{ product.code }}</span
         ><span class="product-color">{{ t('Black / White', 'أسود / أبيض') }}</span>
       </div>
-      <ProductPrice :price="startingPrice(product)" :compare-at-price="product.compareAtPrice" :from="hasSizePriceRange(product)" compact />
+      <ProductPrice
+        :price="startingPrice(product)"
+        :compare-at-price="product.compareAtPrice"
+        :from="hasSizePriceRange(product)"
+        compact
+      />
     </div>
+    <WelcomePriceHint :price="startingPrice(product)" :product-slug="product.slug" compact />
   </article>
 </template>

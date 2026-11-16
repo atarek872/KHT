@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { firstOrderWelcomePrice } from '#shared/welcomePrice'
 import type { StorefrontOrderConfirmation } from '../../shared/storefrontOrder'
 import type { OrderQuote } from '../../shared/discount'
 import type { ShippingZone } from '../../shared/shipping'
@@ -120,6 +121,7 @@ const { data: checkoutOptions } = await useFetch<{ paymentMethods: string[] }>(
 )
 const codAvailable = computed(() => checkoutOptions.value?.paymentMethods.includes('cod') ?? false)
 const welcomeCampaign = computed(() => welcomeCampaignData.value?.campaign || null)
+const guestWelcomePrice = computed(() => firstOrderWelcomePrice(total.value, welcomeCampaign.value))
 const shippingOptions = computed(() => shippingData.value?.items || [])
 const selectedShipping = computed(() =>
   shippingOptions.value.find((option) => option.governorate === form.value.governorate),
@@ -875,11 +877,18 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
                 </p>
               </div>
             </details>
-            <p v-if="!user && welcomeCampaign?.loginRequired" class="checkout-guest-note">
-              {{ t('Want the first-order offer?', 'عاوز عرض أول طلب؟') }}
-              <NuxtLink :to="campaignRedirect(welcomeCampaign.primaryRedirect)">{{
-                t('Create an account (optional)', 'أنشئ حسابًا (اختياري)')
-              }}</NuxtLink>
+            <p v-if="!user && guestWelcomePrice !== null" class="checkout-guest-note">
+              <b>WELCOME10</b> · {{ t('First signed-in order:', 'أول طلب بعد تسجيل حساب:') }}
+              <strong>{{ money(guestWelcomePrice) }}</strong>
+              {{ t('before delivery, if eligible.', 'قبل الشحن، إذا كنت مؤهلاً.') }}
+              <NuxtLink
+                :to="
+                  campaignRedirect(
+                    welcomeCampaign?.primaryRedirect || '/account/register?returnTo={current}',
+                  )
+                "
+                >{{ t('Create an account (optional)', 'أنشئ حسابًا (اختياري)') }}</NuxtLink
+              >
             </p>
             <details class="checkout-optional" :open="Boolean(form.notes)">
               <summary>
@@ -965,6 +974,11 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
               <div>
                 <strong>{{ localized(line.product.name) }}</strong
                 ><span>{{ line.size }} / {{ t('Qty', 'الكمية') }} {{ line.quantity }}</span>
+                <ProductPrice
+                  :price="sizePrice(line.product, line.size)"
+                  :compare-at-price="line.product.compareAtPrice"
+                  compact
+                />
               </div>
               <span>{{ money(line.quantity * sizePrice(line.product, line.size)) }}</span>
             </div>

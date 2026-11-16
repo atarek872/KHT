@@ -215,6 +215,14 @@ export async function getPublicWelcomeCampaign(
 ): Promise<PublicWelcomeCampaign | null> {
   const campaign = await getWelcomeCampaign(database)
   if (!campaign.enabled || !campaign.discount?.active) return null
+  const now = Date.now()
+  if (
+    (campaign.discount.validFrom && now < new Date(campaign.discount.validFrom).getTime()) ||
+    (campaign.discount.validUntil && now > new Date(campaign.discount.validUntil).getTime()) ||
+    (campaign.discount.usageLimit != null &&
+      campaign.discount.currentUsage >= campaign.discount.usageLimit)
+  )
+    return null
   return {
     enabled: true,
     revision: `${campaign.updatedAt}:${campaign.discount.updatedAt}`,
@@ -233,6 +241,12 @@ export async function getPublicWelcomeCampaign(
     loginRequired: campaign.discount.loginRequired,
     oncePerCustomer: campaign.discount.oncePerCustomer,
     firstOrderOnly: campaign.discount.firstOrderOnly,
-    discount: { type: campaign.discount.type, value: campaign.discount.value },
+    discount: {
+      code: campaign.discount.code,
+      type: campaign.discount.type,
+      value: campaign.discount.value,
+      minimumOrder: campaign.discount.minimumOrder ?? null,
+      maximumDiscount: campaign.discount.maximumDiscount ?? null,
+    },
   }
 }

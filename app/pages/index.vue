@@ -10,7 +10,7 @@ import { hasSizePriceRange, startingPrice } from '#shared/productPricing'
 import type { Product } from '#shared/types'
 import type { PublicWelcomeCampaign } from '#shared/welcomeCampaign'
 
-const { locale, t, localized, money } = useLanguage()
+const { locale, t, localized } = useLanguage()
 const catalog = useCatalog()
 const storeContent = useStoreContent()
 const page = computed(() => storeContent.value.pages.home)
@@ -177,7 +177,12 @@ useStoreSeo({
         </p>
         <div v-if="shopping.heroShowPrice && heroProduct" class="hero-shop-price">
           <span>{{ t(shopping.heroPricePrefix.en, shopping.heroPricePrefix.ar) }}</span>
-          <strong>{{ money(startingPrice(heroProduct)) }}</strong>
+          <ProductPrice
+            :price="startingPrice(heroProduct)"
+            :compare-at-price="heroProduct.compareAtPrice"
+            :from="hasSizePriceRange(heroProduct)"
+          />
+          <WelcomePriceHint :price="startingPrice(heroProduct)" :product-slug="heroProduct.slug" />
         </div>
         <p v-if="featuredOffer" class="hero-set-saving">{{ featuredOffer }}</p>
         <div class="hero-actions">
@@ -270,14 +275,24 @@ useStoreSeo({
             <p>{{ t(card.body.en, card.body.ar) }}</p>
             <span class="look-card__code">{{ product.code }}</span>
             <div class="look-card__bottom">
-              <span v-if="card.showPrice" class="look-card__price"
-                >{{ hasSizePriceRange(product) ? t('From', 'من') + ' ' : ''
-                }}{{ money(startingPrice(product)) }}</span
-              >
+              <ProductPrice
+                v-if="card.showPrice"
+                class="look-card__price"
+                :price="startingPrice(product)"
+                :compare-at-price="product.compareAtPrice"
+                :from="hasSizePriceRange(product)"
+                compact
+              />
               <NuxtLink :to="cardDestination(card, product)" class="text-link"
                 >{{ t(card.ctaLabel.en, card.ctaLabel.ar) }}<KhtIcon name="arrow"
               /></NuxtLink>
             </div>
+            <WelcomePriceHint
+              v-if="card.showPrice"
+              :price="startingPrice(product)"
+              :product-slug="product.slug"
+              compact
+            />
           </div>
         </article>
       </div>

@@ -304,6 +304,7 @@ useStoreSeo({
             :compare-at-price="product.compareAtPrice"
             :from="priceStartsAt"
           />
+          <WelcomePriceHint :price="displayedPrice" :product-slug="product.slug" compact />
         </div>
         <button
           class="product-main-image"
@@ -381,6 +382,7 @@ useStoreSeo({
           :compare-at-price="product.compareAtPrice"
           :from="priceStartsAt"
         />
+        <WelcomePriceHint :price="displayedPrice" :product-slug="product.slug" />
         <p v-if="setSaving" class="set-saving">
           {{
             t(
@@ -745,7 +747,14 @@ useStoreSeo({
           :compare-at-price="product.compareAtPrice"
           :from="priceStartsAt"
           compact
-        /><small>{{
+        />
+        <WelcomePriceHint
+          :price="displayedPrice"
+          :product-slug="product.slug"
+          compact
+          :link="false"
+        />
+        <small>{{
           selectedSize
             ? `${t('Size', 'المقاس')}: ${selectedSize}`
             : t('Select size', 'اختار المقاس')
