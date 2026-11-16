@@ -1569,6 +1569,187 @@ summary:focus-visible {
   font-size: 0.875rem;
   gap: 20px;
 }
+.size-heading__actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px 18px;
+}
+.size-finder-trigger {
+  min-height: 44px;
+  padding: 8px 16px;
+  border: 1px solid var(--ink);
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: var(--off-white);
+  color: var(--ink);
+  transition:
+    background 180ms ease,
+    color 180ms ease;
+}
+.size-finder-trigger:hover {
+  background: var(--ink);
+  color: var(--white);
+}
+.size-finder-dialog .panel-content {
+  gap: 0;
+}
+.size-finder__intro {
+  color: var(--description);
+  line-height: 1.65;
+  margin-bottom: 26px;
+}
+.size-finder__inputs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.size-finder__inputs label {
+  display: grid;
+  gap: 9px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.size-finder__inputs input {
+  width: 100%;
+  min-width: 0;
+  min-height: 52px;
+  padding: 12px 14px;
+  border: 1px solid var(--description);
+  background: var(--white);
+  color: var(--ink);
+  font-size: 1rem;
+}
+.size-finder__inputs input:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.size-finder__help,
+.size-finder__disclaimer {
+  color: var(--description);
+  font-size: 0.75rem;
+  line-height: 1.6;
+}
+.size-finder__help {
+  margin-top: 12px;
+}
+.size-finder__result {
+  display: grid;
+  gap: 12px;
+  margin-top: 25px;
+  padding: 22px;
+  border: 1px solid var(--ink);
+  background: var(--white);
+}
+.size-finder__result strong {
+  font-family: var(--display);
+  font-size: clamp(30px, 7vw, 42px);
+  line-height: 1.1;
+}
+.size-finder__result strong b {
+  display: inline-block;
+  padding-inline: 8px;
+  background: var(--ink);
+  color: var(--white);
+}
+.size-finder__result p {
+  color: var(--description);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+.size-finder__result .button {
+  margin-top: 6px;
+}
+.size-finder__preference {
+  display: grid;
+  gap: 10px;
+  margin-top: 4px;
+  padding: 0;
+  border: 0;
+}
+.size-finder__preference legend {
+  margin-bottom: 12px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.size-finder__preference label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 9px 12px;
+  border: 1px solid var(--mist);
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+.size-finder__preference label:has(input:checked) {
+  border-color: var(--ink);
+}
+.size-finder__preference input {
+  accent-color: var(--ink);
+}
+.size-finder__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 20px;
+  margin: 20px 0 16px;
+}
+.size-finder__disclaimer {
+  padding-top: 16px;
+  border-top: 1px solid var(--mist);
+}
+@media (max-width: 767px) {
+  .size-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .size-heading__actions {
+    justify-content: flex-start;
+  }
+  .overlay-panel.size-finder-dialog,
+  [dir='rtl'] .overlay-panel.size-finder-dialog {
+    inset: auto 0 0;
+    width: 100vw;
+    height: auto;
+    max-height: 90dvh;
+    border-top: 4px solid var(--ink);
+  }
+  .overlay-panel.size-finder-dialog[open],
+  [dir='rtl'] .overlay-panel.size-finder-dialog[open] {
+    animation: size-finder-in 220ms ease-out;
+  }
+  .size-finder-dialog .panel-content {
+    padding: 20px 22px max(26px, env(safe-area-inset-bottom));
+  }
+  .size-finder__result {
+    padding: 18px;
+  }
+}
+@media (max-width: 380px) {
+  .size-finder__inputs {
+    grid-template-columns: 1fr;
+  }
+}
+@keyframes size-finder-in {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .overlay-panel.size-finder-dialog[open] {
+    animation: none;
+  }
+  .size-finder-trigger {
+    transition: none;
+  }
+}
 .size-options {
   display: grid;
   grid-template-columns: repeat(5, 1fr);

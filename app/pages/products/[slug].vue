@@ -4,6 +4,7 @@ import { hasSizePriceRange, sizePrice, startingPrice } from '#shared/productPric
 import { DEFAULT_HOME_SHOPPING } from '#shared/storeContent'
 import { useStoreContact } from '#shared/storeConfig'
 import { fullSetDiscountPercent } from '#shared/setOffer'
+import type { KhtSetSize } from '#shared/sizeRecommendation'
 import type { ProductReviewResponse } from '#shared/productReview'
 
 const route = useRoute()
@@ -100,6 +101,13 @@ const fullSet = computed(() =>
       DEFAULT_HOME_SHOPPING.cards.find((card) => card.id === 'full-look')?.productSlug,
   ),
 )
+const showSizeFinder = computed(() => product.value?.id === fullSet.value?.id)
+const finderAvailableSizes = computed(
+  () =>
+    product.value?.sizes
+      .filter((size) => size.stock > 0 && (size.name === 'M' || size.name === 'L'))
+      .map((size) => size.name) || [],
+)
 const setSaving = computed(() =>
   product.value?.id === fullSet.value?.id
     ? fullSetDiscountPercent(catalog.value, selectedSize.value || undefined)
@@ -113,6 +121,10 @@ const message = ref('')
 const zoom = ref(false)
 const actualSize = ref(true)
 const sizeGuide = ref(false)
+const sizeFinderOpen = ref(false)
+const sizingAssistanceUrl = computed(
+  () => contact.value.whatsappHref || brand.value.instagramUrl || '/contact',
+)
 const activeInfoTab = ref<'fit' | 'care' | 'delivery' | 'returns'>('fit')
 function moveInfoTab(event: KeyboardEvent) {
   const tabs = ['fit', 'care', 'delivery', 'returns'] as const
@@ -131,6 +143,16 @@ const buying = ref(false)
 function selectSize(size: string) {
   selectedSize.value = size
   message.value = ''
+}
+function applyFinderSize(size: KhtSetSize) {
+  if (!finderAvailableSizes.value.includes(size)) return
+  selectSize(size)
+  sizeFinderOpen.value = false
+}
+async function showSizeGuideFromFinder() {
+  sizeFinderOpen.value = false
+  await nextTick()
+  sizeGuide.value = true
 }
 function moveImage(direction: number) {
   if (productImages.value.length < 2) return
@@ -381,9 +403,20 @@ useStoreSeo({
             <span
               >{{ t('Select size', 'اختار مقاسك')
               }}<b v-if="selectedSize"> / {{ selectedSize }}</b></span
-            ><button class="remove-link" @click="sizeGuide = true">
-              {{ t('Size guide', 'دليل المقاسات') }}
-            </button>
+            >
+            <div class="size-heading__actions">
+              <button
+                v-if="showSizeFinder"
+                type="button"
+                class="size-finder-trigger"
+                @click="sizeFinderOpen = true"
+              >
+                {{ t('Find my size', 'اختار مقاسي') }}
+              </button>
+              <button type="button" class="remove-link" @click="sizeGuide = true">
+                {{ t('Size guide', 'دليل المقاسات') }}
+              </button>
+            </div>
           </div>
           <div class="size-options" role="group" :aria-label="t('Size', 'المقاس')">
             <button
@@ -733,6 +766,15 @@ useStoreSeo({
       @close="sizeGuide = false"
       ><SizeGuideContent
     /></OverlayPanel>
+    <SizeFinder
+      v-if="showSizeFinder"
+      :open="sizeFinderOpen"
+      :available-sizes="finderAvailableSizes"
+      :assistance-url="sizingAssistanceUrl"
+      @close="sizeFinderOpen = false"
+      @select="applyFinderSize"
+      @guide="showSizeGuideFromFinder"
+    />
     <OverlayPanel :open="zoom" :title="localized(product.name)" wide @close="zoom = false"
       ><div class="zoom-toolbar">
         <p>{{ t('Scroll to explore the details.', 'مرّر الصورة لاستكشاف التفاصيل.') }}</p>

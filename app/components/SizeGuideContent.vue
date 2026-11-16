@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { SIZE_FINDER_CONFIG, type KhtSetSize } from '#shared/sizeRecommendation'
 const { t } = useLanguage()
+const sizes: KhtSetSize[] = ['M', 'L']
 </script>
 <template>
   <div class="size-guide-content">
@@ -27,15 +29,10 @@ const { t } = useLanguage()
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <th scope="row">M</th>
-            <td>72</td>
-            <td>67</td>
-          </tr>
-          <tr>
-            <th scope="row">L</th>
-            <td>76</td>
-            <td>72</td>
+          <tr v-for="size in sizes" :key="size">
+            <th scope="row">{{ size }}</th>
+            <td>{{ SIZE_FINDER_CONFIG.sizes[size].garment.hoodieLengthCm }}</td>
+            <td>{{ SIZE_FINDER_CONFIG.sizes[size].garment.hoodieFlatWidthCm }}</td>
           </tr>
         </tbody>
       </table>
@@ -57,21 +54,26 @@ const { t } = useLanguage()
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <th scope="row">M</th>
-            <td>100</td>
-            <td>52</td>
-            <td>104</td>
-          </tr>
-          <tr>
-            <th scope="row">L</th>
-            <td>100</td>
-            <td>56</td>
-            <td>112</td>
+          <tr v-for="size in sizes" :key="size">
+            <th scope="row">{{ size }}</th>
+            <td>{{ SIZE_FINDER_CONFIG.sizes[size].garment.pantsLengthCm }}</td>
+            <td>
+              {{ SIZE_FINDER_CONFIG.sizes[size].garment.listedPantsWaistCircumferenceCm / 2 }}
+            </td>
+            <td>{{ SIZE_FINDER_CONFIG.sizes[size].garment.listedPantsWaistCircumferenceCm }}</td>
           </tr>
         </tbody>
       </table>
     </div>
+
+    <p>
+      {{
+        t(
+          'The listed pants waist is a garment measurement; it does not identify the relaxed elastic waist or maximum stretch.',
+          'مقاس وسط البنطلون المعروض مقاس للقطعة، وليس قياس الوسط في وضع الأستك المرتاح أو أقصى تمدد له.',
+        )
+      }}
+    </p>
 
     <p>
       {{
