@@ -40,9 +40,9 @@ const PRIVATE_PATH_PREFIXES = [
 ]
 
 export function absoluteStoreUrl(value = '/') {
-  return new URL(value || '/', `${STORE_ORIGIN}/`).toString().replace(/\/$/, (slash) =>
-    value === '/' || value === '' ? slash : '',
-  )
+  return new URL(value || '/', `${STORE_ORIGIN}/`)
+    .toString()
+    .replace(/\/$/, (slash) => (value === '/' || value === '' ? slash : ''))
 }
 
 export function canonicalStoreRedirect(url: URL) {
@@ -81,10 +81,14 @@ function sitemapUrl(path: string, image?: string, imageTitle?: string) {
   return `<url><loc>${escapeXml(absoluteStoreUrl(path))}</loc>${media}</url>`
 }
 
-export function buildSitemapXml(catalog: Catalog) {
+export function buildSitemapXml(catalog: Catalog, includeFaq = true) {
   const urls = [
-    ...INDEXABLE_STATIC_PATHS.map((path) =>
-      sitemapUrl(path, path === '/' ? '/images/campaign.png' : undefined, path === '/' ? 'KHT Drop 001' : undefined),
+    ...INDEXABLE_STATIC_PATHS.filter((path) => includeFaq || path !== '/faq').map((path) =>
+      sitemapUrl(
+        path,
+        path === '/' ? '/images/campaign.png' : undefined,
+        path === '/' ? 'KHT Drop 001' : undefined,
+      ),
     ),
     ...catalog.categories.map((category) =>
       sitemapUrl(`/categories/${category.slug}`, category.image, category.name.en),

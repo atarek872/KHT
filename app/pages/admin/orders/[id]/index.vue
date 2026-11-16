@@ -2,7 +2,9 @@
 import type {
   AdminOrderDetailResponse,
   OrderFulfillmentStatus,
+  OrderSource,
 } from '../../../../../shared/adminOrder'
+import { ORDER_SOURCES } from '#shared/adminOrder'
 import AdminConfirmDialog from '../../../../components/admin/AdminConfirmDialog.vue'
 import OrderStatus from '../../../../components/admin/orders/OrderStatus.vue'
 
@@ -17,6 +19,34 @@ const mutationBusy = ref(false)
 const activeMutation = ref<OrderFulfillmentStatus | 'restock' | null>(null)
 const mutationError = ref('')
 const mutationSuccess = ref('')
+const sourceBusy = ref(false)
+const sourceDraft = ref<OrderSource>('website')
+watch(
+  order,
+  (value) => {
+    if (value) sourceDraft.value = value.source
+  },
+  { immediate: true },
+)
+async function saveSource() {
+  if (!order.value || sourceBusy.value || sourceDraft.value === order.value.source) return
+  sourceBusy.value = true
+  mutationError.value = ''
+  mutationSuccess.value = ''
+  try {
+    await $fetch(`/api/admin/orders/${encodeURIComponent(orderId.value)}/source`, {
+      method: 'PATCH',
+      body: { source: sourceDraft.value },
+    })
+    await refresh()
+    mutationSuccess.value = 'Order source updated.'
+  } catch (cause: unknown) {
+    const failure = cause as { data?: { statusMessage?: string } }
+    mutationError.value = failure.data?.statusMessage || 'Could not update order source.'
+  } finally {
+    sourceBusy.value = false
+  }
+}
 const deleteDialogOpen = ref(false)
 const deleteBusy = ref(false)
 const deleteError = ref('')
@@ -81,7 +111,8 @@ async function updateStatus(nextStatus: OrderFulfillmentStatus) {
       body: { fulfillmentStatus: nextStatus },
     })
     await refresh()
-    mutationSuccess.value = `Order moved to ${statusLabel(nextStatus)}.`
+    if (import.meta.client) reloadNuxtApp({ force: true })
+    else mutationSuccess.value = `Order moved to ${statusLabel(nextStatus)}.`
   } catch (cause: unknown) {
     const failure = cause as { data?: { statusMessage?: string } }
     mutationError.value =
@@ -236,6 +267,24 @@ useSeoMeta({
         </div>
       </div>
 
+      <div class="admin-order-source-editor">
+        <label for="order-source">Order source</label>
+        <select id="order-source" v-model="sourceDraft" :disabled="sourceBusy">
+          <option v-for="source in ORDER_SOURCES" :key="source" :value="source">
+            {{ statusLabel(source) }}
+          </option>
+        </select>
+        <AdminButton
+          type="button"
+          variant="secondary"
+          :disabled="sourceBusy || sourceDraft === order.source"
+          :loading="sourceBusy"
+          @click="saveSource"
+          >Save source</AdminButton
+        >
+        <p>Correct the sales channel at any time. Campaign tracking stays unchanged.</p>
+      </div>
+
       <div class="admin-order-detail__grid">
         <div class="admin-order-detail__main">
           <AdminSection title="Products" description="Exact variants and quantities in this order.">
@@ -325,6 +374,10 @@ useSeoMeta({
                   </strong>
                   <strong v-else-if="event.eventType === 'inventory_restocked'">
                     Returned items restocked
+                  </strong>
+                  <strong v-else-if="event.eventType === 'source_changed'">
+                    Source: {{ statusLabel(event.fromValue || 'unknown') }} →
+                    {{ statusLabel(event.toValue || 'unknown') }}
                   </strong>
                   <strong v-else>Order created</strong>
                   <p v-if="event.note">{{ event.note }}</p>

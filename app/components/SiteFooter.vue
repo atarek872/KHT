@@ -14,11 +14,19 @@ const contact = computed(() =>
 )
 const collectionLinks = computed(() =>
   storeContent.value.navigation.filter(
-    (item) => item.enabled && item.footerColumn === 'collection',
+    (item) =>
+      item.enabled &&
+      item.footerColumn === 'collection' &&
+      (item.href !== '/faq' || storeContent.value.faqEnabled),
   ),
 )
 const careLinks = computed(() =>
-  storeContent.value.navigation.filter((item) => item.enabled && item.footerColumn === 'care'),
+  storeContent.value.navigation.filter(
+    (item) =>
+      item.enabled &&
+      item.footerColumn === 'care' &&
+      (item.href !== '/faq' || storeContent.value.faqEnabled),
+  ),
 )
 </script>
 <template>
@@ -49,6 +57,11 @@ const careLinks = computed(() =>
         <NuxtLink v-for="item in careLinks" :key="item.id" :to="item.href">{{
           t(item.label.en, item.label.ar)
         }}</NuxtLink>
+        <NuxtLink
+          v-if="storeContent.faqEnabled && !careLinks.some((item) => item.href === '/faq')"
+          to="/faq"
+          >{{ t('FAQ', 'الأسئلة الشائعة') }}</NuxtLink
+        >
         <a v-if="contact.email" :href="contact.emailHref">{{ contact.email }}</a>
         <a v-if="contact.phone" :href="contact.phoneHref" dir="ltr">{{ contact.phone }}</a>
         <a

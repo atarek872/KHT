@@ -343,6 +343,25 @@ useStoreSeo({
         /></NuxtLink>
       </div>
     </section>
+    <section
+      v-if="storeContent.faqEnabled && storeContent.pages.faq.sections.length"
+      class="home-faq"
+    >
+      <div class="section-heading">
+        <h2>{{ t('GOOD TO KNOW.', 'قبل ما تطلب.') }}</h2>
+        <NuxtLink to="/faq" class="text-link"
+          >{{ t('All questions', 'كل الأسئلة') }}<KhtIcon name="arrow"
+        /></NuxtLink>
+      </div>
+      <details
+        v-for="item in storeContent.pages.faq.sections.slice(0, 4)"
+        :key="item.id"
+        class="faq-item"
+      >
+        <summary>{{ localized(item.heading) }}<span aria-hidden="true">+</span></summary>
+        <p>{{ localized(item.body) }}</p>
+      </details>
+    </section>
     <section class="closing-campaign">
       <span class="closing-line" aria-hidden="true" />
       <div class="closing-copy">

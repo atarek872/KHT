@@ -41,7 +41,10 @@ test('SEO URL and JSON-LD helpers keep the custom domain canonical and output sa
   assert.equal(STORE_ORIGIN, 'https://kht-eg.com')
   assert.equal(absoluteStoreUrl('/products/line-hoodie'), `${STORE_ORIGIN}/products/line-hoodie`)
   assert.equal(absoluteStoreUrl('https://cdn.example/image.jpg'), 'https://cdn.example/image.jpg')
-  assert.equal(serializeJsonLd({ name: '</script><script>alert(1)</script>' }).includes('</script>'), false)
+  assert.equal(
+    serializeJsonLd({ name: '</script><script>alert(1)</script>' }).includes('</script>'),
+    false,
+  )
 })
 
 test('robots allows production discovery, blocks staging, and advertises the sitemap', () => {
@@ -80,7 +83,8 @@ test('sitemap contains only absolute canonical public catalog URLs', () => {
     '/products/line-hoodie',
     '/about',
     '/shipping',
-  ]) assert.match(sitemap, new RegExp(`<loc>${STORE_ORIGIN}${path.replace('/', '\\/')}`))
+  ])
+    assert.match(sitemap, new RegExp(`<loc>${STORE_ORIGIN}${path.replace('/', '\\/')}`))
   assert.doesNotMatch(sitemap, /search|cart|checkout|account|admin|workers\.dev/)
 })
 
@@ -101,7 +105,15 @@ test('Nuxt renders environment-aware robots defaults and reusable canonical meta
   assert.match(layout, /storeIndexingEnabled/)
   assert.match(layout, /context\.cloudflare/)
   assert.match(helpers, /max-image-preview:large/)
-  for (const path of ['/account', '/cart', '/checkout', '/orders', '/order-confirmation', '/track-order', '/search']) {
+  for (const path of [
+    '/account',
+    '/cart',
+    '/checkout',
+    '/orders',
+    '/order-confirmation',
+    '/track-order',
+    '/search',
+  ]) {
     assert.match(helpers, new RegExp(path.replace('/', '\\/')))
   }
   assert.match(composable, /rel:\s*'canonical'/)
@@ -137,7 +149,7 @@ test('public pages emit truthful store, product, offer, and breadcrumb data', ()
   assert.match(product, /priceCurrency:\s*'EGP'/)
   assert.match(product, /schema\.org\/(?:InStock|OutOfStock)/)
   assert.match(product, /breadcrumbList/)
-  assert.doesNotMatch(product, /aggregateRating|reviewRating/)
+  assert.match(product, /reviewCount\.value\s*\?\s*\{\s*aggregateRating/)
   assert.match(collection, /useStoreSeo/)
   assert.match(collection, /breadcrumbList/)
   assert.match(read('../shared/storefrontSeo.ts'), /'@type':\s*'BreadcrumbList'/)

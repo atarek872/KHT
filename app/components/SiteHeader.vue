@@ -7,7 +7,11 @@ const announcementMessages = computed(() => [
   t(brand.value.announcementCenter.en, brand.value.announcementCenter.ar),
   t(brand.value.announcementEnd.en, brand.value.announcementEnd.ar),
 ])
-const navigation = computed(() => storeContent.value.navigation.filter((item) => item.enabled))
+const navigation = computed(() =>
+  storeContent.value.navigation.filter(
+    (item) => item.enabled && (item.href !== '/faq' || storeContent.value.faqEnabled),
+  ),
+)
 const desktopNavigation = computed(() => navigation.value.filter((item) => item.desktop))
 const mobileMainNavigation = computed(() =>
   navigation.value.filter((item) => item.mobile && item.mobileSection === 'main'),

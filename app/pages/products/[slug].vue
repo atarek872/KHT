@@ -4,12 +4,66 @@ import { hasSizePriceRange, sizePrice, startingPrice } from '#shared/productPric
 import { DEFAULT_HOME_SHOPPING } from '#shared/storeContent'
 import { useStoreContact } from '#shared/storeConfig'
 import { fullSetDiscountPercent } from '#shared/setOffer'
+import type { ProductReviewResponse } from '#shared/productReview'
 
 const route = useRoute()
 const { t, localized, money, locale } = useLanguage()
 const catalog = useCatalog()
 const product = computed(() => catalog.value.products.find((p) => p.slug === route.params.slug))
 if (!product.value) throw createError({ statusCode: 404, statusMessage: 'Piece not found' })
+const { data: reviewData } = await useFetch<ProductReviewResponse>(
+  () => `/api/products/${encodeURIComponent(product.value!.id)}/reviews`,
+)
+const reviewCount = computed(() => reviewData.value?.count || 0)
+const reviewAverage = computed(() => reviewData.value?.average || 0)
+const reviewOpen = ref(false)
+const reviewBusy = ref(false)
+const reviewError = ref('')
+const reviewSuccess = ref('')
+const reviewForm = reactive({ reference: '', phone: '', displayName: '', rating: 5, body: '' })
+const productHighlights = computed(() => {
+  const details = localized(product.value!.detail)
+  const points = details
+    .split(/\r?\n|;\s*/)
+    .map((line) => line.replace(/^[•\-\s]+/, '').trim())
+    .filter(Boolean)
+  return points.slice(0, 6)
+})
+const productIntro = computed(() => localized(product.value!.description).split(/\n\s*\n/)[0] || '')
+async function submitReview() {
+  if (!product.value || reviewBusy.value) return
+  reviewBusy.value = true
+  reviewError.value = ''
+  reviewSuccess.value = ''
+  try {
+    await $fetch(`/api/products/${encodeURIComponent(product.value.id)}/reviews`, {
+      method: 'POST',
+      body: reviewForm,
+    })
+    reviewSuccess.value = t(
+      'Thank you. Your verified review is awaiting approval.',
+      'شكرًا لك. رأيك بعد التحقق في انتظار المراجعة قبل ظهوره.',
+    )
+    reviewOpen.value = false
+    reviewForm.body = ''
+  } catch (cause: unknown) {
+    const failure = cause as { data?: { statusMessage?: string } }
+    const message = failure.data?.statusMessage || ''
+    reviewError.value = message.includes('already exists')
+      ? t(
+          'This order already has a review for this product.',
+          'تم إرسال رأي لهذا المنتج من نفس الطلب بالفعل.',
+        )
+      : message.includes('delivered order')
+        ? t(
+            'Check the order number and phone. Reviews open after delivery.',
+            'تأكد من رقم الطلب والموبايل. الآراء متاحة بعد تسليم الطلب.',
+          )
+        : t('Check all fields and try again.', 'راجع البيانات وجرب تاني.')
+  } finally {
+    reviewBusy.value = false
+  }
+}
 const { trackViewItem, trackAddToCart } = useStoreAnalytics()
 watch(
   () => product.value?.id,
@@ -112,6 +166,9 @@ watch(
     selectedSize.value = ''
     selectedImageIndex.value = 0
     message.value = ''
+    reviewOpen.value = false
+    reviewError.value = ''
+    reviewSuccess.value = ''
   },
 )
 function promptSize() {
@@ -167,6 +224,15 @@ const structuredData = computed(() => {
         size: item.sizes.map((size) => size.name),
         category: category.value ? localized(category.value.name) : undefined,
         brand: { '@type': 'Brand', name: 'KHT' },
+        ...(reviewCount.value
+          ? {
+              aggregateRating: {
+                '@type': 'AggregateRating',
+                ratingValue: reviewAverage.value.toFixed(1),
+                reviewCount: reviewCount.value,
+              },
+            }
+          : {}),
         offers: {
           '@type': 'Offer',
           url: absoluteStoreUrl(canonicalPath.value),
@@ -283,6 +349,10 @@ useStoreSeo({
         <p class="eyebrow">DROP 001</p>
         <h1>{{ localized(product.name) }}</h1>
         <p class="detail-product-code">{{ product.code }}</p>
+        <a v-if="reviewCount" class="product-review-link" href="#product-reviews">
+          <span aria-hidden="true">★</span> {{ reviewAverage.toFixed(1) }} · {{ reviewCount }}
+          {{ t('verified reviews', 'تقييمات من مشترين') }}
+        </a>
         <ProductPrice
           class="detail-price"
           :price="displayedPrice"
@@ -297,7 +367,12 @@ useStoreSeo({
             )
           }}
         </p>
-        <p class="product-description">{{ localized(product.description) }}</p>
+        <div class="product-at-a-glance">
+          <p class="product-description">{{ productIntro }}</p>
+          <ul v-if="productHighlights.length">
+            <li v-for="point in productHighlights" :key="point">{{ point }}</li>
+          </ul>
+        </div>
         <div class="color-choice">
           <span class="color-swatch" /><span>{{ t('Black / White', 'أسود / أبيض') }}</span>
         </div>
@@ -515,6 +590,106 @@ useStoreSeo({
         </p>
       </div>
     </div>
+    <section id="product-reviews" class="product-reviews" aria-labelledby="product-reviews-title">
+      <div class="product-reviews__heading">
+        <div>
+          <p class="eyebrow">KHT / {{ t('CUSTOMER VOICE', 'آراء العملاء') }}</p>
+          <h2 id="product-reviews-title">{{ t('WORN. LOVED. SHARED.', 'من تجربة عملائنا.') }}</h2>
+          <p v-if="reviewCount" class="product-reviews__score">
+            <span aria-hidden="true">★</span> {{ reviewAverage.toFixed(1) }} / 5 · {{ reviewCount }}
+            {{ t('verified reviews', 'آراء مشترين') }}
+          </p>
+          <p v-else class="product-reviews__empty">
+            {{
+              t(
+                'No reviews published yet. Be the first buyer to share your experience after delivery.',
+                'مافيش آراء منشورة للمنتج لسه. بعد الاستلام تقدر تكون أول واحد يشارك تجربته.',
+              )
+            }}
+          </p>
+        </div>
+        <button
+          type="button"
+          class="button button-outline"
+          :aria-expanded="reviewOpen"
+          @click="reviewOpen = !reviewOpen"
+        >
+          {{ t('Write a review', 'اكتب رأيك') }}
+        </button>
+      </div>
+      <p v-if="reviewSuccess" role="status" class="product-reviews__success">{{ reviewSuccess }}</p>
+      <form v-if="reviewOpen" class="product-review-form" @submit.prevent="submitReview">
+        <p>
+          {{
+            t(
+              'For customers whose order has been delivered. Your display name and review will be public after approval; your phone and order number stay private.',
+              'لمن استلموا طلبهم. اسم العرض والرأي هيظهروا بعد المراجعة، ورقم الموبايل والطلب هيفضلوا خاصين.',
+            )
+          }}
+        </p>
+        <div class="product-review-form__grid">
+          <label
+            >{{ t('Order number', 'رقم الطلب')
+            }}<input v-model.trim="reviewForm.reference" required maxlength="80" autocomplete="off"
+          /></label>
+          <label
+            >{{ t('Order phone', 'موبايل الطلب')
+            }}<input
+              v-model.trim="reviewForm.phone"
+              required
+              type="tel"
+              inputmode="tel"
+              autocomplete="tel"
+          /></label>
+          <label
+            >{{ t('Name to display', 'الاسم اللي هيظهر')
+            }}<input
+              v-model.trim="reviewForm.displayName"
+              required
+              minlength="2"
+              maxlength="50"
+              autocomplete="nickname"
+          /></label>
+          <label
+            >{{ t('Rating', 'التقييم')
+            }}<select v-model.number="reviewForm.rating" required>
+              <option v-for="rating in [5, 4, 3, 2, 1]" :key="rating" :value="rating">
+                {{ rating }} / 5
+              </option>
+            </select></label
+          >
+        </div>
+        <label
+          >{{ t('Your experience', 'رأيك في المنتج')
+          }}<textarea
+            v-model.trim="reviewForm.body"
+            required
+            minlength="12"
+            maxlength="1000"
+            rows="4"
+          />
+        </label>
+        <p v-if="reviewError" role="alert" class="form-error">{{ reviewError }}</p>
+        <button type="submit" class="button button-dark" :disabled="reviewBusy">
+          {{ reviewBusy ? t('Sending…', 'جارٍ الإرسال…') : t('Send review', 'إرسال الرأي') }}
+        </button>
+      </form>
+      <div v-if="reviewData?.reviews.length" class="product-review-list">
+        <article v-for="review in reviewData.reviews" :key="review.id" class="product-review-card">
+          <p
+            class="review-stars"
+            :aria-label="`${review.rating} ${t('out of 5 stars', 'من ٥ نجوم')}`"
+          >
+            {{ '★'.repeat(review.rating) }}{{ '☆'.repeat(5 - review.rating) }}
+          </p>
+          <p>{{ review.body }}</p>
+          <div>
+            <strong>{{ review.displayName }}</strong
+            ><span>{{ t('Verified purchase', 'شراء موثّق') }}</span>
+          </div>
+        </article>
+      </div>
+    </section>
     <section class="related-section">
       <div class="section-heading">
         <h2>{{ t('SAME LINE. NEW FORM.', 'نفس الخط. شكل جديد.') }}</h2>

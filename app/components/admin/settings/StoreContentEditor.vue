@@ -10,7 +10,9 @@ import {
 } from '#shared/storeContent'
 import type { Catalog } from '#shared/types'
 
-const props = defineProps<{ view: 'brand' | 'navigation' | 'pages' | 'policy' | 'publishing' }>()
+const props = defineProps<{
+  view: 'brand' | 'navigation' | 'pages' | 'policy' | 'faq' | 'publishing'
+}>()
 const { data, error, status, refresh } = await useFetch<AdminStoreContentState>(
   '/api/admin/store-content',
 )
@@ -506,6 +508,62 @@ onBeforeUnmount(() => {
         </div>
         <AdminButton type="button" variant="quiet" @click="addNavigation"
           >Add navigation link</AdminButton
+        >
+      </AdminSection>
+    </template>
+
+    <template v-else-if="props.view === 'faq'">
+      <AdminSection
+        title="Frequently asked questions"
+        description="Write questions and answers in both languages. Publish to show them on the store."
+      >
+        <AdminCheckbox v-model="form.faqEnabled" label="Show FAQ on the storefront" />
+        <div class="admin-content-editor__list">
+          <article
+            v-for="(item, index) in form.pages.faq.sections"
+            :key="item.id"
+            class="admin-content-editor__card"
+          >
+            <header>
+              <strong>{{ index + 1 }} · {{ item.heading.en }}</strong>
+              <button type="button" @click="form.pages.faq.sections.splice(index, 1)">
+                Remove
+              </button>
+            </header>
+            <div class="admin-content-editor__grid">
+              <AdminInput
+                v-model="item.heading.en"
+                label="Question · English"
+                required
+                maxlength="220"
+              />
+              <AdminInput
+                v-model="item.heading.ar"
+                label="Question · Arabic"
+                required
+                maxlength="220"
+                dir="rtl"
+              />
+              <AdminTextarea v-model="item.body.en" label="Answer · English" required />
+              <AdminTextarea v-model="item.body.ar" label="Answer · Arabic" required dir="rtl" />
+            </div>
+          </article>
+        </div>
+        <AdminButton
+          type="button"
+          variant="quiet"
+          :disabled="form.pages.faq.sections.length >= 20"
+          @click="
+            form.pages.faq.sections.push({
+              id: `question-${Date.now()}`,
+              eyebrow: { en: '', ar: '' },
+              heading: { en: 'New question', ar: 'سؤال جديد' },
+              body: { en: '', ar: '' },
+              ctaLabel: { en: '', ar: '' },
+              ctaUrl: '/',
+            })
+          "
+          >Add question</AdminButton
         >
       </AdminSection>
     </template>

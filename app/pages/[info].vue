@@ -12,6 +12,8 @@ const slug = computed(() =>
 const allowed: StorePageKey[] = ['shipping', 'contact', 'faq', 'privacy', 'terms']
 if (!allowed.includes(slug.value as StorePageKey))
   throw createError({ statusCode: 404, statusMessage: 'Page not found' })
+if (slug.value === 'faq' && !storeContent.value.faqEnabled)
+  throw createError({ statusCode: 404, statusMessage: 'Page not found' })
 const page = computed(() => storeContent.value.pages[slug.value as StorePageKey])
 const brand = computed(() => storeContent.value.brand)
 const contact = computed(() =>
@@ -52,7 +54,15 @@ useStoreSeo({
       <h1>{{ t(page.hero.title.en, page.hero.title.ar) }}</h1>
     </template>
     <div class="info-body">
-      <section v-for="section in page.sections" :key="section.id">
+      <details
+        v-for="section in slug === 'faq' ? page.sections : []"
+        :key="section.id"
+        class="faq-item"
+      >
+        <summary>{{ localized(section.heading) }}<span aria-hidden="true">+</span></summary>
+        <p>{{ localized(section.body) }}</p>
+      </details>
+      <section v-for="section in slug === 'faq' ? [] : page.sections" :key="section.id">
         <p v-if="localized(section.eyebrow)" class="eyebrow">{{ localized(section.eyebrow) }}</p>
         <h2>{{ localized(section.heading) }}</h2>
         <p>{{ localized(section.body) }}</p>

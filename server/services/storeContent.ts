@@ -83,6 +83,8 @@ function safeImage(value: unknown, label: string, allowEmpty = true) {
 
 export function validateStoreContent(input: StorefrontContent) {
   if (!input || typeof input !== 'object') throw new Error('Store content is required.')
+  if (typeof input.faqEnabled !== 'boolean')
+    throw new Error('FAQ visibility must be enabled or disabled.')
   const brand = input.brand
   if (!brand || typeof brand !== 'object') throw new Error('Brand content is required.')
   requiredText(brand.name, 'Brand name', 80)
@@ -260,6 +262,7 @@ function parseContent(value: string) {
         DEFAULT_STORE_CONTENT.brand.announcementDurationSeconds
     if (!content.policyHighlights)
       content.policyHighlights = structuredClone(DEFAULT_STORE_CONTENT.policyHighlights)
+    if (typeof content.faqEnabled !== 'boolean') content.faqEnabled = false
     // Older published content predates the shoppable homepage. Preserve every existing edit.
     if (content.pages?.home && !('homeShopping' in content.pages.home)) {
       content.pages.home.homeShopping = structuredClone(DEFAULT_HOME_SHOPPING)

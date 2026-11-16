@@ -139,6 +139,7 @@ export type StorePolicyHighlights = {
 export type StorefrontContent = {
   brand: StoreBrandContent
   policyHighlights: StorePolicyHighlights
+  faqEnabled: boolean
   navigation: StoreNavigationItem[]
   pages: Record<StorePageKey, StorePageContent>
 }
@@ -250,6 +251,7 @@ export const DEFAULT_HOME_SHOPPING: HomeShoppingContent = {
 }
 
 export const DEFAULT_STORE_CONTENT: StorefrontContent = {
+  faqEnabled: false,
   brand: {
     name: 'KHT',
     logoUrl: null,

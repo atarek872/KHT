@@ -15,6 +15,7 @@ const settingsViews = [
   'navigation',
   'pages',
   'policy',
+  'faq',
   'publishing',
   'recovery',
 ] as const
@@ -238,6 +239,9 @@ onBeforeUnmount(() => {
         to="/admin/settings?section=policy"
         :aria-current="view === 'policy' ? 'page' : undefined"
         >Returns policy</NuxtLink
+      >
+      <NuxtLink to="/admin/settings?section=faq" :aria-current="view === 'faq' ? 'page' : undefined"
+        >FAQ</NuxtLink
       >
       <NuxtLink
         to="/admin/settings?section=publishing"

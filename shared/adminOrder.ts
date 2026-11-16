@@ -13,6 +13,16 @@ export type OrderFulfillmentStatus =
   | 'returned'
 export type OrderSource =
   'website' | 'instagram' | 'facebook' | 'tiktok' | 'whatsapp' | 'phone' | 'admin' | 'other'
+export const ORDER_SOURCES: OrderSource[] = [
+  'website',
+  'instagram',
+  'facebook',
+  'tiktok',
+  'whatsapp',
+  'phone',
+  'admin',
+  'other',
+]
 
 export interface AdminOrderCapabilities {
   search: boolean
