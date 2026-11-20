@@ -716,9 +716,9 @@ summary:focus-visible {
   font-weight: 600;
 }
 .product-price-display__discount {
-  padding: 1px 6px;
+  padding: 2px 7px;
   border: 1px solid var(--ink);
-  font-size: 0.625rem;
+  font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.04em;
 }
@@ -759,7 +759,7 @@ summary:focus-visible {
 .welcome-price-hint--compact {
   margin-top: 8px;
   padding-top: 7px;
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
 }
 .bag-unit-price .product-price-display {
   white-space: normal;
