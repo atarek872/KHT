@@ -195,6 +195,64 @@ test('a mixed-size order keeps both variants on the admin order used by the ship
   }
 })
 
+test('order overview counts all statuses and pending sizes independently of filtered rows', async () => {
+  const fixture = createTestD1()
+  try {
+    const migrationDirectory = new URL('../server/db/migrations/', import.meta.url)
+    for (const name of readdirSync(migrationDirectory)
+      .filter((file) => file.endsWith('.sql'))
+      .sort())
+      fixture.sqlite.exec(readFileSync(new URL(name, migrationDirectory), 'utf8'))
+    for (const [size, phone] of [
+      ['M', '01010000031'],
+      ['L', '01010000032'],
+    ] as const) {
+      await createStorefrontOrder(fixture.database, {
+        requestId: crypto.randomUUID(),
+        cartId: crypto.randomUUID(),
+        customer: {
+          name: `Test ${size}`,
+          phone,
+          address: '12 Test Street',
+          governorate: 'Cairo',
+          city: 'Cairo',
+        },
+        items: [{ id: 'kht-002', size, quantity: 1 }],
+        shippingGovernorate: 'Cairo',
+        paymentMethod: 'cod',
+      })
+    }
+    for (const next of ['confirmed', 'processing', 'shipped', 'out-for-delivery', 'delivered'])
+      fixture.sqlite
+        .prepare(
+          "UPDATE orders SET fulfillment_status=? WHERE customer_id=(SELECT id FROM customers WHERE name='Test L')",
+        )
+        .run(next)
+    const all = await listAdminOrders(fixture.database)
+    assert.equal(all.total, 2)
+    assert.equal(all.statusCounts.pending, 1)
+    assert.equal(all.statusCounts.delivered, 1)
+    assert.equal(
+      all.inventory.find((item) => item.category === 'sets' && item.size === 'M')?.pendingQuantity,
+      1,
+    )
+    assert.equal(
+      all.inventory.find((item) => item.category === 'sets' && item.size === 'L')?.pendingQuantity,
+      0,
+    )
+    const filtered = await listAdminOrders(fixture.database, { status: 'delivered' })
+    assert.equal(filtered.total, 1)
+    assert.equal(filtered.items[0]?.fulfillmentStatus, 'delivered')
+    assert.deepEqual(filtered.statusCounts, all.statusCounts)
+    const searched = await listAdminOrders(fixture.database, { q: 'Test M', status: 'delivered' })
+    assert.equal(searched.total, 0)
+    assert.equal(searched.availability, 'available')
+    assert.equal(searched.items.length, 0)
+  } finally {
+    fixture.close()
+  }
+})
+
 test('shipping label reserves visible room for product rows and prints after rendering', () => {
   const label = read('../app/pages/admin/orders/[id]/print.vue')
   assert.match(label, /v-for="line in order\.lines"/)

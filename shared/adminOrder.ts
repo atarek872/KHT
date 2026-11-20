@@ -11,6 +11,16 @@ export type OrderFulfillmentStatus =
   | 'delivered'
   | 'cancelled'
   | 'returned'
+export const ORDER_FULFILLMENT_STATUSES: OrderFulfillmentStatus[] = [
+  'pending',
+  'confirmed',
+  'processing',
+  'shipped',
+  'out-for-delivery',
+  'delivered',
+  'cancelled',
+  'returned',
+]
 export type OrderSource =
   'website' | 'instagram' | 'facebook' | 'tiktok' | 'whatsapp' | 'phone' | 'admin' | 'other'
 export const ORDER_SOURCES: OrderSource[] = [
@@ -91,6 +101,27 @@ export interface AdminOrderListResponse {
   capabilities: AdminOrderCapabilities
   items: AdminOrderSummary[]
   total: number
+  page: number
+  pageSize: number
+  statusCounts: Record<OrderFulfillmentStatus, number>
+  inventory: AdminOrderInventoryRow[]
+}
+
+export interface AdminOrderInventoryRow {
+  id: string
+  productName: string
+  category: string
+  size: string
+  color: string
+  stock: number
+  pendingQuantity: number
+  openQuantity: number
+}
+
+export interface AdminOrderFilters {
+  status?: OrderFulfillmentStatus
+  q?: string
+  page?: number
 }
 
 export interface AdminOrderDetailResponse {

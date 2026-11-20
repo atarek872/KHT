@@ -1,12 +1,85 @@
 <script setup lang="ts">
-import type { AdminOrderListResponse, AdminOrderSummary } from '../../../../shared/adminOrder'
+import type {
+  AdminOrderListResponse,
+  AdminOrderSummary,
+  OrderFulfillmentStatus,
+} from '../../../../shared/adminOrder'
+import { ORDER_FULFILLMENT_STATUSES } from '#shared/adminOrder'
 import OrderStatus from '../../../components/admin/orders/OrderStatus.vue'
 
 definePageMeta({ layout: 'admin' })
 useSeoMeta({ title: 'Orders — KHT Admin', robots: 'noindex, nofollow' })
 
-const { data, error, status, refresh } = await useFetch<AdminOrderListResponse>('/api/admin/orders')
 const route = useRoute()
+const initialStatus =
+  typeof route.query.status === 'string' &&
+  ORDER_FULFILLMENT_STATUSES.includes(route.query.status as OrderFulfillmentStatus)
+    ? route.query.status
+    : ''
+const selectedStatus = ref(initialStatus)
+const searchDraft = ref(typeof route.query.q === 'string' ? route.query.q : '')
+const searchQuery = ref(searchDraft.value.trim())
+const page = ref(1)
+const { data, error, status, refresh } = await useFetch<AdminOrderListResponse>(
+  '/api/admin/orders',
+  {
+    query: { status: selectedStatus, q: searchQuery, page },
+    watch: [selectedStatus, searchQuery, page],
+  },
+)
+const totalPages = computed(() =>
+  Math.max(1, Math.ceil((data.value?.total || 0) / (data.value?.pageSize || 25))),
+)
+const statusLabels: Record<OrderFulfillmentStatus, string> = {
+  pending: 'Pending',
+  confirmed: 'Confirmed',
+  processing: 'Processing',
+  shipped: 'Shipped',
+  'out-for-delivery': 'Out for delivery',
+  delivered: 'Delivered',
+  cancelled: 'Cancelled',
+  returned: 'Returned',
+}
+const statusCounts = computed(() => data.value?.statusCounts)
+const allOrders = computed(() =>
+  Object.values(statusCounts.value || {}).reduce((sum, count) => sum + count, 0),
+)
+const awaitingFulfillment = computed(
+  () =>
+    (statusCounts.value?.pending || 0) +
+    (statusCounts.value?.confirmed || 0) +
+    (statusCounts.value?.processing || 0),
+)
+const onDelivery = computed(
+  () => (statusCounts.value?.shipped || 0) + (statusCounts.value?.['out-for-delivery'] || 0),
+)
+const inventoryGroups = computed(() => {
+  const groups = new Map<string, NonNullable<AdminOrderListResponse['inventory']>>()
+  for (const item of data.value?.inventory || []) {
+    const key = item.category
+    if (!groups.has(key)) groups.set(key, [])
+    groups.get(key)!.push(item)
+  }
+  return [...groups.entries()].map(([category, items]) => ({ category, items }))
+})
+function categoryLabel(category: string) {
+  return (
+    (
+      { 'full-sets': 'Full sets', hoodies: 'Hoodies', sweatpants: 'Pants' } as Record<
+        string,
+        string
+      >
+    )[category] || category.replaceAll('-', ' ')
+  )
+}
+function chooseStatus(value: string) {
+  selectedStatus.value = value
+  page.value = 1
+}
+function search() {
+  searchQuery.value = searchDraft.value.trim().slice(0, 80)
+  page.value = 1
+}
 const pendingDeleteOrder = ref<AdminOrderSummary | null>(null)
 const deleteBusy = ref(false)
 const deleteError = ref('')
@@ -71,6 +144,9 @@ const date = (value: string) =>
       description="Review payments, fulfillment, and order sources."
     >
       <template #actions>
+        <button type="button" class="admin-button admin-button--quiet" @click="refresh()">
+          Refresh numbers
+        </button>
         <NuxtLink to="/admin/orders/new" class="admin-button admin-button--primary">
           Create order <KhtIcon name="arrow" />
         </NuxtLink>
@@ -108,21 +184,114 @@ const date = (value: string) =>
     />
 
     <AdminEmptyState
-      v-else-if="data?.availability === 'empty' || !data?.items.length"
+      v-else-if="data?.availability === 'empty'"
       title="No orders yet"
-      description="Orders will appear here after durable checkout is enabled."
+      description="New orders will appear here after checkout."
     />
 
     <template v-else-if="data">
-      <div
-        v-if="Object.values(data.capabilities).some(Boolean)"
-        class="admin-orders-capabilities"
-        aria-label="Order search and filters"
-      >
-        <p>Search and filters are provided only when supported by the order backend.</p>
-      </div>
+      <section class="admin-orders-overview" aria-label="Order totals">
+        <div>
+          <span>All orders</span><strong>{{ allOrders }}</strong
+          ><small>All time</small>
+        </div>
+        <div>
+          <span>Awaiting fulfillment</span><strong>{{ awaitingFulfillment }}</strong
+          ><small>Pending, confirmed, processing</small>
+        </div>
+        <div>
+          <span>On delivery</span><strong>{{ onDelivery }}</strong
+          ><small>Shipped or out for delivery</small>
+        </div>
+        <div>
+          <span>Delivered / sold</span><strong>{{ statusCounts?.delivered || 0 }}</strong
+          ><small>Completed deliveries</small>
+        </div>
+      </section>
 
-      <div class="admin-orders-desktop">
+      <section
+        v-if="inventoryGroups.length"
+        class="admin-orders-stock"
+        aria-labelledby="admin-orders-stock-title"
+      >
+        <div class="admin-orders-section-heading">
+          <div>
+            <h2 id="admin-orders-stock-title">Orders and stock by size</h2>
+            <p>
+              Pending and open quantities are items in orders. Available stock is the current
+              inventory record; orders already reserve stock.
+            </p>
+          </div>
+          <NuxtLink to="/admin/inventory">Manage inventory</NuxtLink>
+        </div>
+        <div class="admin-orders-stock__grid">
+          <article
+            v-for="group in inventoryGroups"
+            :key="group.category"
+            class="admin-orders-stock__group"
+          >
+            <h3>{{ categoryLabel(group.category) }}</h3>
+            <div class="admin-orders-stock__head" aria-hidden="true">
+              <span>Size</span><span>Pending</span><span>Open</span><span>In stock</span>
+            </div>
+            <div v-for="item in group.items" :key="item.id" class="admin-orders-stock__row">
+              <span :title="`${item.productName} · ${item.color}`"
+                >{{ item.size }} <small>{{ item.color }}</small></span
+              >
+              <strong
+                :aria-label="`${item.pendingQuantity} pending ${item.productName} size ${item.size}`"
+                >{{ item.pendingQuantity }}</strong
+              >
+              <span>{{ item.openQuantity }}</span>
+              <strong>{{ item.stock }}</strong>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="admin-orders-list" aria-labelledby="admin-orders-list-title">
+        <div class="admin-orders-section-heading">
+          <div>
+            <h2 id="admin-orders-list-title">Order list</h2>
+            <p>{{ data.total }} {{ data.total === 1 ? 'order' : 'orders' }} in this view</p>
+          </div>
+        </div>
+        <form class="admin-orders-search" role="search" @submit.prevent="search">
+          <label for="admin-order-search">Find an order</label>
+          <div>
+            <input
+              id="admin-order-search"
+              v-model="searchDraft"
+              type="search"
+              maxlength="80"
+              placeholder="Order number, customer, or phone"
+            />
+            <button type="submit" class="admin-button admin-button--secondary">Search</button>
+          </div>
+        </form>
+        <div class="admin-orders-status-filters" role="group" aria-label="Filter orders by status">
+          <button type="button" :aria-pressed="selectedStatus === ''" @click="chooseStatus('')">
+            All <span>{{ allOrders }}</span>
+          </button>
+          <button
+            v-for="itemStatus in ORDER_FULFILLMENT_STATUSES"
+            :key="itemStatus"
+            type="button"
+            :aria-pressed="selectedStatus === itemStatus"
+            @click="chooseStatus(itemStatus)"
+          >
+            {{ statusLabels[itemStatus] }} <span>{{ statusCounts?.[itemStatus] || 0 }}</span>
+          </button>
+        </div>
+      </section>
+
+      <AdminEmptyState
+        v-if="!data.items.length"
+        title="No matching orders"
+        description="Try another status or search term."
+      />
+
+      <div v-if="data.items.length" class="admin-orders-desktop">
         <AdminTable label="Orders">
           <thead>
             <tr>
@@ -182,7 +351,7 @@ const date = (value: string) =>
         </AdminTable>
       </div>
 
-      <div class="admin-orders-mobile" aria-label="Orders">
+      <div v-if="data.items.length" class="admin-orders-mobile" aria-label="Orders">
         <article v-for="order in data.items" :key="order.id" class="admin-order-card">
           <div class="admin-order-card__heading">
             <NuxtLink :to="`/admin/orders/${order.id}`">
@@ -239,6 +408,25 @@ const date = (value: string) =>
           </div>
         </article>
       </div>
+      <nav v-if="totalPages > 1" class="admin-orders-pagination" aria-label="Order pages">
+        <button
+          type="button"
+          class="admin-button admin-button--quiet"
+          :disabled="page <= 1 || status === 'pending'"
+          @click="page--"
+        >
+          Previous
+        </button>
+        <span>Page {{ page }} of {{ totalPages }}</span>
+        <button
+          type="button"
+          class="admin-button admin-button--quiet"
+          :disabled="page >= totalPages || status === 'pending'"
+          @click="page++"
+        >
+          Next
+        </button>
+      </nav>
     </template>
 
     <AdminConfirmDialog
