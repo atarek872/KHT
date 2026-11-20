@@ -44,12 +44,6 @@ const statusCounts = computed(() => data.value?.statusCounts)
 const allOrders = computed(() =>
   Object.values(statusCounts.value || {}).reduce((sum, count) => sum + count, 0),
 )
-const awaitingFulfillment = computed(
-  () =>
-    (statusCounts.value?.pending || 0) +
-    (statusCounts.value?.confirmed || 0) +
-    (statusCounts.value?.processing || 0),
-)
 const onDelivery = computed(
   () => (statusCounts.value?.shipped || 0) + (statusCounts.value?.['out-for-delivery'] || 0),
 )
@@ -196,8 +190,8 @@ const date = (value: string) =>
           ><small>All time</small>
         </div>
         <div>
-          <span>Awaiting fulfillment</span><strong>{{ awaitingFulfillment }}</strong
-          ><small>Pending, confirmed, processing</small>
+          <span>Pending orders</span><strong>{{ statusCounts?.pending || 0 }}</strong
+          ><small>Awaiting confirmation</small>
         </div>
         <div>
           <span>On delivery</span><strong>{{ onDelivery }}</strong
