@@ -5,6 +5,7 @@ export interface CreateOrderCustomer {
   id?: string
   name: string
   phone: string
+  phoneCountry?: 'EG' | 'US'
   email?: string
   address: string
   governorate: string
@@ -19,6 +20,7 @@ export interface CreateOrderInput {
   paymentMethod: 'cod'
   source: OrderSource
   couponCode?: string
+  manualDiscountPercent?: number | null
   notes?: string
   attribution?: CampaignAttribution | null
 }

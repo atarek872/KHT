@@ -2149,6 +2149,73 @@
   font-size: 0.75rem;
 }
 
+.kht-admin .admin-order-line .admin-order-components {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--kht-gray-200);
+}
+
+.kht-admin .admin-order-components > div {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  font-size: 0.75rem;
+}
+
+.kht-admin .admin-order-components button {
+  min-height: 36px;
+  padding: 0 6px;
+  border: 0;
+  background: transparent;
+  color: var(--kht-gray-800);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.kht-admin .admin-order-exchange {
+  display: grid;
+  gap: 10px;
+  max-width: 520px;
+}
+
+.kht-admin .admin-order-exchange p {
+  margin: 0 0 5px;
+}
+.kht-admin .admin-order-exchange > label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+.kht-admin .admin-order-exchange > :is(input, select, textarea) {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--kht-gray-200);
+  background: var(--kht-white);
+  color: var(--kht-gray-800);
+  font: inherit;
+}
+.kht-admin .admin-order-exchange__received {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.kht-admin .admin-order-exchange__received input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--kht-black);
+}
+.kht-admin .admin-order-exchange__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+}
+
 .kht-admin .admin-order-line dl,
 .kht-admin .admin-order-facts,
 .kht-admin .admin-order-totals {
@@ -2353,6 +2420,41 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 20px;
+}
+
+.kht-admin .admin-manual-discount {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 22px;
+  margin: 0;
+  padding: 16px;
+  border: 1px solid var(--kht-gray-200);
+}
+
+.kht-admin .admin-manual-discount legend {
+  padding: 0 6px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.kht-admin .admin-manual-discount label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 36px;
+  cursor: pointer;
+  font-size: 0.8125rem;
+}
+
+.kht-admin .admin-manual-discount input {
+  accent-color: var(--kht-black);
+}
+.kht-admin .admin-create-order__fields .admin-field small {
+  display: block;
+  margin-top: 6px;
+  color: #666666;
+  font-size: 0.75rem;
 }
 
 .kht-admin .admin-create-order__search {

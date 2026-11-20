@@ -64,7 +64,14 @@ export async function getCustomerOrder(
   const [lines, history] = await Promise.all([
     database
       .prepare(
-        'SELECT id,product_name AS productName,variant,quantity,unit_price AS unitPrice,total FROM order_items WHERE order_id=? ORDER BY rowid',
+        `SELECT i.id,i.product_name AS productName,
+          COALESCE((SELECT GROUP_CONCAT(
+            (CASE p.category WHEN 'hoodies' THEN 'Hoodie' WHEN 'sweatpants' THEN 'Pants'
+              ELSE v.product_name END) || ' ' || v.size || ' ×' || c.quantity, ' / ')
+            FROM order_item_components c JOIN inventory_variants v ON v.id=c.variant_id
+            JOIN products p ON p.id=v.product_id WHERE c.order_item_id=i.id),i.variant) AS variant,
+          i.quantity,i.unit_price AS unitPrice,i.total
+          FROM order_items i WHERE i.order_id=? ORDER BY i.rowid`,
       )
       .bind(id)
       .all<AdminOrderLine>(),

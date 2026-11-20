@@ -20,6 +20,82 @@ const activeMutation = ref<OrderFulfillmentStatus | 'restock' | null>(null)
 const mutationError = ref('')
 const mutationSuccess = ref('')
 const sourceBusy = ref(false)
+const exchangeSource = ref<{
+  orderItemId: string
+  variantId: string
+  productId: string
+  productName: string
+  size: string
+  color: string
+  quantity: number
+} | null>(null)
+const exchangeTargetId = ref('')
+const exchangeQuantity = ref(1)
+const exchangeReceived = ref(false)
+const exchangeNote = ref('')
+const exchangeRequestId = ref(crypto.randomUUID())
+const exchangeBusy = ref(false)
+const exchangeError = ref('')
+const exchangeSuccess = ref('')
+const exchangeTargets = computed(() =>
+  (order.value?.componentOptions || []).filter(
+    (item) =>
+      item.productId === exchangeSource.value?.productId &&
+      item.color === exchangeSource.value?.color &&
+      item.id !== exchangeSource.value?.variantId,
+  ),
+)
+const exchangeNeedsReturn = computed(() =>
+  ['shipped', 'out-for-delivery', 'delivered'].includes(order.value?.fulfillmentStatus || ''),
+)
+
+function startExchange(
+  orderItemId: string,
+  component: NonNullable<NonNullable<typeof order.value>['lines'][number]['components']>[number],
+) {
+  exchangeSource.value = { orderItemId, ...component }
+  exchangeTargetId.value = ''
+  exchangeQuantity.value = 1
+  exchangeReceived.value = false
+  exchangeNote.value = ''
+  exchangeError.value = ''
+  exchangeSuccess.value = ''
+  exchangeRequestId.value = crypto.randomUUID()
+}
+
+async function submitExchange() {
+  if (!order.value || !exchangeSource.value || !exchangeTargetId.value || exchangeBusy.value) return
+  if (exchangeNeedsReturn.value && !exchangeReceived.value) {
+    exchangeError.value = 'Confirm that the returned piece is in hand before changing stock.'
+    return
+  }
+  exchangeBusy.value = true
+  exchangeError.value = ''
+  try {
+    await $fetch(`/api/admin/orders/${encodeURIComponent(orderId.value)}/exchange`, {
+      method: 'POST',
+      body: {
+        requestId: exchangeRequestId.value,
+        orderItemId: exchangeSource.value.orderItemId,
+        fromVariantId: exchangeSource.value.variantId,
+        toVariantId: exchangeTargetId.value,
+        quantity: exchangeQuantity.value,
+        returnedReceived: exchangeReceived.value,
+        note: exchangeNote.value.trim() || undefined,
+      },
+    })
+    await refresh()
+    exchangeSource.value = null
+    exchangeRequestId.value = crypto.randomUUID()
+    exchangeSuccess.value = 'Size exchanged and inventory updated.'
+  } catch (cause: unknown) {
+    const failure = cause as { data?: { statusMessage?: string } }
+    exchangeError.value =
+      failure.data?.statusMessage || 'The exchange could not be saved. Refresh and try again.'
+  } finally {
+    exchangeBusy.value = false
+  }
+}
 const sourceDraft = ref<OrderSource>('website')
 watch(
   order,
@@ -293,6 +369,22 @@ useSeoMeta({
                 <div>
                   <strong>{{ line.productName }}</strong
                   ><span>{{ line.variant }}</span>
+                  <div v-if="line.components?.length" class="admin-order-components">
+                    <div v-for="component in line.components" :key="component.variantId">
+                      <span
+                        >{{ component.productName }} · {{ component.color }} /
+                        {{ component.size }} × {{ component.quantity }}</span
+                      >
+                      <button
+                        v-if="!['cancelled', 'returned'].includes(order.fulfillmentStatus)"
+                        type="button"
+                        :disabled="exchangeBusy"
+                        @click="startExchange(line.id, component)"
+                      >
+                        Change size
+                      </button>
+                    </div>
+                  </div>
                 </div>
                 <dl>
                   <div>
@@ -311,6 +403,92 @@ useSeoMeta({
               </div>
             </div>
           </AdminSection>
+
+          <AdminSection
+            v-if="exchangeSource"
+            title="Change piece size"
+            description="The old size returns to stock and the replacement size is reserved. The order price stays the same."
+          >
+            <form class="admin-order-exchange" @submit.prevent="submitExchange">
+              <p>
+                {{ exchangeSource.productName }} · {{ exchangeSource.color }} /
+                {{ exchangeSource.size }}
+              </p>
+              <label for="exchange-target">Replacement size</label>
+              <select
+                id="exchange-target"
+                v-model="exchangeTargetId"
+                required
+                :disabled="exchangeBusy"
+              >
+                <option value="">Choose available size</option>
+                <option
+                  v-for="target in exchangeTargets"
+                  :key="target.id"
+                  :value="target.id"
+                  :disabled="target.stock < 1"
+                >
+                  {{ target.size }} · {{ target.stock }} available
+                </option>
+              </select>
+              <label for="exchange-quantity">Pieces to change</label>
+              <input
+                id="exchange-quantity"
+                v-model.number="exchangeQuantity"
+                type="number"
+                min="1"
+                :max="exchangeSource.quantity"
+                step="1"
+                required
+                :disabled="exchangeBusy"
+              />
+              <label v-if="exchangeNeedsReturn" class="admin-order-exchange__received">
+                <input
+                  v-model="exchangeReceived"
+                  type="checkbox"
+                  required
+                  :disabled="exchangeBusy"
+                />
+                I have received and checked the returned piece
+              </label>
+              <label for="exchange-note">Note (optional)</label>
+              <textarea
+                id="exchange-note"
+                v-model="exchangeNote"
+                maxlength="500"
+                rows="2"
+                :disabled="exchangeBusy"
+              />
+              <p v-if="exchangeError" class="admin-create-order__error" role="alert">
+                {{ exchangeError }}
+              </p>
+              <div class="admin-order-exchange__actions">
+                <AdminButton
+                  type="submit"
+                  :loading="exchangeBusy"
+                  loading-label="Saving exchange"
+                  :disabled="
+                    !exchangeTargetId ||
+                    !Number.isInteger(exchangeQuantity) ||
+                    exchangeQuantity < 1 ||
+                    exchangeQuantity > exchangeSource.quantity ||
+                    (exchangeNeedsReturn && !exchangeReceived)
+                  "
+                  >Confirm size exchange</AdminButton
+                >
+                <AdminButton
+                  type="button"
+                  variant="quiet"
+                  :disabled="exchangeBusy"
+                  @click="exchangeSource = null"
+                  >Cancel</AdminButton
+                >
+              </div>
+            </form>
+          </AdminSection>
+          <p v-if="exchangeSuccess" class="admin-order-action__success" role="status">
+            {{ exchangeSuccess }}
+          </p>
 
           <AdminSection v-if="order.notes" title="Notes">
             <p class="admin-order-notes">{{ order.notes }}</p>
@@ -379,6 +557,9 @@ useSeoMeta({
                     Source: {{ statusLabel(event.fromValue || 'unknown') }} →
                     {{ statusLabel(event.toValue || 'unknown') }}
                   </strong>
+                  <strong v-else-if="event.eventType === 'component_exchanged'">
+                    Size exchanged: {{ event.fromValue }} → {{ event.toValue }}
+                  </strong>
                   <strong v-else>Order created</strong>
                   <p v-if="event.note">{{ event.note }}</p>
                   <small>{{ event.actorEmail }} · {{ date(event.createdAt) }}</small>
@@ -423,7 +604,10 @@ useSeoMeta({
               </div>
               <div>
                 <dt>
-                  Discount<template v-if="order.discountCode"> · {{ order.discountCode }}</template>
+                  Discount<template v-if="order.discountCode"> · {{ order.discountCode }}</template
+                  ><template v-else-if="order.manualDiscountPercent">
+                    · Manual {{ order.manualDiscountPercent }}%</template
+                  >
                 </dt>
                 <dd>− {{ money(order.discount) }}</dd>
               </div>

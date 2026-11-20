@@ -7,6 +7,7 @@ export interface InventoryVariant {
   size: string
   color: string
   stock: number
+  isBundle: boolean
   active: boolean
   lowStock: boolean
   updatedAt: string

@@ -13,20 +13,22 @@ function database(changes: number) {
           return {
             run: async () => ({ success: true, meta: { changes } }),
             first: async () =>
-              sql.startsWith('SELECT')
-                ? {
-                    id: 'tee-m',
-                    productId: 'tee',
-                    productName: 'Line Tee',
-                    category: 'tees',
-                    sku: 'TEE-M',
-                    size: 'M',
-                    color: 'Black',
-                    stock: values[0] === 'tee-m' ? 2 : 0,
-                    active: 1,
-                    updatedAt: '2026-09-04T00:00:00.000Z',
-                  }
-                : null,
+              sql.startsWith('SELECT 1 FROM inventory_bundle_components')
+                ? null
+                : sql.startsWith('SELECT')
+                  ? {
+                      id: 'tee-m',
+                      productId: 'tee',
+                      productName: 'Line Tee',
+                      category: 'tees',
+                      sku: 'TEE-M',
+                      size: 'M',
+                      color: 'Black',
+                      stock: values[0] === 'tee-m' ? 2 : 0,
+                      active: 1,
+                      updatedAt: '2026-09-04T00:00:00.000Z',
+                    }
+                  : null,
           }
         },
       }

@@ -55,17 +55,23 @@ function restoreInventoryStatement(database: D1Database, orderId: string, eventI
   return database
     .prepare(
       `UPDATE inventory_variants
-       SET stock = stock + (
+       SET stock = stock + COALESCE((
+         SELECT SUM(c.quantity) FROM order_item_components c
+         JOIN order_items oi ON oi.id=c.order_item_id
+         WHERE oi.order_id=? AND c.variant_id=inventory_variants.id
+       ),0) + COALESCE((
          SELECT SUM(oi.quantity) FROM order_items oi
-         WHERE oi.order_id = ? AND oi.variant_id = inventory_variants.id
-       )
+         WHERE oi.order_id=? AND oi.variant_id=inventory_variants.id
+           AND NOT EXISTS(SELECT 1 FROM order_item_components c WHERE c.order_item_id=oi.id)
+       ),0)
        WHERE EXISTS (SELECT 1 FROM order_events WHERE id = ?)
-         AND EXISTS (
-           SELECT 1 FROM order_items oi
-           WHERE oi.order_id = ? AND oi.variant_id = inventory_variants.id
-         )`,
+         AND (EXISTS (SELECT 1 FROM order_item_components c JOIN order_items oi ON oi.id=c.order_item_id
+           WHERE oi.order_id=? AND c.variant_id=inventory_variants.id)
+          OR EXISTS(SELECT 1 FROM order_items oi WHERE oi.order_id=?
+            AND oi.variant_id=inventory_variants.id AND NOT EXISTS(
+              SELECT 1 FROM order_item_components c WHERE c.order_item_id=oi.id)))`,
     )
-    .bind(orderId, eventId, orderId)
+    .bind(orderId, orderId, eventId, orderId, orderId)
 }
 
 export async function transitionOrder(

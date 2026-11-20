@@ -4,10 +4,14 @@ import { requireAdmin } from '../../../utils/adminAuth'
 import { scheduleAdminOrderNotification } from '../../../utils/adminNotification'
 
 export default defineEventHandler(async (event) => {
-  const { database } = await requireAdmin(event)
+  const { database, email } = await requireAdmin(event)
   const body = await readBody<CreateOrderInput>(event)
   try {
-    const order = await createOrder(database, body)
+    const order = await createOrder(database, body, {
+      allowInternationalPhone: true,
+      allowManualDiscount: true,
+      actorEmail: email,
+    })
     scheduleAdminOrderNotification(event, database, { id: order.id })
     return { order }
   } catch (error) {

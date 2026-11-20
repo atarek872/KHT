@@ -6,6 +6,8 @@ import type {
   OrderEvent,
   AdminOrderFilters,
   AdminOrderInventoryRow,
+  AdminOrderComponent,
+  AdminOrderComponentOption,
 } from '../../shared/adminOrder'
 import { ORDER_FULFILLMENT_STATUSES as fulfillmentStatuses } from '../../shared/adminOrder.ts'
 import type { AdminOrderDetail, AdminOrderLine, AdminOrderSummary } from '../../shared/adminOrder'
@@ -17,6 +19,7 @@ type AdminOrderRow = Omit<
   AdminOrderDetail,
   | 'lines'
   | 'events'
+  | 'componentOptions'
   | 'allowedFulfillmentTransitions'
   | 'canRestockReturned'
   | 'canDelete'
@@ -208,7 +211,8 @@ export async function getAdminOrder(
         `SELECT o.id, o.number, c.name AS customerName,
       c.phone AS customerPhone, c.email AS customerEmail,
       c.address || ', ' || c.city || ', ' || c.governorate AS address,
-      o.subtotal, o.shipping, o.discount, o.discount_code AS discountCode, o.total, o.payment_method AS paymentMethod,
+      o.subtotal, o.shipping, o.discount, o.discount_code AS discountCode,
+      o.manual_discount_percent AS manualDiscountPercent, o.total, o.payment_method AS paymentMethod,
       o.payment_status AS paymentStatus, o.fulfillment_status AS fulfillmentStatus,
       o.source, o.notes, o.created_at AS createdAt,
       o.public_reference AS publicReference,
@@ -232,6 +236,28 @@ export async function getAdminOrder(
       )
       .bind(id)
       .all<AdminOrderLine>()
+    const components = await database
+      .prepare(
+        `SELECT c.order_item_id AS orderItemId,
+      c.variant_id AS variantId, v.product_id AS productId,
+      v.product_name AS productName, v.size, v.color, c.quantity
+      FROM order_item_components c JOIN order_items oi ON oi.id=c.order_item_id
+      JOIN inventory_variants v ON v.id=c.variant_id
+      WHERE oi.order_id=? ORDER BY oi.rowid,v.product_name,v.size`,
+      )
+      .bind(id)
+      .all<AdminOrderComponent & { orderItemId: string }>()
+    const componentOptions = await database
+      .prepare(
+        `SELECT v.id, v.product_id AS productId,
+      v.size,v.color,v.stock FROM inventory_variants v WHERE v.active=1 AND v.product_id IN (
+        SELECT DISTINCT v2.product_id FROM order_item_components c
+        JOIN order_items oi ON oi.id=c.order_item_id
+        JOIN inventory_variants v2 ON v2.id=c.variant_id WHERE oi.order_id=?
+      ) ORDER BY v.product_name,v.size`,
+      )
+      .bind(id)
+      .all<AdminOrderComponentOption>()
     const events = await database
       .prepare(
         `SELECT id, event_type AS eventType,
@@ -256,7 +282,13 @@ export async function getAdminOrder(
       order: {
         ...details,
         attribution,
-        lines: lines.results || [],
+        lines: (lines.results || []).map((line) => ({
+          ...line,
+          components: (components.results || [])
+            .filter((component) => component.orderItemId === line.id)
+            .map(({ orderItemId: _orderItemId, ...component }) => component),
+        })),
+        componentOptions: componentOptions.results || [],
         events: events.results || [],
         allowedFulfillmentTransitions: allowedFulfillmentTransitions(details.fulfillmentStatus),
         canRestockReturned: details.fulfillmentStatus === 'returned' && !returnedRestockedAt,

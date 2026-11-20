@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import { createStorefrontOrder } from '../server/services/storefrontCheckout.ts'
 import { getCatalog } from '../server/services/catalog.ts'
+import { trackOrder } from '../server/services/storefrontOrders.ts'
 import type { StorefrontCheckoutInput } from '../shared/storefrontOrder.ts'
 import { createTestD1 } from './helpers/sqliteD1.ts'
 
@@ -17,6 +18,7 @@ const migrationUrls = [
   '../server/db/migrations/0015_order_campaign.sql',
   '../server/db/migrations/0016_meta_attribution.sql',
   '../server/db/migrations/0017_shipping_product_proof.sql',
+  '../server/db/migrations/0024_shared_set_inventory.sql',
 ].map((path) => new URL(path, import.meta.url))
 
 function setup() {
@@ -89,6 +91,25 @@ test('guest checkout creates one customer and one order from server prices', asy
         }
       ).stock,
       10,
+    )
+  } finally {
+    close()
+  }
+})
+
+test('a customer can later order and track with the same US contact number', async () => {
+  const { database, sqlite, close } = setup()
+  try {
+    const input = checkoutInput()
+    input.customer.phone = '+1 (212) 555-0187'
+    const order = await createStorefrontOrder(database, input)
+    const saved = sqlite.prepare('SELECT phone_normalized AS phone FROM customers').get() as {
+      phone: string
+    }
+    assert.equal(saved.phone, '12125550187')
+    assert.equal(
+      (await trackOrder(database, order.reference, '+1 212 555 0187'))?.reference,
+      order.reference,
     )
   } finally {
     close()
@@ -176,7 +197,7 @@ test('checkout rejects unsupported payment and malformed Egyptian phone numbers'
           requestId: crypto.randomUUID(),
           customer: { ...input.customer, phone: '12345' },
         }),
-      /Egyptian mobile number/,
+      /valid mobile number/,
     )
   } finally {
     close()

@@ -22,6 +22,7 @@ const migrations = [
   '0017_shipping_product_proof.sql',
   '0019_cart_recovery_email.sql',
   '0020_recovery_admin_settings.sql',
+  '0024_shared_set_inventory.sql',
 ].map((name) => new URL(`../server/db/migrations/${name}`, import.meta.url))
 
 function setup() {

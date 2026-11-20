@@ -1,6 +1,6 @@
 import type { StorefrontOrderLine, StorefrontOrderView } from '../../shared/storefrontOrder.ts'
 import type { D1Database } from '../utils/d1.ts'
-import { normalizeEgyptianPhone } from './createOrder.ts'
+import { normalizeAdminPhone, normalizeEgyptianPhone } from './createOrder.ts'
 
 interface PublicOrderRow extends Omit<StorefrontOrderView, 'lines'> {
   internalId: string
@@ -27,7 +27,13 @@ async function loadPublicOrder(
   if (!order) return null
   const lines = await database
     .prepare(
-      `SELECT i.product_name AS productName, i.variant, p.image,
+      `SELECT i.product_name AS productName,
+      COALESCE((SELECT GROUP_CONCAT(
+        (CASE cp.category WHEN 'hoodies' THEN 'Hoodie' WHEN 'sweatpants' THEN 'Pants'
+          ELSE cv.product_name END) || ' ' || cv.size || ' ×' || c.quantity, ' / ')
+        FROM order_item_components c JOIN inventory_variants cv ON cv.id=c.variant_id
+        JOIN products cp ON cp.id=cv.product_id WHERE c.order_item_id=i.id),i.variant) AS variant,
+      p.image,
     i.quantity, i.unit_price AS unitPrice, i.total FROM order_items i
     LEFT JOIN inventory_variants v ON v.id = i.variant_id
     LEFT JOIN products p ON p.id = v.product_id
@@ -46,7 +52,9 @@ export function getOrderConfirmation(database: D1Database, reference: string) {
 export async function trackOrder(database: D1Database, reference: string, phone: string) {
   let normalizedPhone: string
   try {
-    normalizedPhone = normalizeEgyptianPhone(phone)
+    normalizedPhone = /^\s*(?:\+1|001)/.test(phone)
+      ? normalizeAdminPhone(phone, 'US')
+      : normalizeEgyptianPhone(phone)
   } catch {
     return null
   }

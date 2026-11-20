@@ -1,3 +1,5 @@
+import { normalizeAdminPhone } from './orderPhone.ts'
+
 export type CheckoutStep = 1 | 2 | 3
 export type CheckoutField = 'name' | 'phone' | 'email' | 'governorate' | 'city' | 'address'
 
@@ -5,6 +7,13 @@ export type CheckoutDraft = Record<CheckoutField, string>
 
 export function normalizeCheckoutPhone(value: string): string | null {
   if (!/^[+0-9٠-٩۰-۹ ()-]{7,20}$/.test(value.trim())) return null
+  if (/^\s*(?:\+1|001)/.test(value)) {
+    try {
+      return `+${normalizeAdminPhone(value, 'US')}`
+    } catch {
+      return null
+    }
+  }
   const arabicDigits = '٠١٢٣٤٥٦٧٨٩'
   const easternDigits = '۰۱۲۳۴۵۶۷۸۹'
   let digits = value

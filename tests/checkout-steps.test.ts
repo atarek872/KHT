@@ -37,6 +37,8 @@ test('checkout accepts Egyptian mobile formats and normalizes Arabic digits for 
   assert.equal(normalizeCheckoutPhone('+20 101 234 5678'), '201012345678')
   assert.equal(normalizeCheckoutPhone('٠١٠١٢٣٤٥٦٧٨'), '201012345678')
   assert.equal(normalizeCheckoutPhone('1234567890'), null)
+  assert.equal(normalizeCheckoutPhone('+1 (212) 555-0187'), '+12125550187')
+  assert.equal(normalizeCheckoutPhone('+1 112 555 0187'), null)
   assert.deepEqual(invalidCheckoutFields(1, { ...draft(), phone: '1234567890' }, ['Cairo']), [
     'phone',
   ])

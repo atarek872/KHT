@@ -4,7 +4,8 @@ import type {
   StorefrontOrderConfirmation,
 } from '../../shared/storefrontOrder.ts'
 import type { D1Database } from '../utils/d1.ts'
-import { createDurableOrder, normalizeEgyptianPhone } from './createOrder.ts'
+import { createDurableOrder } from './createOrder.ts'
+import { normalizeCheckoutPhone } from '../../shared/checkoutSteps.ts'
 import { sanitizeCampaignAttribution } from '../../shared/campaignAttribution.ts'
 import type { MetaRequestContext } from './metaCapi.ts'
 
@@ -23,7 +24,7 @@ function validateCheckout(input: StorefrontCheckoutInput) {
   }
   requireText(input.customer?.name, 'Full name', 100)
   requireText(input.customer?.phone, 'Phone number', 30)
-  normalizeEgyptianPhone(input.customer.phone)
+  if (!normalizeCheckoutPhone(input.customer.phone)) throw new Error('Enter a valid mobile number.')
   if (input.customer.email) {
     const email = input.customer.email.trim()
     if (email.length > 160 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {

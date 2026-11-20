@@ -34,6 +34,15 @@ const paymentMethod = computed(() =>
 const itemCount = computed(
   () => order.value?.lines.reduce((total, line) => total + line.quantity, 0) || 0,
 )
+const printedVariant = (line: NonNullable<typeof order.value>['lines'][number]) =>
+  line.components?.length
+    ? line.components
+        .map(
+          (component) =>
+            `${/hoodie/i.test(component.productName) ? 'Hoodie' : 'Pants'} ${component.size} ×${component.quantity}`,
+        )
+        .join(' / ')
+    : line.variant
 const densityClass = computed(() => ({
   'shipping-label--dense': (order.value?.lines.length || 0) > 4,
   'shipping-label--extra-dense': (order.value?.lines.length || 0) > 7,
@@ -152,7 +161,7 @@ useSeoMeta({
               <tr v-for="line in order.lines" :key="line.id">
                 <td>
                   <strong dir="auto">{{ line.productName }}</strong>
-                  <span dir="auto">{{ line.variant }}</span>
+                  <span dir="auto">{{ printedVariant(line) }}</span>
                 </td>
                 <td>{{ line.quantity }}</td>
                 <td>{{ money(line.unitPrice) }}</td>
@@ -173,7 +182,10 @@ useSeoMeta({
             </div>
             <div v-if="order.discount">
               <dt>
-                Discount<template v-if="order.discountCode"> · {{ order.discountCode }}</template>
+                Discount<template v-if="order.discountCode"> · {{ order.discountCode }}</template
+                ><template v-else-if="order.manualDiscountPercent">
+                  · {{ order.manualDiscountPercent }}%</template
+                >
               </dt>
               <dd>− {{ money(order.discount) }}</dd>
             </div>

@@ -577,8 +577,8 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
                 />
                 <span id="checkout-phone-help" class="checkout-field-help">{{
                   t(
-                    'The courier will use this number to arrange delivery.',
-                    'شركة الشحن هتتواصل معاك على الرقم ده لتنسيق التوصيل.',
+                    'Use a reachable Egyptian mobile or a US number starting +1. The courier will use it to arrange delivery.',
+                    'اكتب رقم مصري متاح أو رقم أمريكي يبدأ بـ +1. شركة الشحن هتستخدمه لتنسيق التوصيل.',
                   )
                 }}</span>
                 <span

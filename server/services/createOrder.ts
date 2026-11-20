@@ -13,7 +13,15 @@ import { listShippingZones, requireShippingRate } from './shipping.ts'
 import { resolveCustomerDiscountCode } from './welcomeOffer.ts'
 import { sanitizeCampaignAttribution } from '../../shared/campaignAttribution.ts'
 import { enqueueMetaStatement, purchaseMetaEvent, type MetaRequestContext } from './metaCapi.ts'
-import { enqueueGa4Statement, ga4ClientId, ga4SessionId, purchaseGa4Payload } from './ga4Purchase.ts'
+import {
+  enqueueGa4Statement,
+  ga4ClientId,
+  ga4SessionId,
+  purchaseGa4Payload,
+} from './ga4Purchase.ts'
+import { normalizeAdminPhone, normalizeEgyptianPhone } from '../../shared/orderPhone.ts'
+import { normalizeCheckoutPhone } from '../../shared/checkoutSteps.ts'
+export { normalizeAdminPhone, normalizeEgyptianPhone } from '../../shared/orderPhone.ts'
 
 const sources: OrderSource[] = [
   'website',
@@ -26,28 +34,11 @@ const sources: OrderSource[] = [
   'other',
 ]
 
-export function normalizeEgyptianPhone(value: string) {
-  const arabicDigits = '٠١٢٣٤٥٦٧٨٩'
-  const easternDigits = '۰۱۲۳۴۵۶۷۸۹'
-  let digits = value
-    .trim()
-    .replace(/[٠-٩۰-۹]/g, (digit) => {
-      const arabicIndex = arabicDigits.indexOf(digit)
-      return String(arabicIndex >= 0 ? arabicIndex : easternDigits.indexOf(digit))
-    })
-    .replace(/\D/g, '')
-  if (digits.startsWith('0020')) digits = digits.slice(2)
-  if (/^01[0125]\d{8}$/.test(digits)) digits = `20${digits.slice(1)}`
-  if (!/^201[0125]\d{8}$/.test(digits)) {
-    throw new Error('Enter a valid Egyptian mobile number.')
-  }
-  return digits
-}
-
 export function prepareOrder(
   input: CreateOrderInput,
   variants: OrderVariantOption[],
   shipping: ShippingOption,
+  options: { allowInternationalPhone?: boolean } = {},
 ) {
   if (!input.requestId || input.requestId.length > 100) throw new Error('Invalid order request.')
   if (
@@ -57,7 +48,10 @@ export function prepareOrder(
   ) {
     throw new Error('Customer name, phone and address are required.')
   }
-  normalizeEgyptianPhone(input.customer.phone)
+  if (options.allowInternationalPhone)
+    normalizeAdminPhone(input.customer.phone, input.customer.phoneCountry || 'EG')
+  else if (!normalizeCheckoutPhone(input.customer.phone))
+    normalizeEgyptianPhone(input.customer.phone)
   if (!input.customer.governorate.trim() || !input.customer.city.trim()) {
     throw new Error('Governorate and city are required.')
   }
@@ -110,6 +104,8 @@ export async function getCreateOrderResources(database: D1Database): Promise<Cre
 interface OrderPricingOptions {
   userId?: string | null
   automaticWelcome?: boolean
+  allowInternationalPhone?: boolean
+  allowManualDiscount?: boolean
 }
 
 export async function quoteOrder(
@@ -119,7 +115,62 @@ export async function quoteOrder(
 ) {
   const resources = await getCreateOrderResources(database)
   const zone = await requireShippingRate(database, input.shippingGovernorate)
-  const priced = prepareOrder(input, resources.variants, zone)
+  const priced = prepareOrder(input, resources.variants, zone, options)
+  const bundleComponents = await database
+    .prepare(
+      `SELECT bundle_variant_id AS bundleVariantId,
+    component_variant_id AS componentVariantId, quantity
+    FROM inventory_bundle_components`,
+    )
+    .all<{
+      bundleVariantId: string
+      componentVariantId: string
+      quantity: number
+    }>()
+  const componentsByBundle = new Map<string, { variantId: string; quantity: number }[]>()
+  for (const component of bundleComponents.results || []) {
+    const parts = componentsByBundle.get(component.bundleVariantId) || []
+    parts.push({ variantId: component.componentVariantId, quantity: component.quantity })
+    componentsByBundle.set(component.bundleVariantId, parts)
+  }
+  const requiredStock = new Map<string, number>()
+  for (const line of priced.lines) {
+    const parts = componentsByBundle.get(line.variant.id) || [
+      { variantId: line.variant.id, quantity: 1 },
+    ]
+    for (const part of parts)
+      requiredStock.set(
+        part.variantId,
+        (requiredStock.get(part.variantId) || 0) + line.quantity * part.quantity,
+      )
+  }
+  for (const [variantId, quantity] of requiredStock) {
+    const available = resources.variants.find((variant) => variant.id === variantId)?.stock || 0
+    if (quantity > available)
+      throw new Error(
+        'The selected set and separate pieces exceed available stock. Adjust quantities before continuing.',
+      )
+  }
+  if (input.manualDiscountPercent != null) {
+    if (!options.allowManualDiscount)
+      throw new Error('Manual discounts are available to admins only.')
+    if (input.couponCode?.trim()) throw new Error('Choose a coupon or a manual discount, not both.')
+    if (
+      !Number.isInteger(input.manualDiscountPercent) ||
+      input.manualDiscountPercent < 1 ||
+      input.manualDiscountPercent > 100
+    )
+      throw new Error('Manual discount must be a whole percentage from 1 to 100.')
+    const discount = Math.floor((priced.subtotal * input.manualDiscountPercent) / 100)
+    return {
+      ...priced,
+      discount,
+      total: calculateOrderTotal(priced.subtotal, discount, priced.shipping),
+      couponCode: undefined,
+      discountId: undefined,
+      manualDiscountPercent: input.manualDiscountPercent,
+    }
+  }
   const discountCode = await resolveCustomerDiscountCode(database, {
     userId: options.userId,
     requestedCode: input.couponCode,
@@ -132,6 +183,7 @@ export async function quoteOrder(
     total: calculateOrderTotal(priced.subtotal, coupon.discount, priced.shipping),
     couponCode: coupon.coupon?.code,
     discountId: coupon.coupon?.id,
+    manualDiscountPercent: undefined,
   }
 }
 
@@ -143,6 +195,8 @@ interface DurableOrderOptions {
   actorEmail?: string
   automaticWelcome?: boolean
   metaContext?: MetaRequestContext
+  allowInternationalPhone?: boolean
+  allowManualDiscount?: boolean
 }
 
 export async function createDurableOrder(
@@ -168,11 +222,19 @@ export async function createDurableOrder(
   const priced = await quoteOrder(database, input, {
     userId: options.userId,
     automaticWelcome: options.automaticWelcome ?? Boolean(options.userId),
+    allowInternationalPhone: options.allowInternationalPhone,
+    allowManualDiscount: options.allowManualDiscount,
   })
   if (options.expectedTotal !== undefined && options.expectedTotal !== priced.total) {
     throw new Error('Prices changed. Review your bag and total before placing your order.')
   }
-  const phoneNormalized = normalizeEgyptianPhone(input.customer.phone)
+  const phoneNormalized = options.allowInternationalPhone
+    ? normalizeAdminPhone(input.customer.phone, input.customer.phoneCountry || 'EG')
+    : normalizeCheckoutPhone(input.customer.phone)?.replace(/^\+/, '') ||
+      normalizeEgyptianPhone(input.customer.phone)
+  const customerPhone = phoneNormalized.startsWith('1')
+    ? `+${phoneNormalized}`
+    : input.customer.phone.trim()
   const existingCustomer = input.customer.id
     ? await database
         .prepare('SELECT id FROM customers WHERE id = ?')
@@ -225,7 +287,7 @@ export async function createDurableOrder(
             )
             .bind(
               input.customer.name.trim(),
-              input.customer.phone.trim(),
+              customerPhone,
               phoneNormalized,
               input.customer.email?.trim() || null,
               input.customer.address.trim(),
@@ -242,7 +304,7 @@ export async function createDurableOrder(
             .bind(
               customerId,
               input.customer.name.trim(),
-              input.customer.phone.trim(),
+              customerPhone,
               phoneNormalized,
               input.customer.email?.trim() || null,
               input.customer.address.trim(),
@@ -256,9 +318,9 @@ export async function createDurableOrder(
             `INSERT INTO orders
       (id, number, public_reference, idempotency_key, customer_id, subtotal, shipping,
        shipping_governorate, discount, total, payment_method, source, notes, created_at,
-       discount_id, discount_code, campaign_attribution, attribution_source,
+       discount_id, discount_code, manual_discount_percent, campaign_attribution, attribution_source,
        attribution_campaign_id, attribution_adset_id, attribution_ad_id)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'cod', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'cod', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           )
           .bind(
             orderId,
@@ -276,6 +338,7 @@ export async function createDurableOrder(
             createdAt,
             priced.discountId || null,
             priced.couponCode || null,
+            priced.manualDiscountPercent || null,
             campaignAttribution ? JSON.stringify(campaignAttribution) : null,
             campaignAttribution?.source || null,
             campaignAttribution?.campaignId || null,
@@ -287,10 +350,10 @@ export async function createDurableOrder(
             `INSERT INTO orders
       (id, number, public_reference, idempotency_key, customer_id, subtotal, shipping,
        shipping_governorate, discount, total, payment_method, source, notes, created_at,
-       discount_id, discount_code, user_id, cart_id, cart_version, shipping_snapshot,
+       discount_id, discount_code, manual_discount_percent, user_id, cart_id, cart_version, shipping_snapshot,
        campaign_attribution, attribution_source, attribution_campaign_id,
        attribution_adset_id, attribution_ad_id)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'cod', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'cod', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           )
           .bind(
             orderId,
@@ -308,12 +371,13 @@ export async function createDurableOrder(
             createdAt,
             priced.discountId || null,
             priced.couponCode || null,
+            priced.manualDiscountPercent || null,
             options.userId || null,
             options.cartId || null,
             options.cartVersion,
             JSON.stringify({
               name: input.customer.name.trim(),
-              phone: input.customer.phone.trim(),
+              phone: customerPhone,
               email: input.customer.email?.trim() || null,
               address: input.customer.address.trim(),
               city: input.customer.city.trim(),
@@ -350,10 +414,16 @@ export async function createDurableOrder(
     database
       .prepare(
         `INSERT INTO order_events
-      (id, order_id, event_type, to_value, actor_email, created_at)
-      VALUES (?, ?, 'created', 'pending', ?, ?)`,
+      (id, order_id, event_type, to_value, note, actor_email, created_at)
+      VALUES (?, ?, 'created', 'pending', ?, ?, ?)`,
       )
-      .bind(createdEventId, orderId, options.actorEmail || 'system@kht.local', createdAt),
+      .bind(
+        createdEventId,
+        orderId,
+        priced.manualDiscountPercent ? `Manual discount ${priced.manualDiscountPercent}%` : null,
+        options.actorEmail || 'system@kht.local',
+        createdAt,
+      ),
     ...(metaEvent ? [enqueueMetaStatement(database, metaEvent)] : []),
     ...(ga4Payload ? [enqueueGa4Statement(database, publicReference, ga4Payload)] : []),
   ]
@@ -385,7 +455,7 @@ export async function createDurableOrder(
     id: orderId,
     number: orderNumber,
     customerName: input.customer.name.trim(),
-    customerPhone: input.customer.phone.trim(),
+    customerPhone,
     customerEmail: input.customer.email?.trim() || undefined,
     address: `${input.customer.address.trim()}, ${input.customer.city}, ${input.customer.governorate}`,
     subtotal: priced.subtotal,
@@ -393,6 +463,7 @@ export async function createDurableOrder(
     discount: priced.discount,
     total: priced.total,
     discountCode: priced.couponCode,
+    manualDiscountPercent: priced.manualDiscountPercent,
     paymentMethod: 'cod',
     paymentStatus: 'pending',
     fulfillmentStatus: 'pending',
@@ -412,6 +483,9 @@ export async function createDurableOrder(
         id: createdEventId,
         eventType: 'created',
         toValue: 'pending',
+        note: priced.manualDiscountPercent
+          ? `Manual discount ${priced.manualDiscountPercent}%`
+          : undefined,
         actorEmail: options.actorEmail || 'system@kht.local',
         createdAt,
       },

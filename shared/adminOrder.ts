@@ -65,6 +65,24 @@ export interface AdminOrderLine {
   quantity: number
   unitPrice: number
   total: number
+  components?: AdminOrderComponent[]
+}
+
+export interface AdminOrderComponent {
+  variantId: string
+  productId: string
+  productName: string
+  size: string
+  color: string
+  quantity: number
+}
+
+export interface AdminOrderComponentOption {
+  id: string
+  productId: string
+  size: string
+  color: string
+  stock: number
 }
 
 export interface OrderEvent {
@@ -88,8 +106,10 @@ export interface AdminOrderDetail extends AdminOrderSummary {
   subtotal: number
   shipping: number
   discount: number
+  manualDiscountPercent?: number | null
   discountCode?: string
   lines: AdminOrderLine[]
+  componentOptions?: AdminOrderComponentOption[]
   events: OrderEvent[]
   allowedFulfillmentTransitions: OrderFulfillmentStatus[]
   canRestockReturned: boolean

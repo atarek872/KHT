@@ -33,6 +33,7 @@ const migrations = [
   '0015_order_campaign.sql',
   '0016_meta_attribution.sql',
   '0017_shipping_product_proof.sql',
+  '0024_shared_set_inventory.sql',
 ].map((name) => new URL(`../server/db/migrations/${name}`, import.meta.url))
 
 function setup() {
@@ -131,7 +132,10 @@ test('Meta purchase uses server merchandise value and normalized SHA-256 custome
 test('GA4 purchase separates discount-adjusted item value and shipping', () => {
   assert.equal(ga4ClientId('GA1.1.123456.789012', 'fallback'), '123456.789012')
   assert.equal(ga4SessionId('GS2.1.s1760000000$o1$g1'), 'GS2.1.s1760000000$o1$g1')
-  assert.equal(ga4SessionId('GS1.1.1760000000.1.1.1760000020.0.0.0'), 'GS1.1.1760000000.1.1.1760000020.0.0.0')
+  assert.equal(
+    ga4SessionId('GS1.1.1760000000.1.1.1760000020.0.0.0'),
+    'GS1.1.1760000000.1.1.1760000020.0.0.0',
+  )
   assert.equal(ga4SessionId('bad\nvalue'), undefined)
   const payload = purchaseGa4Payload({
     reference: 'KHT-REF-1',
@@ -251,7 +255,8 @@ test('concurrent order submissions keep one order and one Purchase per platform'
     ])
     assert.ok(results.some((result) => result.status === 'fulfilled'))
     const fulfilled = results.filter((result) => result.status === 'fulfilled')
-    if (fulfilled.length === 2) assert.equal(fulfilled[0]!.value.reference, fulfilled[1]!.value.reference)
+    if (fulfilled.length === 2)
+      assert.equal(fulfilled[0]!.value.reference, fulfilled[1]!.value.reference)
     for (const table of ['orders', 'meta_event_outbox', 'ga4_purchase_outbox']) {
       assert.equal(
         (sqlite.prepare(`SELECT count(*) AS count FROM ${table}`).get() as { count: number }).count,
