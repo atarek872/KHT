@@ -22,6 +22,7 @@ const {
   total,
   cartId,
   completeCheckout,
+  changeSize,
   snapshotContact,
   flush,
   saved,
@@ -360,16 +361,18 @@ async function validateStep(targetStep: 1 | 2) {
 
 async function handleStepAction() {
   if (busy.value) return
-  if (step.value === 1) {
-    if (await validateStep(1)) await showStep(2)
-    return
-  }
-  if (step.value === 2) {
-    if (await validateStep(2)) await showStep(3)
-    return
-  }
   if (!(await validateStep(1)) || !(await validateStep(2))) return
   await submit()
+}
+
+function changeCheckoutSize(id: string, oldSize: string, event: Event) {
+  const nextSize = (event.target as HTMLSelectElement).value
+  if (changeSize(id, oldSize, nextSize)) return
+  ;(event.target as HTMLSelectElement).value = oldSize
+  error.value = t(
+    'That size is unavailable. Your selection was kept.',
+    'المقاس ده غير متاح. احتفظنا باختيارك الحالي.',
+  )
 }
 
 async function submit() {
@@ -382,8 +385,8 @@ async function submit() {
   busy.value = true
   error.value = ''
   try {
+    await flush()
     if (user.value) {
-      await flush()
       const accountOrder = await $fetch<{
         id: string
         number: string
@@ -487,49 +490,22 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
       <h1>{{ t('MAKE IT YOURS.', 'كمّل إطلالتك.') }}</h1>
     </div>
     <template v-if="count"
-      ><div class="commerce-grid" :class="`checkout-step-${step}`">
+      ><div class="commerce-grid">
         <form
           id="checkout-form"
           class="checkout-form"
           novalidate
           @submit.prevent="handleStepAction"
         >
-          <nav class="checkout-progress" :aria-label="t('Checkout progress', 'مراحل إتمام الطلب')">
-            <ol>
-              <li>
-                <button
-                  type="button"
-                  :aria-current="step === 1 ? 'step' : undefined"
-                  :disabled="busy"
-                  @click="showStep(1)"
-                >
-                  <span>01</span>{{ t('Contact', 'البيانات') }}
-                </button>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  :aria-current="step === 2 ? 'step' : undefined"
-                  :disabled="step < 2 || busy"
-                  @click="showStep(2)"
-                >
-                  <span>02</span>{{ t('Delivery', 'التوصيل') }}
-                </button>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  :aria-current="step === 3 ? 'step' : undefined"
-                  :disabled="step < 3 || busy"
-                  @click="showStep(3)"
-                >
-                  <span>03</span>{{ t('Review', 'المراجعة') }}
-                </button>
-              </li>
-            </ol>
-          </nav>
-
-          <fieldset v-if="step === 1" id="checkout-step-1" tabindex="-1">
+          <p class="checkout-one-page-note">
+            {{
+              t(
+                'One page. Your details, delivery and order total are all here.',
+                'صفحة واحدة: بياناتك، التوصيل، وإجمالي طلبك قدامك.',
+              )
+            }}
+          </p>
+          <fieldset id="checkout-step-1" tabindex="-1">
             <legend><span>01</span>{{ t('How can we reach you?', 'إزاي نتواصل معاك؟') }}</legend>
             <p v-if="!user" class="checkout-guest-note">
               {{ t('Checkout as a guest — no account needed.', 'كمّل كضيف — مش محتاج تعمل حساب.') }}
@@ -636,7 +612,7 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
             </p>
           </fieldset>
 
-          <fieldset v-else-if="step === 2" id="checkout-step-2" tabindex="-1">
+          <fieldset id="checkout-step-2" tabindex="-1">
             <legend><span>02</span>{{ t('Where should we deliver?', 'هنوصل الطلب فين؟') }}</legend>
             <label v-if="addresses.length" class="checkout-saved-address-select"
               >{{ t('Saved address', 'عنوان محفوظ') }}
@@ -776,29 +752,8 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
             </div>
           </fieldset>
 
-          <fieldset v-else id="checkout-step-3" tabindex="-1">
+          <fieldset id="checkout-step-3" tabindex="-1">
             <legend><span>03</span>{{ t('Review and confirm', 'راجع وأكد الطلب') }}</legend>
-            <div class="checkout-review-block">
-              <div>
-                <strong>{{ t('Contact', 'بيانات التواصل') }}</strong
-                ><button type="button" class="remove-link" @click="showStep(1)">
-                  {{ t('Edit', 'تعديل') }}
-                </button>
-              </div>
-              <p>
-                {{ form.name }} · <bdi>{{ form.phone }}</bdi
-                ><br v-if="form.email" /><span v-if="form.email">{{ form.email }}</span>
-              </p>
-            </div>
-            <div class="checkout-review-block">
-              <div>
-                <strong>{{ t('Delivery', 'التوصيل') }}</strong
-                ><button type="button" class="remove-link" @click="showStep(2)">
-                  {{ t('Edit', 'تعديل') }}
-                </button>
-              </div>
-              <p>{{ form.address }}<br />{{ form.city }} · {{ form.governorate }}</p>
-            </div>
             <div class="checkout-review-block">
               <div>
                 <strong>{{ t('Your items', 'القطع المطلوبة') }}</strong
@@ -812,13 +767,30 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
                 class="checkout-review-item"
               >
                 <span
-                  >{{ localized(line.product.name) }} · {{ line.size }} × {{ line.quantity }}</span
-                >
+                  >{{ localized(line.product.name) }} × {{ line.quantity }}
+                  <select
+                    class="checkout-size-select"
+                    :value="line.size"
+                    :aria-label="t('Change size', 'غيّر المقاس')"
+                    @change="changeCheckoutSize(line.id, line.size, $event)"
+                  >
+                    <option
+                      v-for="size in line.product.sizes"
+                      :key="size.name"
+                      :value="size.name"
+                      :disabled="size.stock < line.quantity"
+                    >
+                      {{ size.name }}
+                    </option>
+                  </select>
+                </span>
                 <strong>{{ money(line.quantity * sizePrice(line.product, line.size)) }}</strong>
               </p>
               <p class="checkout-review-item">
                 <span>{{ t('Delivery', 'التوصيل') }}</span
-                ><strong>{{ money(shipping) }}</strong>
+                ><strong>{{
+                  selectedShipping ? money(shipping) : t('Select area', 'اختار المحافظة')
+                }}</strong>
               </p>
               <p v-if="couponQuote?.discount" class="checkout-review-item">
                 <span>{{ t('Discount', 'الخصم') }}</span
@@ -912,15 +884,6 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
           </fieldset>
 
           <div class="checkout-actions">
-            <button
-              v-if="step > 1"
-              type="button"
-              class="checkout-back-button"
-              :disabled="busy"
-              @click="showStep((step - 1) as CheckoutStep)"
-            >
-              {{ t('Back', 'رجوع') }}
-            </button>
             <div class="checkout-final-total" aria-live="polite">
               <span>{{
                 selectedShipping
@@ -931,19 +894,20 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
             </div>
             <button
               class="button button-dark checkout-primary-action"
-              :disabled="busy || (step === 3 && (!codAvailable || couponBusy || welcomeBusy))"
+              :disabled="busy || !codAvailable || couponBusy || welcomeBusy"
             >
               {{
                 busy
                   ? t('Placing order…', 'جارٍ تسجيل الطلب…')
-                  : step === 1
-                    ? t('Continue to delivery', 'متابعة للتوصيل')
-                    : step === 2
-                      ? t('Review order', 'مراجعة الطلب')
-                      : t(
-                          `Place order — ${money(couponQuote?.total ?? total + shipping)}`,
-                          `تأكيد الطلب — ${money(couponQuote?.total ?? total + shipping)}`,
-                        )
+                  : selectedShipping
+                    ? t(
+                        `Place order — ${money(couponQuote?.total ?? total + shipping)}`,
+                        `تأكيد الطلب — ${money(couponQuote?.total ?? total + shipping)}`,
+                      )
+                    : t(
+                        'Enter details to see final total',
+                        'اكتب بياناتك علشان تشوف الإجمالي النهائي',
+                      )
               }}<KhtIcon name="arrow" />
             </button>
           </div>
@@ -955,7 +919,12 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
             :aria-expanded="summaryOpen"
             @click="summaryOpen = !summaryOpen"
           >
-            {{ t('Order summary', 'ملخص الطلب') }} ·
+            {{
+              selectedShipping
+                ? t('Order summary', 'ملخص الطلب')
+                : t('Subtotal before delivery', 'المجموع قبل التوصيل')
+            }}
+            ·
             {{ money(couponQuote?.total ?? total + shipping) }}
             <span>{{ summaryOpen ? '−' : '+' }}</span>
           </button>

@@ -260,6 +260,7 @@ export async function createDurableOrder(
         discount: priced.discount,
         customer: input.customer,
         context: options.metaContext,
+        attribution: campaignAttribution,
       })
     : null
   const ga4Payload = options.metaContext

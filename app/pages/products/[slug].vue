@@ -2,10 +2,10 @@
 import { STORE_ORIGIN, absoluteStoreUrl, breadcrumbList } from '#shared/storefrontSeo'
 import { hasSizePriceRange, sizePrice, startingPrice } from '#shared/productPricing'
 import { DEFAULT_HOME_SHOPPING } from '#shared/storeContent'
-import { useStoreContact } from '#shared/storeConfig'
 import { fullSetDiscountPercent } from '#shared/setOffer'
 import type { KhtSetSize } from '#shared/sizeRecommendation'
 import type { ProductReviewResponse } from '#shared/productReview'
+import { khtWhatsAppLink } from '#shared/whatsapp'
 
 const route = useRoute()
 const { t, localized, money, locale } = useLanguage()
@@ -17,6 +17,7 @@ const { data: reviewData } = await useFetch<ProductReviewResponse>(
 )
 const reviewCount = computed(() => reviewData.value?.count || 0)
 const reviewAverage = computed(() => reviewData.value?.average || 0)
+const featuredReview = computed(() => reviewData.value?.reviews?.[0])
 const reviewOpen = ref(false)
 const reviewBusy = ref(false)
 const reviewError = ref('')
@@ -76,7 +77,7 @@ watch(
 const category = computed(() =>
   catalog.value.categories.find((c) => c.slug === product.value?.category),
 )
-const selectedSize = ref('')
+const selectedSize = useState('kht-whatsapp-product-size', () => '')
 const displayedPrice = computed(() =>
   product.value
     ? selectedSize.value
@@ -114,17 +115,36 @@ const setSaving = computed(() =>
     : 0,
 )
 const storeContent = useStoreContent()
-const brand = computed(() => storeContent.value.brand)
 const policy = computed(() => storeContent.value.policyHighlights)
-const contact = computed(() => useStoreContact({ whatsapp: brand.value.contactWhatsApp }))
+const productWhatsApp = computed(() =>
+  khtWhatsAppLink(
+    t(
+      `Hello KHT, I have a question about ${localized(product.value!.name)}. Size: ${selectedSize.value || 'not selected yet'}.`,
+      `أهلاً KHT، عندي استفسار عن ${localized(product.value!.name)}. المقاس: ${selectedSize.value || 'لسه ما اخترتش'}.`,
+    ),
+  ),
+)
+const fabricDescription = computed(() => {
+  const explicit = product.value?.fabric
+  if (explicit?.en && explicit?.ar) return localized(explicit)
+  return (
+    localized(product.value!.detail)
+      .split(/\r?\n/)
+      .find((line) => /Milton|ميلتون/i.test(line))
+      ?.replace(/^[•\-\s]+/, '')
+      .trim() || ''
+  )
+})
+const gsm = computed(() => {
+  const text = `${product.value?.fabric?.en || ''} ${product.value?.fabric?.ar || ''}`
+  return text.match(/\b\d{3,4}\s*GSM\b/i)?.[0] || ''
+})
 const message = ref('')
 const zoom = ref(false)
 const actualSize = ref(true)
 const sizeGuide = ref(false)
 const sizeFinderOpen = ref(false)
-const sizingAssistanceUrl = computed(
-  () => contact.value.whatsappHref || brand.value.instagramUrl || '/contact',
-)
+const sizingAssistanceUrl = productWhatsApp
 const activeInfoTab = ref<'fit' | 'care' | 'delivery' | 'returns'>('fit')
 function moveInfoTab(event: KeyboardEvent) {
   const tabs = ['fit', 'care', 'delivery', 'returns'] as const
@@ -485,6 +505,58 @@ useStoreSeo({
             {{ t('Add to bag', 'أضف للسلة') }}
           </button>
         </div>
+        <div class="product-purchase-facts">
+          <p>
+            <strong>{{ t('Final product price', 'السعر النهائي للمنتج') }}</strong>
+            <span>{{ money(displayedPrice) }}</span>
+          </p>
+          <p v-if="fabricDescription">
+            <strong>{{ t('Fabric', 'الخامة') }}</strong> <span>{{ fabricDescription }}</span>
+          </p>
+          <p v-if="gsm">
+            <strong>GSM</strong><span>{{ gsm }}</span>
+          </p>
+          <p>
+            <strong>{{ t('Sizes', 'المقاسات') }}</strong>
+            <span>{{ product.sizes.map((size) => size.name).join(' / ') }}</span>
+          </p>
+          <p v-if="product.modelMeasurements?.en && product.modelMeasurements?.ar">
+            <strong>{{ t('Model height, weight & size', 'طول ووزن ومقاس الموديل') }}</strong>
+            <span>{{ localized(product.modelMeasurements) }}</span>
+          </p>
+          <p>
+            <strong>{{ t('Payment', 'الدفع') }}</strong>
+            <span>{{ t('Cash on delivery', 'الدفع عند الاستلام') }}</span>
+          </p>
+          <p>
+            <strong>{{ t('Delivery time', 'مدة الشحن') }}</strong>
+            <span>{{
+              t('Confirmed by the courier for your area', 'تؤكدها شركة الشحن حسب منطقتك')
+            }}</span>
+          </p>
+          <p>
+            <strong>{{ localized(policy.productReturnTabLabel) }}</strong>
+            <span>{{ localized(policy.productReturnSummary) }}</span>
+          </p>
+        </div>
+        <a
+          class="product-whatsapp-link"
+          :href="productWhatsApp"
+          target="_blank"
+          rel="noopener noreferrer"
+          >{{ t('Ask about this size on WhatsApp', 'اسأل عن المقاس ده على واتساب') }} ↗</a
+        >
+        <a v-if="featuredReview" class="product-featured-review" href="#product-reviews">
+          <span aria-hidden="true">★★★★★</span>
+          <q>{{ featuredReview.body }}</q>
+          <small>{{ featuredReview.displayName }} · {{ t('Verified buyer', 'مشتري موثّق') }}</small>
+        </a>
+        <a v-else class="product-review-empty-link" href="#product-reviews">{{
+          t(
+            'No verified reviews yet. See customer reviews',
+            'لا توجد تقييمات موثقة بعد. شوف آراء العملاء',
+          )
+        }}</a>
         <p v-if="message" class="form-error" role="alert">{{ message }}</p>
         <ul class="product-trust">
           <li>{{ t('Cash on delivery', 'الدفع عند الاستلام') }}</li>
@@ -518,21 +590,6 @@ useStoreSeo({
             <dd>{{ localized(product.embroidery) }}</dd>
           </template>
         </dl>
-        <p class="product-size-help">
-          <a
-            v-if="contact.whatsappHref"
-            :href="contact.whatsappHref"
-            target="_blank"
-            rel="noopener noreferrer"
-            >{{ t('Need size help? WhatsApp us', 'محتاج مساعدة في المقاس؟ راسلنا واتساب') }}</a
-          ><a
-            v-else-if="brand.instagramUrl"
-            :href="brand.instagramUrl"
-            target="_blank"
-            rel="noopener noreferrer"
-            >{{ t('Need size help? Message us', 'محتاج مساعدة في المقاس؟ راسلنا') }}</a
-          >
-        </p>
         <div class="product-service-links">
           <NuxtLink to="/shipping">{{ t('Delivery information', 'معلومات التوصيل') }}</NuxtLink
           ><NuxtLink to="/returns">{{ localized(policy.productReturnLinkLabel) }}</NuxtLink>
@@ -625,6 +682,39 @@ useStoreSeo({
         </p>
       </div>
     </div>
+    <section class="product-worth" aria-labelledby="product-worth-title">
+      <p class="eyebrow">KHT / THE DETAILS</p>
+      <h2 id="product-worth-title">
+        {{ t('Why is KHT worth its price?', 'لماذا يستحق KHT سعره؟') }}
+      </h2>
+      <div class="product-worth__grid">
+        <article>
+          <h3>{{ t('The fit', 'القَصّة') }}</h3>
+          <p>{{ localized(product.fit) }}</p>
+        </article>
+        <article v-if="fabricDescription">
+          <h3>{{ t('The fabric', 'الخامة') }}</h3>
+          <p>{{ fabricDescription }}</p>
+        </article>
+        <article v-if="productHighlights.length">
+          <h3>{{ t('The details', 'التفاصيل') }}</h3>
+          <ul>
+            <li v-for="point in productHighlights.slice(0, 4)" :key="point">{{ point }}</li>
+          </ul>
+        </article>
+        <article v-if="setSaving">
+          <h3>{{ t('The full set', 'الطقم الكامل') }}</h3>
+          <p>
+            {{
+              t(
+                `Save around ${setSaving}% compared with buying the pieces separately.`,
+                `وفّر حوالي ${setSaving}٪ مقارنة بشراء القطع منفصلة.`,
+              )
+            }}
+          </p>
+        </article>
+      </div>
+    </section>
     <section id="product-reviews" class="product-reviews" aria-labelledby="product-reviews-title">
       <div class="product-reviews__heading">
         <div>

@@ -110,6 +110,7 @@ test('Meta purchase uses server merchandise value and normalized SHA-256 custome
     subtotal: 2000,
     discount: 200,
     customer: { email: ' Mariam@Example.test ', phone: '01010000001' },
+    attribution: { campaignId: '123456', adsetId: '789012', adId: '345678' },
     context: {
       eventSourceUrl: 'https://kht-eg.com/checkout',
       ip: '203.0.113.4',
@@ -124,6 +125,9 @@ test('Meta purchase uses server merchandise value and normalized SHA-256 custome
   assert.equal(payload.custom_data.value, 1800)
   assert.deepEqual(payload.custom_data.content_ids, ['KHT-001'])
   assert.equal(payload.custom_data.num_items, 2)
+  assert.equal(payload.custom_data.campaign_id, '123456')
+  assert.equal(payload.custom_data.adset_id, '789012')
+  assert.equal(payload.custom_data.ad_id, '345678')
   assert.equal(payload.user_data.em?.[0], await sha256Hex('mariam@example.test'))
   assert.equal(payload.user_data.ph?.[0], await sha256Hex('201010000001'))
   assert.doesNotMatch(JSON.stringify(payload), /Mariam@|01010000001/)
@@ -230,6 +234,9 @@ test('successful UTM order atomically queues one Purchase per platform across re
     )
     assert.equal(meta.event_id, first.reference)
     assert.equal(meta.custom_data.value, first.subtotal - first.discount)
+    assert.equal(meta.custom_data.campaign_id, '123456')
+    assert.equal(meta.custom_data.adset_id, '789012')
+    assert.equal(meta.custom_data.ad_id, '345678')
     assert.equal(ga4.events[0].params.transaction_id, first.reference)
     assert.equal(ga4.events[0].params.value, first.subtotal - first.discount)
     assert.equal(ga4.events[0].params.session_id, 'GS2.1.s1760000000$o1$g1')
@@ -318,14 +325,13 @@ test('Meta API failure retries without blocking the order or logging secrets', a
       0,
     )
     assert.equal(sends, 1)
-    assert.equal(
-      (
-        sqlite.prepare('SELECT payload_json AS payload FROM meta_event_outbox').get() as {
-          payload: string | null
-        }
-      ).payload,
-      null,
-    )
+    const retainedPurchasePayload = (
+      sqlite.prepare('SELECT payload_json AS payload FROM meta_event_outbox').get() as {
+        payload: string | null
+      }
+    ).payload
+    assert.ok(retainedPurchasePayload)
+    assert.equal(JSON.parse(retainedPurchasePayload).event_name, 'Purchase')
     assert.doesNotMatch(messages.join(' '), /secret-token|Mariam|01010000001/)
   } finally {
     console.warn = warning

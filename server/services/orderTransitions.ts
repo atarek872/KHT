@@ -1,5 +1,10 @@
 import type { OrderFulfillmentStatus, OrderPaymentStatus } from '../../shared/adminOrder.ts'
 import type { D1Database } from '../utils/d1.ts'
+import {
+  enqueueMetaStatement,
+  orderLifecycleMetaEvent,
+  type MetaCommerceEvent,
+} from './metaCapi.ts'
 
 const transitions: Record<OrderFulfillmentStatus, OrderFulfillmentStatus[]> = {
   pending: ['confirmed', 'cancelled'],
@@ -21,9 +26,18 @@ interface CurrentOrderStatus {
   paymentStatus: OrderPaymentStatus
 }
 
+interface CurrentOrderRecord extends CurrentOrderStatus {
+  publicReference: string
+  purchaseMetaPayloadJson: string | null
+}
+
 export interface OrderTransitionResult extends CurrentOrderStatus {
   inventoryRestoredAt?: string
   returnedRestockedAt?: string
+  analyticsEvent?: {
+    eventName: Extract<MetaCommerceEvent, 'OrderConfirmed' | 'OrderDelivered'>
+    eventId: string
+  }
 }
 
 export function isOrderFulfillmentStatus(value: unknown): value is OrderFulfillmentStatus {
@@ -44,11 +58,14 @@ function validateMutationInput(id: string, actorEmail: string, note?: string) {
 async function currentOrder(database: D1Database, id: string) {
   return database
     .prepare(
-      `SELECT fulfillment_status AS fulfillmentStatus, payment_status AS paymentStatus
+      `SELECT fulfillment_status AS fulfillmentStatus, payment_status AS paymentStatus,
+         public_reference AS publicReference,
+         (SELECT payload_json FROM meta_event_outbox
+          WHERE event_name='Purchase' AND event_id=orders.public_reference) AS purchaseMetaPayloadJson
        FROM orders WHERE id = ?`,
     )
     .bind(id)
-    .first<CurrentOrderStatus>()
+    .first<CurrentOrderRecord>()
 }
 
 function restoreInventoryStatement(database: D1Database, orderId: string, eventId: string) {
@@ -93,7 +110,25 @@ export async function transitionOrder(
   const changedAt = new Date().toISOString()
   const cancelling = nextStatus === 'cancelled'
   const delivered = nextStatus === 'delivered'
-  const results = await database.batch([
+  const lifecycleEventName =
+    nextStatus === 'confirmed'
+      ? 'OrderConfirmed'
+      : nextStatus === 'delivered'
+        ? 'OrderDelivered'
+        : undefined
+  const lifecycleEventId = lifecycleEventName
+    ? `${current.publicReference}:${nextStatus}`
+    : undefined
+  const lifecycleEvent =
+    lifecycleEventName && lifecycleEventId
+      ? orderLifecycleMetaEvent({
+          purchasePayloadJson: current.purchaseMetaPayloadJson,
+          eventName: lifecycleEventName,
+          eventId: lifecycleEventId,
+          changedAt,
+        })
+      : undefined
+  const statements = [
     database
       .prepare(
         `INSERT INTO order_events
@@ -137,7 +172,21 @@ export async function transitionOrder(
         eventId,
       ),
     restoreInventoryStatement(database, id, cancelling ? eventId : '__not-a-cancellation__'),
-  ])
+  ]
+  if (lifecycleEvent) {
+    statements.push(enqueueMetaStatement(database, lifecycleEvent))
+    if (nextStatus === 'delivered') {
+      statements.push(
+        database
+          .prepare(
+            `UPDATE meta_event_outbox SET payload_json=NULL
+             WHERE event_name='Purchase' AND event_id=?`,
+          )
+          .bind(current.publicReference),
+      )
+    }
+  }
+  const results = await database.batch(statements)
 
   if ((results[0]?.meta?.changes || 0) !== 1 || (results[1]?.meta?.changes || 0) !== 1) {
     throw new Error('ORDER_TRANSITION_CONFLICT')
@@ -150,6 +199,17 @@ export async function transitionOrder(
         ? 'failed'
         : current.paymentStatus,
     ...(cancelling ? { inventoryRestoredAt: changedAt } : {}),
+    ...(lifecycleEvent
+      ? {
+          analyticsEvent: {
+            eventName: lifecycleEvent.event_name as Extract<
+              MetaCommerceEvent,
+              'OrderConfirmed' | 'OrderDelivered'
+            >,
+            eventId: lifecycleEvent.event_id,
+          },
+        }
+      : {}),
   }
 }
 
@@ -189,7 +249,8 @@ export async function restockReturnedOrder(
     throw new Error('ORDER_RESTOCK_CONFLICT')
   }
   return {
-    ...current,
+    fulfillmentStatus: current.fulfillmentStatus,
+    paymentStatus: current.paymentStatus,
     returnedRestockedAt: changedAt,
   }
 }

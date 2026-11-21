@@ -87,6 +87,11 @@ useSeoMeta({ title: 'Order confirmed — KHT', robots: 'noindex, nofollow' })
         </div>
         <strong>{{ statusLabel(order.fulfillmentStatus) }}</strong>
       </div>
+      <OrderWhatsAppActions
+        :reference="order.reference"
+        :status="order.fulfillmentStatus"
+        :items="order.lines"
+      />
       <p class="muted small-copy">
         {{
           t(

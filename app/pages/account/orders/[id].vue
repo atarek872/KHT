@@ -108,6 +108,11 @@ const exceptional = computed(() =>
             )
           }}
         </p>
+        <OrderWhatsAppActions
+          :reference="order.number"
+          :status="order.fulfillmentStatus"
+          :items="order.lines"
+        />
         <details class="account-history">
           <summary>{{ t('Recorded updates', 'التحديثات المسجلة') }}</summary>
           <ol v-if="order.history.length">

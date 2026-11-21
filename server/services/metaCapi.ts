@@ -1,7 +1,14 @@
 import type { D1Database, D1Statement } from '../utils/d1.ts'
 import type { OrderVariantOption } from '../../shared/createOrder.ts'
+import type { CampaignAttribution } from '../../shared/campaignAttribution.ts'
 
-export type MetaCommerceEvent = 'ViewContent' | 'AddToCart' | 'InitiateCheckout' | 'Purchase'
+export type MetaCommerceEvent =
+  | 'ViewContent'
+  | 'AddToCart'
+  | 'InitiateCheckout'
+  | 'Purchase'
+  | 'OrderConfirmed'
+  | 'OrderDelivered'
 
 export interface MetaRequestContext {
   eventSourceUrl: string
@@ -38,6 +45,9 @@ export interface MetaEvent {
     contents: { id: string; quantity: number; item_price: number }[]
     num_items: number
     order_id?: string
+    campaign_id?: string
+    adset_id?: string
+    ad_id?: string
   }
 }
 
@@ -111,6 +121,7 @@ export async function purchaseMetaEvent(input: {
   discount: number
   customer: { email?: string; phone?: string }
   context: MetaRequestContext
+  attribution?: CampaignAttribution | null
 }): Promise<MetaEvent> {
   const contents = input.lines.map(({ variant, quantity }) => ({
     id: variant.productCode || variant.productId,
@@ -132,7 +143,39 @@ export async function purchaseMetaEvent(input: {
       contents,
       num_items: contents.reduce((sum, item) => sum + item.quantity, 0),
       order_id: input.reference,
+      ...(input.attribution?.campaignId ? { campaign_id: input.attribution.campaignId } : {}),
+      ...(input.attribution?.adsetId ? { adset_id: input.attribution.adsetId } : {}),
+      ...(input.attribution?.adId ? { ad_id: input.attribution.adId } : {}),
     },
+  }
+}
+
+export function orderLifecycleMetaEvent(input: {
+  purchasePayloadJson: string | null | undefined
+  eventName: 'OrderConfirmed' | 'OrderDelivered'
+  eventId: string
+  changedAt: string
+}): MetaEvent | undefined {
+  if (!input.purchasePayloadJson) return undefined
+  try {
+    const purchase = JSON.parse(input.purchasePayloadJson) as Partial<MetaEvent>
+    if (
+      purchase.event_name !== 'Purchase' ||
+      purchase.action_source !== 'website' ||
+      typeof purchase.event_source_url !== 'string' ||
+      !purchase.user_data ||
+      !purchase.custom_data
+    ) {
+      return undefined
+    }
+    return {
+      ...(purchase as MetaEvent),
+      event_name: input.eventName,
+      event_time: Math.floor(new Date(input.changedAt).getTime() / 1000),
+      event_id: input.eventId,
+    }
+  } catch {
+    return undefined
   }
 }
 
@@ -239,7 +282,8 @@ export async function deliverMetaOutbox(
       if (!accepted) throw new Error('META_NOT_CONFIGURED')
       await database
         .prepare(
-          `UPDATE meta_event_outbox SET state='sent', payload_json=NULL,
+          `UPDATE meta_event_outbox SET state='sent',
+        payload_json=CASE WHEN event_name='Purchase' THEN payload_json ELSE NULL END,
         delivered_at=?, lease_until=NULL WHERE event_name=? AND event_id=? AND state='sending'`,
         )
         .bind(new Date().toISOString(), row.eventName, row.eventId)

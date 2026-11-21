@@ -164,6 +164,14 @@ async function handleCurtainExpired() {
       <SiteFooter />
       <BagDrawer v-if="!curtainActive" />
       <WelcomeGift v-if="!curtainActive" />
+      <StoreWhatsApp
+        v-if="
+          !curtainActive &&
+          route.path !== '/checkout' &&
+          !route.path.startsWith('/order-confirmation/') &&
+          !route.path.startsWith('/account/orders/')
+        "
+      />
       <span class="sr-only" role="status" aria-live="polite">{{ announcement }}</span>
     </div>
     <StoreCurtain v-if="curtain" :curtain="curtain" @expired="handleCurtainExpired" />

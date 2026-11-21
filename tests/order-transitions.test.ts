@@ -66,6 +66,50 @@ function stock(sqlite: ReturnType<typeof createTestD1>['sqlite']) {
   ).stock
 }
 
+function metaOutboxEvent(
+  sqlite: ReturnType<typeof createTestD1>['sqlite'],
+  eventName: 'Purchase' | 'OrderConfirmed' | 'OrderDelivered',
+) {
+  const row = sqlite
+    .prepare(
+      `SELECT event_id AS eventId, payload_json AS payloadJson
+       FROM meta_event_outbox WHERE event_name = ?`,
+    )
+    .get(eventName) as { eventId: string; payloadJson: string } | undefined
+  return row
+    ? { eventId: row.eventId, payload: JSON.parse(row.payloadJson) as Record<string, unknown> }
+    : undefined
+}
+
+function seedPurchaseMetaEvent(
+  sqlite: ReturnType<typeof createTestD1>['sqlite'],
+  reference: string,
+) {
+  const payload = {
+    event_name: 'Purchase',
+    event_time: 1_795_210_000,
+    event_id: reference,
+    action_source: 'website',
+    event_source_url: 'https://kht-eg.com/order-confirmation',
+    user_data: { fbp: 'fb.1.1795210000.1234567890' },
+    custom_data: {
+      currency: 'EGP',
+      value: 2800,
+      content_ids: ['KHT-001'],
+      contents: [{ id: 'KHT-001', quantity: 2, item_price: 1400 }],
+      num_items: 2,
+      order_id: reference,
+    },
+  }
+  sqlite
+    .prepare(
+      `INSERT INTO meta_event_outbox
+       (event_name, event_id, payload_json, next_attempt_at, created_at)
+       VALUES ('Purchase', ?, ?, '2026-11-21T00:00:00.000Z', '2026-11-21T00:00:00.000Z')`,
+    )
+    .run(reference, JSON.stringify(payload))
+}
+
 test('only valid fulfillment transitions are advertised', () => {
   assert.deepEqual(allowedFulfillmentTransitions('pending'), ['confirmed', 'cancelled'])
   assert.deepEqual(allowedFulfillmentTransitions('confirmed'), ['processing', 'cancelled'])
@@ -147,7 +191,10 @@ test('delivering a COD order marks payment paid and terminal states reject chang
       },
     )
     await transitionOrder(database, id, 'returned', 'admin@kht.local')
-    await assert.rejects(() => transitionOrder(database, id, 'cancelled', 'admin@kht.local'), /ORDER_TRANSITION_CONFLICT/)
+    await assert.rejects(
+      () => transitionOrder(database, id, 'cancelled', 'admin@kht.local'),
+      /ORDER_TRANSITION_CONFLICT/,
+    )
     assert.equal(
       (
         sqlite
@@ -158,6 +205,79 @@ test('delivering a COD order marks payment paid and terminal states reject chang
       ).count,
       6,
     )
+  } finally {
+    close()
+  }
+})
+
+test('confirming an order queues one deterministic Meta event from its Purchase payload', async () => {
+  const { database, sqlite, close } = setup()
+  try {
+    const created = await createStorefrontOrder(database, checkoutInput())
+    const { id } = sqlite.prepare('SELECT id FROM orders').get() as { id: string }
+    seedPurchaseMetaEvent(sqlite, created.reference)
+    const purchase = metaOutboxEvent(sqlite, 'Purchase')
+    assert.ok(purchase)
+
+    const transition = await transitionOrder(database, id, 'confirmed', 'admin@kht.local')
+
+    const confirmed = metaOutboxEvent(sqlite, 'OrderConfirmed')
+    assert.ok(confirmed)
+    assert.equal(confirmed.eventId, `${created.reference}:confirmed`)
+    assert.deepEqual(confirmed.payload, {
+      ...purchase.payload,
+      event_name: 'OrderConfirmed',
+      event_id: `${created.reference}:confirmed`,
+      event_time: (confirmed.payload as { event_time: number }).event_time,
+    })
+    assert.deepEqual(transition.analyticsEvent, {
+      eventName: 'OrderConfirmed',
+      eventId: `${created.reference}:confirmed`,
+    })
+    assert.ok(metaOutboxEvent(sqlite, 'Purchase'))
+
+    await assert.rejects(
+      () => transitionOrder(database, id, 'confirmed', 'admin@kht.local'),
+      /ORDER_TRANSITION_CONFLICT/,
+    )
+    assert.equal(
+      (
+        sqlite
+          .prepare(
+            `SELECT COUNT(*) AS count FROM meta_event_outbox WHERE event_name='OrderConfirmed'`,
+          )
+          .get() as { count: number }
+      ).count,
+      1,
+    )
+  } finally {
+    close()
+  }
+})
+
+test('delivering an order queues one deterministic Meta delivery event', async () => {
+  const { database, sqlite, close } = setup()
+  try {
+    const created = await createStorefrontOrder(database, checkoutInput())
+    const { id } = sqlite.prepare('SELECT id FROM orders').get() as { id: string }
+    seedPurchaseMetaEvent(sqlite, created.reference)
+    await transitionOrder(database, id, 'confirmed', 'admin@kht.local')
+    await transitionOrder(database, id, 'processing', 'admin@kht.local')
+    await transitionOrder(database, id, 'shipped', 'admin@kht.local')
+    await transitionOrder(database, id, 'out-for-delivery', 'admin@kht.local')
+
+    const transition = await transitionOrder(database, id, 'delivered', 'admin@kht.local')
+
+    const delivered = metaOutboxEvent(sqlite, 'OrderDelivered')
+    assert.ok(delivered)
+    assert.equal(delivered.eventId, `${created.reference}:delivered`)
+    assert.equal(delivered.payload.event_name, 'OrderDelivered')
+    assert.equal(delivered.payload.event_id, `${created.reference}:delivered`)
+    assert.deepEqual(transition.analyticsEvent, {
+      eventName: 'OrderDelivered',
+      eventId: `${created.reference}:delivered`,
+    })
+    assert.equal(metaOutboxEvent(sqlite, 'Purchase')?.payload, null)
   } finally {
     close()
   }
@@ -213,7 +333,10 @@ test('order workflow endpoints require Admin authentication and the detail UI op
     new URL('../server/api/admin/orders/[id]/restock.post.ts', import.meta.url),
     'utf8',
   )
-  const page = readFileSync(new URL('../app/pages/admin/orders/[id]/index.vue', import.meta.url), 'utf8')
+  const page = readFileSync(
+    new URL('../app/pages/admin/orders/[id]/index.vue', import.meta.url),
+    'utf8',
+  )
 
   assert.match(patchRoute, /requireAdmin\(event\)/)
   assert.match(restockRoute, /requireAdmin\(event\)/)
