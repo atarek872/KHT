@@ -212,7 +212,7 @@ export async function buildPersistedDashboardSnapshot(
       .bind(lowStockThreshold)
       .first<{ value: number }>(),
     getAbandonedCartMetrics(database, rangeStart(range, now)),
-    listAbandonedCarts(database),
+    listAbandonedCarts(database, start),
   ])
 
   const commerceValues = {

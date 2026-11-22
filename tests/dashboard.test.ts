@@ -124,6 +124,10 @@ test('persisted dashboard reports real COD commerce and inventory data', async (
          'KHT-001-S', 2, 890, 1780),
         ('dashboard-item-2', 'dashboard-pending', 'kht-001-m', 'The Line Tee', 'Black / M',
          'KHT-001-M', 1, 890, 890);
+      INSERT INTO abandoned_carts (id, subtotal, items_count, created_at, last_activity)
+      VALUES
+        ('dashboard-old-cart', 890, 1, '2026-09-02 09:00:00', '2026-09-02 09:00:00'),
+        ('dashboard-new-cart', 890, 1, '2026-09-05 08:00:00', '2026-09-05 08:00:00');
     `)
 
     const dashboard = await buildPersistedDashboardSnapshot(
@@ -166,6 +170,11 @@ test('persisted dashboard reports real COD commerce and inventory data', async (
       revenue: 1780,
     })
     assert.ok(dashboard.lowStock.items.length > 0)
+    assert.equal(metric('abandonedCarts')?.value, 1)
+    assert.deepEqual(
+      dashboard.abandonedCarts.items.map((cart) => cart.id),
+      ['dashboard-new-cart'],
+    )
     assert.deepEqual(dashboard.sourcePerformance.items, [
       { source: 'phone', orders: 1, paidValue: 0 },
       { source: 'website', orders: 1, paidValue: 1840 },

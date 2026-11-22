@@ -150,7 +150,7 @@ export async function saveCartSnapshot(database: D1Database, input: CartSnapshot
 
 const recoveryExpression = 'recovery_state'
 
-export async function listAbandonedCarts(database: D1Database) {
+export async function listAbandonedCarts(database: D1Database, since?: string) {
   const result = await database
     .prepare(
       `SELECT id, customer_name AS customerName, phone, email,
@@ -163,8 +163,10 @@ export async function listAbandonedCarts(database: D1Database) {
     FROM abandoned_carts WHERE state = 'active'
     AND recovery_state IN ('active', 'contacted')
     AND datetime(last_activity) <= datetime('now', '-${abandonmentMinutes} minutes')
+    AND (? IS NULL OR datetime(created_at) >= datetime(?))
     ORDER BY last_activity DESC LIMIT 100`,
     )
+    .bind(since || null, since || null)
     .all<CartRow>()
   return result.results || []
 }
