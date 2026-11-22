@@ -24,7 +24,7 @@ test('dashboard never invents metrics when commerce persistence is unavailable',
 
   assert.equal(dashboard.range, '30d')
   assert.equal(dashboard.generatedAt, generatedAt.toISOString())
-  assert.equal(dashboard.metrics.length, 8)
+  assert.equal(dashboard.metrics.length, 14)
   for (const metric of dashboard.metrics) {
     assert.equal(metric.value, null)
     assert.equal(metric.availability, 'unavailable')
@@ -33,6 +33,7 @@ test('dashboard never invents metrics when commerce persistence is unavailable',
     dashboard.salesTrend,
     dashboard.recentOrders,
     dashboard.topProducts,
+    dashboard.sourcePerformance,
     dashboard.lowStock,
     dashboard.abandonedCarts,
   ]) {
@@ -40,6 +41,8 @@ test('dashboard never invents metrics when commerce persistence is unavailable',
     assert.deepEqual(section.items, [])
     assert.ok(section.message)
   }
+  assert.equal(dashboard.forecast.value, null)
+  assert.deepEqual(dashboard.priorities, [])
 })
 
 test('dashboard page uses one aggregate endpoint and includes every required section', () => {
@@ -49,16 +52,18 @@ test('dashboard page uses one aggregate endpoint and includes every required sec
   assert.match(page, /'\/api\/admin\/dashboard'/)
   assert.match(page, /query: \{ range \}/)
   for (const section of [
-    'Overview',
-    'Sales trend',
-    'Recent orders',
-    'Top products',
-    'Low stock',
-    'Abandoned carts',
+    'نظرة عامة',
+    'اتجاه الطلبات المدفوعة',
+    'أحدث الطلبات',
+    'المنتجات',
+    'مصادر الطلبات',
+    'المخزون',
+    'السلات المتروكة',
+    'أولويات العمل',
   ]) {
     assert.match(page, new RegExp(section, 'i'), section)
   }
-  for (const period of ['Today', '7 days', '30 days']) {
+  for (const period of ['اليوم', '٧ أيام', '٣٠ يومًا']) {
     assert.match(page, new RegExp(period), period)
   }
   for (const collection of ['salesTrend', 'recentOrders', 'topProducts', 'lowStock']) {
@@ -134,9 +139,22 @@ test('persisted dashboard reports real COD commerce and inventory data', async (
         orders: metric('orders')?.value,
         averageOrderValue: metric('averageOrderValue')?.value,
         itemsSold: metric('itemsSold')?.value,
+        placedValue: metric('placedValue')?.value,
+        awaitingAction: metric('awaitingAction')?.value,
+        delivered: metric('delivered')?.value,
       },
-      { sales: 1840, orders: 2, averageOrderValue: 1840, itemsSold: 2 },
+      {
+        sales: 1840,
+        orders: 2,
+        averageOrderValue: 1840,
+        itemsSold: 2,
+        placedValue: 2790,
+        awaitingAction: 1,
+        delivered: 1,
+      },
     )
+    assert.equal(dashboard.forecast.value, null)
+    assert.ok(dashboard.priorities.some((priority) => priority.key === 'pending'))
     assert.equal(metric('lowStock')?.availability, 'available')
     assert.ok(Number(metric('lowStock')?.value) > 0)
     assert.deepEqual(dashboard.salesTrend.items, [{ date: '2026-09-05', sales: 1840 }])
@@ -148,6 +166,10 @@ test('persisted dashboard reports real COD commerce and inventory data', async (
       revenue: 1780,
     })
     assert.ok(dashboard.lowStock.items.length > 0)
+    assert.deepEqual(dashboard.sourcePerformance.items, [
+      { source: 'phone', orders: 1, paidValue: 0 },
+      { source: 'website', orders: 1, paidValue: 1840 },
+    ])
     for (const section of [
       dashboard.salesTrend,
       dashboard.recentOrders,
@@ -156,6 +178,46 @@ test('persisted dashboard reports real COD commerce and inventory data', async (
     ]) {
       assert.equal(section.availability, 'available')
     }
+  } finally {
+    close()
+  }
+})
+
+test('dashboard forecast requires three paid orders on distinct days and explains the projection', async () => {
+  const { database, sqlite, close } = createTestD1()
+  try {
+    for (const name of [
+      '0001_commerce.sql',
+      '0002_products.sql',
+      '0003_categories.sql',
+      '0004_discounts.sql',
+      '0005_abandoned_carts.sql',
+      '0006_commerce_safety.sql',
+      '0007_production_commerce.sql',
+      '0019_cart_recovery_email.sql',
+      '0020_recovery_admin_settings.sql',
+    ]) {
+      sqlite.exec(read(`../server/db/migrations/${name}`))
+    }
+    sqlite.exec(`INSERT INTO customers (id, name, phone, address, governorate, city)
+      VALUES ('forecast-customer', 'Test', '01010000112', 'Street', 'Cairo', 'Cairo');`)
+    for (const [index, day] of ['01', '03', '05'].entries()) {
+      sqlite.exec(`INSERT INTO orders (id, number, idempotency_key, customer_id, subtotal, shipping, discount, total, payment_method, payment_status, fulfillment_status, source, created_at, public_reference, shipping_governorate)
+        VALUES ('forecast-${index}', 'KHT-F-${index}', 'f-${index}', 'forecast-customer', 900, 60, 0, 960, 'cod', 'pending', 'pending', 'website', '2026-09-${day} 09:00:00', 'KHT-F-${index}-REF', 'Cairo');
+        UPDATE orders SET payment_status='paid', fulfillment_status='delivered' WHERE id='forecast-${index}';`)
+    }
+    const dashboard = await buildPersistedDashboardSnapshot(
+      database,
+      '7d',
+      new Date('2026-09-08T00:00:00.000Z'),
+    )
+    assert.equal(dashboard.forecast.value, 2880)
+    assert.equal(dashboard.forecast.sampleOrders, 3)
+    assert.match(dashboard.forecast.method, /٧ أيام/)
+    assert.equal(
+      dashboard.priorities.some((priority) => priority.key === 'pending'),
+      false,
+    )
   } finally {
     close()
   }

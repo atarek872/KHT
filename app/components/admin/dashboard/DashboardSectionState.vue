@@ -7,7 +7,9 @@ defineProps<{ availability: DashboardAvailability; message: string }>()
 <template>
   <div class="dashboard-section-state" role="status">
     <span aria-hidden="true" />
-    <strong>{{ availability === 'unavailable' ? 'Data unavailable' : 'No activity yet' }}</strong>
+    <strong>{{
+      availability === 'unavailable' ? 'البيانات غير متاحة' : 'لا يوجد نشاط بعد'
+    }}</strong>
     <p>{{ message }}</p>
   </div>
 </template>

@@ -20,6 +20,8 @@ const displayValue = computed(() => {
   <article class="dashboard-metric" :data-availability="metric.availability">
     <p>{{ metric.label }}</p>
     <strong>{{ displayValue }}</strong>
-    <span>{{ metric.availability === 'unavailable' ? 'Not available' : metric.note }}</span>
+    <span>{{
+      metric.availability === 'unavailable' ? 'البيانات غير متاحة حاليًا' : metric.note
+    }}</span>
   </article>
 </template>

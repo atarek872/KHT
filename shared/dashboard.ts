@@ -7,9 +7,15 @@ export type DashboardAvailability = 'available' | 'empty' | 'unavailable'
 export interface DashboardMetric {
   key:
     | 'sales'
+    | 'placedValue'
     | 'orders'
+    | 'paidOrders'
     | 'averageOrderValue'
     | 'itemsSold'
+    | 'awaitingAction'
+    | 'onDelivery'
+    | 'delivered'
+    | 'cancelled'
     | 'lowStock'
     | 'abandonedCarts'
     | 'recoveredCarts'
@@ -59,6 +65,19 @@ export interface DashboardSnapshot {
   salesTrend: DashboardSection<{ date: string; sales: number }>
   recentOrders: DashboardSection<DashboardRecentOrder>
   topProducts: DashboardSection<DashboardTopProduct>
+  sourcePerformance: DashboardSection<{ source: string; orders: number; paidValue: number }>
   lowStock: DashboardSection<DashboardLowStockItem>
   abandonedCarts: DashboardSection<AbandonedCartSummary>
+  forecast: {
+    value: number | null
+    sampleOrders: number
+    method: string
+  }
+  priorities: {
+    key: 'pending' | 'delivery' | 'stock' | 'carts'
+    title: string
+    detail: string
+    count: number
+    to: string
+  }[]
 }

@@ -4723,3 +4723,181 @@
     width: 100%;
   }
 }
+
+/* Dashboard: retain the KHT monochrome system while making operations readable in Arabic. */
+.kht-admin .admin-dashboard {
+  min-width: 0;
+  text-align: right;
+}
+
+.kht-admin .admin-dashboard__insights {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(260px, 1fr);
+  gap: 16px;
+}
+
+.kht-admin .admin-dashboard__insights .admin-section__body {
+  min-height: 164px;
+}
+
+.kht-admin .admin-dashboard__priority-list {
+  width: 100%;
+  display: grid;
+  align-content: start;
+}
+
+.kht-admin .admin-dashboard__priority {
+  min-height: 64px;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) 20px;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 0;
+  color: var(--kht-gray-800);
+  border-bottom: 1px solid var(--kht-gray-200);
+  text-decoration: none;
+}
+
+.kht-admin .admin-dashboard__priority:last-child {
+  border-bottom: 0;
+}
+.kht-admin .admin-dashboard__priority:hover b {
+  text-decoration: underline;
+}
+.kht-admin .admin-dashboard__priority > strong {
+  font-family: var(--display);
+  font-size: 1.6rem;
+  font-variant-numeric: tabular-nums;
+}
+.kht-admin .admin-dashboard__priority span:nth-child(2) {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+.kht-admin .admin-dashboard__priority b {
+  font-size: 0.875rem;
+}
+.kht-admin .admin-dashboard__priority small,
+.kht-admin .admin-dashboard__forecast p,
+.kht-admin .admin-dashboard__quiet {
+  color: #666;
+  font-size: 0.78rem;
+  line-height: 1.6;
+}
+.kht-admin .admin-dashboard__forecast {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+}
+.kht-admin .admin-dashboard__forecast > strong {
+  font-family: var(--display);
+  font-size: clamp(1.8rem, 3vw, 2.7rem);
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+.kht-admin .admin-dashboard__forecast p {
+  margin: 0;
+}
+.kht-admin .admin-dashboard__sources {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--kht-gray-200);
+  border: 1px solid var(--kht-gray-200);
+}
+.kht-admin .admin-dashboard__source {
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+  padding: 16px;
+  background: var(--kht-white);
+}
+.kht-admin .admin-dashboard__source > strong {
+  font-size: 0.9rem;
+}
+.kht-admin .admin-dashboard__source > span {
+  font-family: var(--display);
+  font-size: 1.6rem;
+}
+.kht-admin .admin-dashboard__source > small {
+  color: #666;
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+.kht-admin .admin-dashboard__source > small b {
+  color: var(--kht-gray-800);
+}
+.kht-admin .admin-dashboard__quiet {
+  margin: 0;
+}
+.kht-admin .dashboard-metric > strong {
+  font-size: clamp(1.8rem, 2.7vw, 2.5rem);
+  overflow-wrap: anywhere;
+}
+.kht-admin .dashboard-metric > span {
+  margin-top: 12px;
+  font-weight: 400;
+}
+.kht-admin .admin-dashboard__sales-bar {
+  width: min(34%, var(--bar-width));
+  height: 7px;
+  margin-inline-start: auto;
+  background: var(--kht-black);
+  flex: none;
+}
+.kht-admin .admin-dashboard__data-list > :is(a, li) {
+  min-width: 0;
+}
+.kht-admin .admin-dashboard__data-list > :is(a, li) > strong {
+  white-space: nowrap;
+}
+
+@media (max-width: 1279px) {
+  .kht-admin .admin-dashboard__insights {
+    grid-template-columns: 1fr;
+  }
+  .kht-admin .admin-dashboard__sources {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 767px) {
+  .kht-admin .admin-dashboard__source {
+    padding: 13px;
+  }
+  .kht-admin .admin-dashboard__metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .kht-admin .dashboard-metric {
+    min-width: 0;
+    min-height: 136px;
+    padding: 15px;
+  }
+  .kht-admin .dashboard-metric:nth-child(-n + 2) {
+    grid-column: span 2;
+    min-height: 124px;
+  }
+  .kht-admin .dashboard-metric > strong {
+    font-size: clamp(1.55rem, 7vw, 2.1rem);
+  }
+  .kht-admin .dashboard-metric > p {
+    font-size: 0.78rem;
+  }
+  .kht-admin .dashboard-metric > span {
+    font-size: 0.7rem;
+  }
+  .kht-admin .admin-dashboard__priority {
+    grid-template-columns: 34px minmax(0, 1fr) 16px;
+    gap: 9px;
+  }
+  .kht-admin .admin-dashboard__sales-bar {
+    display: none;
+  }
+  .kht-admin .admin-dashboard__data-list > :is(a, li) {
+    gap: 8px;
+  }
+  .kht-admin .admin-dashboard__data-list > :is(a, li) > strong {
+    font-size: 0.8rem;
+  }
+}
