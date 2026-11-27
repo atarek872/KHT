@@ -39,8 +39,8 @@ const isExternalHelp = computed(() => /^https:\/\//.test(props.assistanceUrl))
       <p class="size-finder__intro">
         {{
           t(
-            'A starting point for the KHT oversized hoodie and wide-leg pants set. Enter your height and weight; compare the garment measurements before you choose.',
-            'نقطة بداية لاختيار مقاس طقم KHT الأوفرسايز. اكتب طولك ووزنك، وقارن مقاسات القطعة قبل ما تختار.',
+            'Find your KHT oversized set size. Enter your height and weight, then compare the garment measurements for your preferred fit.',
+            'اختار مقاس طقم KHT الأوفرسايز. اكتب طولك ووزنك، وقارن قياسات القطعة للفيت اللي تفضله.',
           )
         }}
       </p>
@@ -83,9 +83,9 @@ const isExternalHelp = computed(() => /^https:\/\//.test(props.assistanceUrl))
 
       <div v-if="result" class="size-finder__result" aria-live="polite">
         <template v-if="result.kind === 'recommended'">
-          <span class="eyebrow">{{ t('YOUR SIZE STARTING POINT', 'المقاس الأقرب لك') }}</span>
+          <span class="eyebrow">{{ t('YOUR KHT FIT', 'مقاس KHT المناسب لك') }}</span>
           <strong
-            >{{ t('Recommended size', 'المقاس المقترح') }} <b>{{ result.size }}</b></strong
+            >{{ t('Best match', 'المقاس المناسب') }} <b>{{ result.size }}</b></strong
           >
           <p>
             {{
@@ -100,8 +100,8 @@ const isExternalHelp = computed(() => /^https:\/\//.test(props.assistanceUrl))
           </button>
         </template>
         <template v-else-if="result.kind === 'borderline'">
-          <span class="eyebrow">{{ t('TWO POSSIBLE FITS', 'مقاسين محتملين') }}</span>
-          <strong>{{ t('M or L may work', 'M أو L ممكن يناسبك') }}</strong>
+          <span class="eyebrow">{{ t('CHOOSE YOUR FIT', 'اختار الفيت المناسب') }}</span>
+          <strong>{{ t('M or L — your choice', 'M أو L — اختار فيتك') }}</strong>
           <p>
             {{
               t(

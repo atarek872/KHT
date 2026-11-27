@@ -602,8 +602,8 @@ export const DEFAULT_STORE_CONTENT: StorefrontContent = {
       hero: hero(
         text('SHIPPING & RETURNS.', 'الشحن والاستبدال والاسترجاع.'),
         text(
-          'Inspect your order at the door where the courier allows it. Your legal exchange and return rights are explained below.',
-          'افحص طلبك عند الباب إذا كانت شركة الشحن تسمح بذلك. حقوقك القانونية في الاستبدال والاسترجاع موضحة أدناه.',
+          'Inspect your order while the courier waits. If the product is not right for you, decline delivery and hand it back. Your legal rights remain protected.',
+          'افحص طلبك والمندوب منتظر. لو المنتج مش مناسب لك، ارفض الاستلام ورجّعه للمندوب. حقوقك القانونية محفوظة.',
         ),
         { eyebrow: text('KHT / CUSTOMER CARE', 'KHT / المساعدة') },
       ),
@@ -627,8 +627,8 @@ export const DEFAULT_STORE_CONTENT: StorefrontContent = {
           'inspection',
           text('Request inspection at your door', 'اطلب فحص الطلب عند الباب'),
           text(
-            'When the courier arrives, ask to open the parcel while they wait at your door, if the delivery company permits inspection before acceptance. Check the product, quantity, size, colour and visible condition against your order before paying or accepting. If the parcel is wrong, incomplete or visibly damaged, refuse delivery and contact KHT immediately with your order number. If opening is not permitted, contact us as soon as you notice an issue. Checking or accepting the parcel at the door does not waive your statutory exchange or return rights.',
-            'عند وصول المندوب، اطلب فتح الشحنة وهو منتظر عند الباب إذا كانت شركة الشحن تسمح بالفحص قبل الاستلام. اتأكد من المنتج والعدد والمقاس واللون والحالة الظاهرة بمقارنتها بطلبك قبل الدفع أو قبول الشحنة. لو الطلب غلط أو ناقص أو فيه تلف ظاهر، ارفض الاستلام وتواصل مع KHT فورًا برقم الطلب. لو فتح الشحنة غير مسموح، تواصل معانا أول ما تلاحظ أي مشكلة. فحص الطلب أو قبوله عند الباب لا يلغي حقوقك القانونية في الاستبدال أو الاسترجاع.',
+            'Open and inspect the parcel while the courier waits. Check the product, quantity, size, colour and visible condition before accepting it. If the item is not right for you, decline delivery and give it back to the courier, then contact KHT with your order number. If inspection cannot take place, contact us for help. Inspecting or accepting the parcel does not waive your statutory exchange or return rights.',
+            'افتح الشحنة وافحصها والمندوب منتظر. اتأكد من المنتج والعدد والمقاس واللون والحالة قبل الاستلام. لو المنتج مش مناسب لك، ارفض الاستلام ورجّعه للمندوب، وبعدها تواصل مع KHT برقم الطلب. لو ما قدرتش تفحص الشحنة، تواصل معانا للمساعدة. الفحص أو الاستلام لا يلغي حقوقك القانونية في الاستبدال أو الاسترجاع.',
           ),
         ),
         section(

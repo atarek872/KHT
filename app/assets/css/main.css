@@ -4829,6 +4829,7 @@ a {
   padding: 3px 7px;
   font-size: 0.72rem;
   white-space: nowrap;
+  animation: kht-offer-code 5s ease-in-out infinite;
 }
 .store-promotion-bar__link svg {
   width: 15px;
@@ -4840,10 +4841,14 @@ a {
     transform: rotate(90deg) scale(1.25);
   }
 }
+@keyframes kht-offer-code {
+  50% { background: #111; color: #fff; }
+}
 @media (prefers-reduced-motion: reduce) {
   .store-promotion-bar__spark {
     animation: none;
   }
+  .store-promotion-bar__code { animation: none; }
 }
 @media (max-width: 600px) {
   .store-promotion-bar__link {
