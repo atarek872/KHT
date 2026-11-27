@@ -90,8 +90,8 @@ const isExternalHelp = computed(() => /^https:\/\//.test(props.assistanceUrl))
           <p>
             {{
               t(
-                `Your height and weight fall within the initial range for size ${result.size}. This is an estimate for KHT’s oversized fit, not a guarantee of fit.`,
-                `طولك ووزنك داخل النطاق المبدئي لمقاس ${result.size}. ده تقدير لفيت KHT الأوفرسايز، مش ضمان للمقاس.`,
+                `Based on your height and weight, size ${result.size} matches the KHT oversized fit guide. Compare the garment measurements for your preferred fit.`,
+                `بناءً على طولك ووزنك، مقاس ${result.size} مناسب حسب دليل فيت KHT الأوفرسايز. قارن قياسات القطعة للفيت اللي تفضله.`,
               )
             }}
           </p>
@@ -105,8 +105,8 @@ const isExternalHelp = computed(() => /^https:\/\//.test(props.assistanceUrl))
           <p>
             {{
               t(
-                'Your measurements overlap or sit close to both estimated ranges. Compare the garment chart and choose the fit you prefer; no size has been selected for you.',
-                'مقاساتك متداخلة أو قريبة من نطاق المقاسين. قارن جدول القطعة واختار الفيت اللي بتحبه؛ مش هنحدد المقاس بدلًا منك.',
+                'Both sizes match your measurements. Choose M for a balanced oversized fit or L for a roomier fit, then compare the garment chart.',
+                'المقاسين مناسبين لقياساتك. اختار M لأوفرسايز متوازن أو L لفيت أوسع، وقارن جدول قياسات القطعة.',
               )
             }}
           </p>
@@ -127,12 +127,12 @@ const isExternalHelp = computed(() => /^https:\/\//.test(props.assistanceUrl))
             {{
               preference === 'balanced'
                 ? t(
-                    'M may give a more balanced silhouette. Check both garment measurements before choosing it.',
-                    'مقاس M ممكن يدي شكل أوفرسايز متوازن. قارن قياسات القطعتين قبل اختياره.',
+                    'M gives the more balanced oversized silhouette. Check the garment measurements before choosing it.',
+                    'مقاس M يدي شكل أوفرسايز متوازن. قارن قياسات القطعة قبل اختياره.',
                   )
                 : t(
-                    'L may give a roomier silhouette. Check both garment measurements before choosing it.',
-                    'مقاس L ممكن يدي شكل أوسع. قارن قياسات القطعتين قبل اختياره.',
+                    'L gives a roomier oversized silhouette. Check the garment measurements before choosing it.',
+                    'مقاس L يدي شكل أوفرسايز أوسع. قارن قياسات القطعة قبل اختياره.',
                   )
             }}
           </p>
@@ -144,12 +144,12 @@ const isExternalHelp = computed(() => /^https:\/\//.test(props.assistanceUrl))
             {{
               result.reason === 'unavailable'
                 ? t(
-                    'The size suggested by these estimates is currently unavailable, or one of two plausible sizes is unavailable. Please check the size guide or ask us before ordering.',
-                    'المقاس الأقرب بالتقدير غير متاح حاليًا، أو واحد من المقاسين المحتملين غير متاح. راجع جدول المقاسات أو اسألنا قبل الطلب.',
+                    'Your matching size is currently unavailable. Check the size guide or ask us about the next restock.',
+                    'المقاس المناسب غير متاح حاليًا. راجع دليل المقاسات أو اسألنا عن موعد توفره.',
                   )
                 : t(
-                    'Height and weight alone cannot give a confident suggestion for these measurements. Ask us for help and compare a similar garment.',
-                    'الطول والوزن وحدهم مش كفاية علشان نرشح مقاس بثقة في الحالة دي. تواصل معانا وقارن بقطعة مشابهة.',
+                    'For these measurements, compare the garment chart or send us your preferred fit and we will help you choose.',
+                    'للقياسات دي، قارن جدول القطعة أو ابعتلنا الفيت اللي تفضله ونساعدك تختار.',
                   )
             }}
           </p>
@@ -179,8 +179,8 @@ const isExternalHelp = computed(() => /^https:\/\//.test(props.assistanceUrl))
       <p class="size-finder__disclaimer">
         {{
           t(
-            'Initial height and weight ranges are estimates, not tested fit data. Garment widths and lengths describe the clothing, not your body. The listed pants waist is not a measured relaxed or maximum elastic waist.',
-            'نطاقات الطول والوزن تقديرية ولم تُختبر على العملاء بعد. عرض وطول القطعة قياسات للملابس مش للجسم. قياس وسط البنطلون المعروض ليس قياس الأستك مرتاحًا أو عند أقصى تمدد.',
+            'The chart shows garment measurements. Compare them with a similar piece you own for the fit you like.',
+            'الجدول يعرض قياسات القطعة نفسها. قارنها بقطعة عندك لتحصل على الفيت اللي بتحبه.',
           )
         }}
       </p>

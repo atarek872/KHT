@@ -29,6 +29,7 @@ export interface DiscountQuote {
 export interface OrderQuote {
   subtotal: number
   shipping: number
+  freeShipping?: boolean
   discount: number
   total: number
   couponCode?: string

@@ -22,6 +22,7 @@ export interface StorefrontCheckoutInput {
   shippingGovernorate: string
   paymentMethod: OrderPaymentMethod
   couponCode?: string
+  expectedTotal?: number
   notes?: string
   attribution?: CampaignAttribution | null
 }

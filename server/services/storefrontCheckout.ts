@@ -94,6 +94,7 @@ export async function createStorefrontOrder(
     actorEmail: 'storefront@kht.local',
     userId: null,
     automaticWelcome: false,
+    expectedTotal: input.expectedTotal,
     metaContext,
   })
   return {

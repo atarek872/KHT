@@ -21,6 +21,7 @@ import {
 } from './ga4Purchase.ts'
 import { normalizeAdminPhone, normalizeEgyptianPhone } from '../../shared/orderPhone.ts'
 import { normalizeCheckoutPhone } from '../../shared/checkoutSteps.ts'
+import { getActiveStorePromotion } from './promotions.ts'
 export { normalizeAdminPhone, normalizeEgyptianPhone } from '../../shared/orderPhone.ts'
 
 const sources: OrderSource[] = [
@@ -115,7 +116,15 @@ export async function quoteOrder(
 ) {
   const resources = await getCreateOrderResources(database)
   const zone = await requireShippingRate(database, input.shippingGovernorate)
-  const priced = prepareOrder(input, resources.variants, zone, options)
+  const promotion = options.allowManualDiscount
+    ? { freeShipping: false }
+    : await getActiveStorePromotion(database)
+  const priced = prepareOrder(
+    input,
+    resources.variants,
+    promotion.freeShipping ? { ...zone, rate: 0 } : zone,
+    options,
+  )
   const bundleComponents = await database
     .prepare(
       `SELECT bundle_variant_id AS bundleVariantId,

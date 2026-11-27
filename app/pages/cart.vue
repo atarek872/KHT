@@ -86,6 +86,13 @@ watch(
   { immediate: true },
 )
 onMounted(async () => {
+  const campaignCode =
+    typeof route.query.coupon === 'string' ? route.query.coupon.toUpperCase() : ''
+  if (/^[A-Z0-9][A-Z0-9_-]{2,31}$/.test(campaignCode)) {
+    appliedCode.value = campaignCode
+    codeInput.value = campaignCode
+    if (count.value) await checkOffer(campaignCode)
+  }
   const token = route.hash.match(/^#recovery=([a-f0-9-]{72})$/i)?.[1]
   if (!token) return
   window.history.replaceState(null, '', route.path)

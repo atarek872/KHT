@@ -5,6 +5,14 @@ const route = useRoute()
 const catalog = useCatalog()
 const { t, localized } = useLanguage()
 const selectedSize = useState('kht-whatsapp-product-size', () => '')
+const dismissed = ref(false)
+onMounted(() => {
+  dismissed.value = sessionStorage.getItem('kht-whatsapp-dismissed') === '1'
+})
+function dismiss() {
+  dismissed.value = true
+  sessionStorage.setItem('kht-whatsapp-dismissed', '1')
+}
 const product = computed(() =>
   route.path.startsWith('/products/')
     ? catalog.value.products.find((item) => item.slug === route.params.slug)
@@ -23,14 +31,30 @@ const href = computed(() =>
 </script>
 
 <template>
-  <a
-    class="store-whatsapp"
-    :class="{ 'store-whatsapp--product': product }"
-    :href="href"
-    target="_blank"
-    rel="noopener noreferrer"
-    :aria-label="t('Ask KHT on WhatsApp', 'اسأل KHT على واتساب')"
-  >
-    <span aria-hidden="true">↗</span><span>WhatsApp</span>
-  </a>
+  <Transition name="store-whatsapp-dismiss">
+    <div
+      v-if="!dismissed"
+      class="store-whatsapp-wrap"
+      :class="{ 'store-whatsapp-wrap--product': product }"
+    >
+      <a
+        class="store-whatsapp"
+        :href="href"
+        target="_blank"
+        rel="noopener noreferrer"
+        :aria-label="t('Ask KHT on WhatsApp', 'اسأل KHT على واتساب')"
+        title="WhatsApp"
+      >
+        <KhtIcon name="whatsapp" />
+      </a>
+      <button
+        type="button"
+        class="store-whatsapp-close"
+        :aria-label="t('Hide WhatsApp shortcut', 'إخفاء زر واتساب')"
+        @click="dismiss"
+      >
+        <KhtIcon name="close" />
+      </button>
+    </div>
+  </Transition>
 </template>

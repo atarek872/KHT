@@ -11,7 +11,7 @@ import {
 import type { Catalog } from '#shared/types'
 
 const props = defineProps<{
-  view: 'brand' | 'navigation' | 'pages' | 'policy' | 'faq' | 'publishing'
+  view: 'brand' | 'promotions' | 'navigation' | 'pages' | 'policy' | 'faq' | 'publishing'
 }>()
 const { data, error, status, refresh } = await useFetch<AdminStoreContentState>(
   '/api/admin/store-content',
@@ -32,6 +32,23 @@ const announcementFields = [
 ] as const
 type AnnouncementField = (typeof announcementFields)[number]['key']
 const announcementSymbols = ['✦', '🖤', '🤍', '🎁', '✨'] as const
+const shippingDays = [
+  { value: 0, label: 'Sunday' },
+  { value: 1, label: 'Monday' },
+  { value: 2, label: 'Tuesday' },
+  { value: 3, label: 'Wednesday' },
+  { value: 4, label: 'Thursday' },
+  { value: 5, label: 'Friday' },
+  { value: 6, label: 'Saturday' },
+]
+function toggleShippingDay(day: number) {
+  if (!form.value) return
+  const days = form.value.brand.promotion.freeShippingWeekdays
+  const index = days.indexOf(day)
+  if (index < 0) days.push(day)
+  else days.splice(index, 1)
+  days.sort((a, b) => a - b)
+}
 
 const pageKeys: StorePageKey[] = [
   'home',
@@ -166,7 +183,7 @@ async function uploadImage(
   feedback.value = ''
   try {
     const body = new FormData()
-    body.append('image', file)
+    body.append('image', await optimizeUploadImage(file))
     const result = await $fetch<{ url: string }>('/api/admin/media', { method: 'POST', body })
     uploadedUrls.value.push(result.url)
     if (target === 'logo') form.value.brand.logoUrl = result.url
@@ -456,6 +473,90 @@ onBeforeUnmount(() => {
             required
           />
         </div>
+      </AdminSection>
+    </template>
+
+    <template v-else-if="props.view === 'promotions'">
+      <AdminSection
+        title="Campaign banner"
+        description="A moving offer banner appears above the main header during the selected dates (Cairo time). Create and activate the coupon in Discounts separately."
+      >
+        <AdminCheckbox
+          v-model="form.brand.promotion.announcementEnabled"
+          label="Show campaign banner"
+        />
+        <div class="admin-content-editor__grid">
+          <AdminInput
+            v-model="form.brand.promotion.announcementMessage.en"
+            label="English message"
+            maxlength="180"
+          />
+          <AdminInput
+            v-model="form.brand.promotion.announcementMessage.ar"
+            label="Arabic message"
+            maxlength="180"
+            dir="rtl"
+          />
+          <AdminInput
+            v-model="form.brand.promotion.announcementCode"
+            label="Coupon code"
+            maxlength="32"
+            help="Shown in the banner. The coupon rules are managed in Discounts."
+          />
+          <AdminInput
+            v-model="form.brand.promotion.announcementLink"
+            label="Banner destination"
+            help="Use a store path such as /cart or /shop."
+          />
+          <AdminInput
+            v-model="form.brand.promotion.announcementStartDate"
+            type="date"
+            label="Start date · Cairo"
+          />
+          <AdminInput
+            v-model="form.brand.promotion.announcementEndDate"
+            type="date"
+            label="Last date · Cairo"
+          />
+        </div>
+        <p class="admin-field__help">
+          The main announcement bar text and speed remain editable in Brand. This campaign banner
+          appears only while its schedule is active.
+        </p>
+      </AdminSection>
+      <AdminSection
+        title="Free delivery schedule"
+        description="When active, eligible customers see free delivery in cart and checkout. Order totals are calculated again on the server."
+      >
+        <AdminCheckbox
+          v-model="form.brand.promotion.freeShippingEnabled"
+          label="Enable free delivery"
+        />
+        <div class="admin-content-editor__grid">
+          <AdminInput
+            v-model="form.brand.promotion.freeShippingStartDate"
+            type="date"
+            label="Start date · Cairo"
+            help="Leave blank for no start date."
+          />
+          <AdminInput
+            v-model="form.brand.promotion.freeShippingEndDate"
+            type="date"
+            label="Last date · Cairo"
+            help="Leave blank for no end date."
+          />
+        </div>
+        <fieldset class="admin-promotion-days">
+          <legend>Days of the week · leave all unselected for every day</legend>
+          <label v-for="day in shippingDays" :key="day.value">
+            <input
+              type="checkbox"
+              :checked="form.brand.promotion.freeShippingWeekdays.includes(day.value)"
+              @change="toggleShippingDay(day.value)"
+            />
+            {{ day.label }}
+          </label>
+        </fieldset>
       </AdminSection>
     </template>
 

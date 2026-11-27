@@ -58,7 +58,7 @@ async function uploadImage(event: Event) {
   for (const file of selected) {
     try {
       const body = new FormData()
-      body.append('image', file)
+      body.append('image', await optimizeUploadImage(file))
       const response = await $fetch<{ url: string }>('/api/admin/media', { method: 'POST', body })
       if (!form.images.includes(response.url)) form.images.push(response.url)
       else failures.push(`${file.name}: this image is already in the gallery.`)

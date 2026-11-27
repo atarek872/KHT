@@ -9,6 +9,7 @@ import {
   type StorefrontContent,
 } from '../../shared/storeContent.ts'
 import type { D1Database } from '../utils/d1'
+import { DEFAULT_PROMOTION, validateStorePromotion } from '../../shared/promotion.ts'
 
 type ContentStateRow = {
   draftJson: string
@@ -109,6 +110,7 @@ export function validateStoreContent(input: StorefrontContent) {
     brand.announcementDurationSeconds > 60
   )
     throw new Error('Announcement speed must be between 10 and 60 seconds.')
+  validateStorePromotion(brand.promotion)
   safeImage(brand.logoUrl, 'Brand logo')
   safeImage(brand.defaultSocialImageUrl, 'Default social sharing image', false)
   safeLink(brand.footerStatementLinkUrl, 'Footer statement destination')
@@ -260,6 +262,8 @@ function parseContent(value: string) {
     if (content.brand && content.brand.announcementDurationSeconds === undefined)
       content.brand.announcementDurationSeconds =
         DEFAULT_STORE_CONTENT.brand.announcementDurationSeconds
+    if (content.brand && !content.brand.promotion)
+      content.brand.promotion = structuredClone(DEFAULT_PROMOTION)
     if (!content.policyHighlights)
       content.policyHighlights = structuredClone(DEFAULT_STORE_CONTENT.policyHighlights)
     if (typeof content.faqEnabled !== 'boolean') content.faqEnabled = false

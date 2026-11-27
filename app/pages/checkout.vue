@@ -2,7 +2,7 @@
 import { firstOrderWelcomePrice } from '#shared/welcomePrice'
 import type { StorefrontOrderConfirmation } from '../../shared/storefrontOrder'
 import type { OrderQuote } from '../../shared/discount'
-import type { ShippingZone } from '../../shared/shipping'
+import type { StorefrontShippingZone } from '../../shared/shipping'
 import type { CustomerAddress } from '../../shared/account'
 import type { PublicWelcomeCampaign } from '../../shared/welcomeCampaign'
 import { sizePrice } from '#shared/productPricing'
@@ -110,7 +110,9 @@ const {
   data: shippingData,
   error: shippingError,
   status: shippingStatus,
-} = await useFetch<{ items: ShippingZone[] }>('/api/shipping/options')
+} = await useFetch<{ items: StorefrontShippingZone[]; freeShipping: boolean }>(
+  '/api/shipping/options',
+)
 const { data: welcomeCampaignData } = await useFetch<{
   campaign: PublicWelcomeCampaign | null
 }>('/api/storefront/welcome-campaign', { key: 'welcome-campaign' })
@@ -444,6 +446,7 @@ async function submit() {
         },
         items: lines.value.map(({ id, size, quantity }) => ({ id, size, quantity })),
         couponCode: couponQuote.value?.couponCode,
+        expectedTotal: couponQuote.value?.total ?? total.value + shipping.value,
         shippingGovernorate: form.value.governorate,
         paymentMethod: 'cod',
         notes: form.value.notes || undefined,
@@ -734,7 +737,11 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
             <div v-if="selectedShipping" class="delivery-option" role="status">
               <span class="selected-indicator" />
               <div>
-                <strong>{{ t('Standard delivery', 'توصيل عادي') }}</strong
+                <strong>{{
+                  shippingData?.freeShipping
+                    ? t('Free delivery offer', 'عرض التوصيل المجاني')
+                    : t('Standard delivery', 'توصيل عادي')
+                }}</strong
                 ><span v-if="selectedShipping.etaMinDays && selectedShipping.etaMaxDays">{{
                   t(
                     `Estimated delivery: ${selectedShipping.etaMinDays}–${selectedShipping.etaMaxDays} days. The courier will confirm the timing.`,
@@ -748,7 +755,12 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
                   )
                 }}</span>
               </div>
-              <strong>{{ money(shipping) }}</strong>
+              <strong
+                ><s v-if="selectedShipping.standardRate" class="shipping-original-rate">{{
+                  money(selectedShipping.standardRate)
+                }}</s>
+                {{ shippingData?.freeShipping ? t('FREE', 'مجاني') : money(shipping) }}</strong
+              >
             </div>
           </fieldset>
 
@@ -789,7 +801,11 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
               <p class="checkout-review-item">
                 <span>{{ t('Delivery', 'التوصيل') }}</span
                 ><strong>{{
-                  selectedShipping ? money(shipping) : t('Select area', 'اختار المحافظة')
+                  selectedShipping
+                    ? shippingData?.freeShipping
+                      ? t('FREE', 'مجاني')
+                      : money(shipping)
+                    : t('Select area', 'اختار المحافظة')
                 }}</strong>
               </p>
               <p v-if="couponQuote?.discount" class="checkout-review-item">
@@ -958,7 +974,11 @@ useSeoMeta({ title: () => t('Checkout — KHT', 'إتمام الطلب — KHT')
             <div class="summary-row">
               <span>{{ t('Delivery', 'التوصيل') }}</span
               ><span>{{
-                selectedShipping ? money(shipping) : t('Select area', 'اختار المحافظة')
+                selectedShipping
+                  ? shippingData?.freeShipping
+                    ? t('FREE', 'مجاني')
+                    : money(shipping)
+                  : t('Select area', 'اختار المحافظة')
               }}</span>
             </div>
             <div v-if="couponQuote?.discount" class="summary-row">

@@ -38,6 +38,7 @@ function submitSearch() {
 }
 </script>
 <template>
+  <StorePromotionBar :promotion="brand.promotion" :language="locale" />
   <AnnouncementBar
     :messages="announcementMessages"
     :duration-seconds="brand.announcementDurationSeconds"

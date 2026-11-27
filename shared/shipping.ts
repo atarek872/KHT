@@ -7,3 +7,6 @@ export interface ShippingZoneInput {
 }
 
 export interface ShippingZone extends ShippingZoneInput {}
+export interface StorefrontShippingZone extends ShippingZone {
+  standardRate?: number
+}

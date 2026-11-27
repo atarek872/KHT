@@ -72,6 +72,16 @@ const careLinks = computed(() =>
           dir="ltr"
           >WhatsApp · {{ contact.whatsapp }}</a
         >
+        <a
+          v-if="brand.instagramUrl"
+          :href="brand.instagramUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Instagram</a
+        >
+        <a v-if="brand.tiktokUrl" :href="brand.tiktokUrl" target="_blank" rel="noopener noreferrer"
+          >TikTok</a
+        >
       </div>
       <div class="footer-statement">
         <span>{{ t(brand.footerStatement.en, brand.footerStatement.ar) }}</span

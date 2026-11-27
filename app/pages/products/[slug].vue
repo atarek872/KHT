@@ -433,7 +433,7 @@ useStoreSeo({
                 class="size-finder-trigger"
                 @click="sizeFinderOpen = true"
               >
-                {{ t('Find my size', 'اختار مقاسي') }}
+                <KhtIcon name="ruler" />{{ t('Find my size', 'اختار مقاسي') }}
               </button>
               <button type="button" class="remove-link" @click="sizeGuide = true">
                 {{ t('Size guide', 'دليل المقاسات') }}
@@ -544,7 +544,8 @@ useStoreSeo({
           :href="productWhatsApp"
           target="_blank"
           rel="noopener noreferrer"
-          >{{ t('Ask about this size on WhatsApp', 'اسأل عن المقاس ده على واتساب') }} ↗</a
+          ><KhtIcon name="whatsapp" />
+          {{ t('Ask about this size on WhatsApp', 'اسأل عن المقاس ده على واتساب') }}</a
         >
         <a v-if="featuredReview" class="product-featured-review" href="#product-reviews">
           <span aria-hidden="true">★★★★★</span>

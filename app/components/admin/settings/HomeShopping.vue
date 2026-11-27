@@ -58,7 +58,7 @@ async function uploadImage(event: Event, card: HomeShoppingCard, mobile: boolean
   error.value = ''
   try {
     const body = new FormData()
-    body.append('image', file)
+    body.append('image', await optimizeUploadImage(file))
     const result = await $fetch<{ url: string }>('/api/admin/media', { method: 'POST', body })
     uploadedUrls.value.push(result.url)
     if (mobile) card.mobileImageUrl = result.url

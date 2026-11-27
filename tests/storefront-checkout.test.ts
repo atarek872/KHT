@@ -6,6 +6,7 @@ import { getCatalog } from '../server/services/catalog.ts'
 import { trackOrder } from '../server/services/storefrontOrders.ts'
 import type { StorefrontCheckoutInput } from '../shared/storefrontOrder.ts'
 import { createTestD1 } from './helpers/sqliteD1.ts'
+import { cloneStoreContent } from '../shared/storeContent.ts'
 
 const migrationUrls = [
   '../server/db/migrations/0001_commerce.sql',
@@ -15,10 +16,12 @@ const migrationUrls = [
   '../server/db/migrations/0005_abandoned_carts.sql',
   '../server/db/migrations/0006_commerce_safety.sql',
   '../server/db/migrations/0007_production_commerce.sql',
+  '../server/db/migrations/0014_storefront_content.sql',
   '../server/db/migrations/0015_order_campaign.sql',
   '../server/db/migrations/0016_meta_attribution.sql',
   '../server/db/migrations/0017_shipping_product_proof.sql',
   '../server/db/migrations/0024_shared_set_inventory.sql',
+  '../server/db/migrations/0025_campaign.sql',
 ].map((path) => new URL(path, import.meta.url))
 
 function setup() {
@@ -49,6 +52,32 @@ const checkoutInput = (): StorefrontCheckoutInput => ({
   items: [{ id: 'kht-001', size: 'M', quantity: 2 }],
   shippingGovernorate: 'Cairo',
   paymentMethod: 'cod',
+})
+
+test('scheduled free delivery is priced by the server and checked against the customer total', async () => {
+  const { database, sqlite, close } = setup()
+  try {
+    const content = cloneStoreContent()
+    content.brand.promotion.freeShippingEnabled = true
+    sqlite
+      .prepare('UPDATE storefront_content_state SET published_json = ? WHERE id = 1')
+      .run(JSON.stringify(content))
+    const input = checkoutInput()
+    input.expectedTotal = 1780
+    const order = await createStorefrontOrder(database, input)
+    assert.equal(order.subtotal, 1780)
+    assert.equal(order.shipping, 0)
+    assert.equal(order.total, 1780)
+
+    const mismatch = checkoutInput()
+    mismatch.expectedTotal = 1840
+    await assert.rejects(
+      () => createStorefrontOrder(database, mismatch),
+      /total.*changed|price.*changed/i,
+    )
+  } finally {
+    close()
+  }
 })
 
 test('guest checkout creates one customer and one order from server prices', async () => {

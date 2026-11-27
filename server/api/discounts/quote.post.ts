@@ -7,6 +7,7 @@ import { enforceRateLimit } from '../../utils/rateLimit'
 import { requireJsonBody, safeErrorMessage } from '../../utils/requestGuards'
 import { getCustomer } from '../../utils/customerAuth'
 import { isWelcomeCampaignDiscount, resolveCustomerDiscountCode } from '../../services/welcomeOffer'
+import { getActiveStorePromotion } from '../../services/promotions'
 
 export default defineEventHandler(async (event) => {
   await enforceRateLimit(event, 'discount-quote', 60, 10 * 60)
@@ -20,7 +21,11 @@ export default defineEventHandler(async (event) => {
     const user = await getCustomer(event)
     const governorate =
       typeof body?.shippingGovernorate === 'string' ? body.shippingGovernorate.trim() : ''
-    const shipping = governorate ? (await getStorefrontShippingRate(database, governorate)).rate : 0
+    const [zone, promotion] = await Promise.all([
+      governorate ? getStorefrontShippingRate(database, governorate) : Promise.resolve(null),
+      getActiveStorePromotion(database),
+    ])
+    const shipping = zone && !promotion.freeShipping ? zone.rate : 0
     const priced = priceOrder(
       body?.items,
       await getCatalog(getDatabase(event), import.meta.dev),
@@ -36,6 +41,7 @@ export default defineEventHandler(async (event) => {
     return {
       subtotal: priced.subtotal,
       shipping: priced.shipping,
+      freeShipping: Boolean(zone && promotion.freeShipping),
       discount: coupon.discount,
       total: calculateOrderTotal(priced.subtotal, coupon.discount, priced.shipping),
       couponCode: coupon.coupon?.code,

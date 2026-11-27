@@ -112,8 +112,11 @@ test('shipping APIs are protected for admin and public options expose enabled zo
   const publicOptions = read('../server/api/shipping/options.get.ts')
   assert.match(
     publicOptions,
-    /database \? await listShippingZones\(database, true\) : demoShippingZones/,
+    /if \(!database\) return \{ items: demoShippingZones, freeShipping: false \}/,
   )
+  assert.match(publicOptions, /listShippingZones\(database, true\)/)
+  assert.match(publicOptions, /getActiveStorePromotion\(database\)/)
+  assert.match(publicOptions, /standardRate: zone\.rate, rate: 0/)
 })
 
 test('storefront checkout and admin order use the same shipping source', () => {

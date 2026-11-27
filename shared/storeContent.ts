@@ -1,3 +1,5 @@
+import { DEFAULT_PROMOTION, type StorePromotion } from './promotion.ts'
+
 export type ContentLocale = 'en' | 'ar'
 export type ContentText = { en: string; ar: string }
 export type StorePageKey =
@@ -107,6 +109,7 @@ export type StoreBrandContent = {
   announcementCenter: ContentText
   announcementEnd: ContentText
   announcementDurationSeconds: number
+  promotion: StorePromotion
   footerCollectionTitle: ContentText
   footerCareTitle: ContentText
   footerStatement: ContentText
@@ -261,6 +264,7 @@ export const DEFAULT_STORE_CONTENT: StorefrontContent = {
     announcementCenter: text('BLACK. WHITE. LINE.', 'أسود. أبيض. خط.'),
     announcementEnd: text('THE KHT COLLECTION', 'مجموعة KHT'),
     announcementDurationSeconds: 24,
+    promotion: structuredClone(DEFAULT_PROMOTION),
     footerCollectionTitle: text('Collection', 'المجموعة'),
     footerCareTitle: text('Customer care', 'المساعدة'),
     footerStatement: text('THE LINE CONNECTS US.', 'الخط يجمعنا.'),
@@ -270,7 +274,7 @@ export const DEFAULT_STORE_CONTENT: StorefrontContent = {
     privacyLabel: text('Privacy', 'الخصوصية'),
     termsLabel: text('Terms', 'الشروط'),
     contactEmail: 'kht.egstore@gmail.com',
-    contactPhone: '',
+    contactPhone: '+201553815746',
     contactWhatsApp: '',
     instagramUrl: '',
     facebookUrl: '',
@@ -280,8 +284,8 @@ export const DEFAULT_STORE_CONTENT: StorefrontContent = {
   policyHighlights: {
     homeReturnMessage: text('Inspect your order at the door', 'افحص طلبك مع المندوب عند الباب'),
     productInspectionMessage: text(
-      'Ask to inspect the parcel at delivery if the courier permits.',
-      'اطلب فحص الطرد عند الاستلام لو شركة الشحن تسمح.',
+      'Inspect your order while the courier waits. If it is not right for you, decline delivery and hand it back to the courier.',
+      'افحص طلبك والمندوب مستني. لو المنتج مش مناسب لك، ارفض الاستلام ورجّعه للمندوب.',
     ),
     productReturnMessage: text(
       'Inspect your order before accepting delivery',

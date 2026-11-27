@@ -12,6 +12,7 @@ const route = useRoute()
 const settingsViews = [
   'availability',
   'brand',
+  'promotions',
   'navigation',
   'pages',
   'policy',
@@ -146,7 +147,7 @@ async function uploadImage(event: Event) {
       }).catch(() => undefined)
     }
     const body = new FormData()
-    body.append('image', file)
+    body.append('image', await optimizeUploadImage(file))
     const uploaded = await $fetch<{ url: string }>('/api/admin/media', { method: 'POST', body })
     form.imageUrl = uploaded.url
     newlyUploadedImage.value = uploaded.url
@@ -224,6 +225,11 @@ onBeforeUnmount(() => {
         to="/admin/settings?section=brand"
         :aria-current="view === 'brand' ? 'page' : undefined"
         >Brand</NuxtLink
+      >
+      <NuxtLink
+        to="/admin/settings?section=promotions"
+        :aria-current="view === 'promotions' ? 'page' : undefined"
+        >Offers &amp; delivery</NuxtLink
       >
       <NuxtLink
         to="/admin/settings?section=navigation"
