@@ -27,15 +27,17 @@ const setSaving = computed(() => setSavingsForLines(catalog.value, lines.value))
           }}
         </p>
         <p class="muted">
-          {{ t('Delivery calculated at checkout.', 'تكلفة التوصيل تُحدد عند إتمام الطلب.') }}
+          {{
+            t(
+              'See delivery and your final total in your bag.',
+              'شوف الشحن والإجمالي النهائي في السلة.',
+            )
+          }}
         </p>
-        <NuxtLink to="/checkout" class="button button-dark" @click="open = false"
-          >{{ t('Continue to checkout', 'متابعة لإتمام الطلب') }}<KhtIcon name="arrow" /></NuxtLink
-        ><NuxtLink to="/cart" class="button button-outline" @click="open = false">{{
-          t('View your bag', 'عرض السلة')
-        }}</NuxtLink>
-      </div></template
-    >
+        <NuxtLink to="/cart" class="button button-dark" @click="open = false">
+          {{ t('See total & checkout', 'شوف الإجمالي وكمل الطلب') }}<KhtIcon name="arrow" />
+        </NuxtLink></div
+    ></template>
     <div v-else class="empty-state">
       <span class="empty-line" />
       <h3>{{ t('A clean start.', 'بداية جديدة.') }}</h3>

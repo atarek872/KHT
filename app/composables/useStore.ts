@@ -11,10 +11,9 @@ export function useLanguage() {
     default: () => {
       const query = useRoute().query
       if (query.lang === 'ar' || query.utm_language === 'ar') return 'ar'
-      const source = String(query.utm_source || '').toLowerCase()
-      const metaAd = Boolean(query.fbclid) || ['facebook', 'instagram', 'meta'].includes(source)
+      if (query.lang === 'en' || query.utm_language === 'en') return 'en'
       const country = import.meta.server ? useRequestHeaders(['cf-ipcountry'])['cf-ipcountry'] : ''
-      if (metaAd && country === 'EG') return 'ar'
+      if (country === 'EG') return 'ar'
       const language = import.meta.server
         ? useRequestHeaders(['accept-language'])['accept-language'] || ''
         : navigator.language || ''
@@ -195,10 +194,17 @@ export function useBag() {
       const product = catalog.value.products.find((item) => item.id === selection.id)
       const stock = product?.sizes.find((size) => size.name === selection.size)?.stock || 0
       if (!stock || !Number.isInteger(selection.quantity) || selection.quantity < 1) continue
-      const existing = merged.find((item) => item.id === selection.id && item.size === selection.size)
+      const existing = merged.find(
+        (item) => item.id === selection.id && item.size === selection.size,
+      )
       if (!existing && merged.length >= 12) continue
       if (existing) existing.quantity = Math.min(10, stock, existing.quantity + selection.quantity)
-      else merged.push({ id: selection.id, size: selection.size, quantity: Math.min(10, stock, selection.quantity) })
+      else
+        merged.push({
+          id: selection.id,
+          size: selection.size,
+          quantity: Math.min(10, stock, selection.quantity),
+        })
       changed = true
     }
     if (changed) {

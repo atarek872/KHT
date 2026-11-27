@@ -214,6 +214,7 @@ useStoreSeo({
       :aria-label="t('Shopping information', 'معلومات التسوق')"
     >
       <span>{{ t('Cash on delivery', 'الدفع عند الاستلام') }}</span>
+      <span>{{ t('Made in Egypt', 'صُنع في مصر') }}</span>
       <span>{{ localized(policy.homeReturnMessage) }}</span>
       <span>{{
         t('Delivery to available Egyptian governorates', 'توصيل للمحافظات المتاحة في مصر')

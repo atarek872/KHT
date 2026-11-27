@@ -17,7 +17,20 @@ const { data: reviewData } = await useFetch<ProductReviewResponse>(
 )
 const reviewCount = computed(() => reviewData.value?.count || 0)
 const reviewAverage = computed(() => reviewData.value?.average || 0)
-const featuredReview = computed(() => reviewData.value?.reviews?.[0])
+const visibleReviews = computed(() =>
+  (reviewData.value?.reviews || []).filter((review) =>
+    locale.value === 'ar'
+      ? /[\u0600-\u06ff]/.test(review.body)
+      : !/[\u0600-\u06ff]/.test(review.body),
+  ),
+)
+const visibleReviewCount = computed(() => visibleReviews.value.length)
+const visibleReviewAverage = computed(() =>
+  visibleReviewCount.value
+    ? visibleReviews.value.reduce((sum, review) => sum + review.rating, 0) /
+      visibleReviewCount.value
+    : 0,
+)
 const reviewOpen = ref(false)
 const reviewBusy = ref(false)
 const reviewError = ref('')
@@ -348,7 +361,9 @@ useStoreSeo({
           >
             ‹
           </button>
-          <span aria-live="polite">{{ selectedImageIndex + 1 }} / {{ productImages.length }}</span>
+          <span dir="ltr" aria-live="polite"
+            >{{ selectedImageIndex + 1 }} / {{ productImages.length }}</span
+          >
           <button
             type="button"
             :aria-label="t('Next image', 'الصورة التالية')"
@@ -392,8 +407,9 @@ useStoreSeo({
         <p class="eyebrow">DROP 001</p>
         <h1>{{ localized(product.name) }}</h1>
         <p class="detail-product-code">{{ product.code }}</p>
-        <a v-if="reviewCount" class="product-review-link" href="#product-reviews">
-          <span aria-hidden="true">★</span> {{ reviewAverage.toFixed(1) }} · {{ reviewCount }}
+        <a v-if="visibleReviewCount" class="product-review-link" href="#product-reviews">
+          <span aria-hidden="true">★</span> {{ visibleReviewAverage.toFixed(1) }} ·
+          {{ visibleReviewCount }}
           {{ t('verified reviews', 'تقييمات من مشترين') }}
         </a>
         <ProductPrice
@@ -535,6 +551,12 @@ useStoreSeo({
             }}</span>
           </p>
           <p>
+            <strong>{{ t('Delivery cost', 'تكلفة الشحن') }}</strong>
+            <NuxtLink to="/shipping">{{
+              t('See rates by governorate', 'اعرف السعر حسب المحافظة')
+            }}</NuxtLink>
+          </p>
+          <p>
             <strong>{{ localized(policy.productReturnTabLabel) }}</strong>
             <span>{{ localized(policy.productReturnSummary) }}</span>
           </p>
@@ -547,10 +569,12 @@ useStoreSeo({
           ><KhtIcon name="whatsapp" />
           {{ t('Ask about this size on WhatsApp', 'اسأل عن المقاس ده على واتساب') }}</a
         >
-        <a v-if="featuredReview" class="product-featured-review" href="#product-reviews">
-          <span aria-hidden="true">★★★★★</span>
-          <q>{{ featuredReview.body }}</q>
-          <small>{{ featuredReview.displayName }} · {{ t('Verified buyer', 'مشتري موثّق') }}</small>
+        <a v-if="visibleReviewCount" class="product-featured-review" href="#product-reviews">
+          <span aria-hidden="true">★ {{ visibleReviewAverage.toFixed(1) }} / 5</span>
+          <small
+            >{{ visibleReviewCount }}
+            {{ t('verified buyer reviews — read them', 'آراء مشترين موثّقة — اقرأها') }}</small
+          >
         </a>
         <a v-else class="product-review-empty-link" href="#product-reviews">{{
           t(
@@ -721,8 +745,9 @@ useStoreSeo({
         <div>
           <p class="eyebrow">KHT / {{ t('CUSTOMER VOICE', 'آراء العملاء') }}</p>
           <h2 id="product-reviews-title">{{ t('WORN. LOVED. SHARED.', 'من تجربة عملائنا.') }}</h2>
-          <p v-if="reviewCount" class="product-reviews__score">
-            <span aria-hidden="true">★</span> {{ reviewAverage.toFixed(1) }} / 5 · {{ reviewCount }}
+          <p v-if="visibleReviewCount" class="product-reviews__score">
+            <span aria-hidden="true">★</span> {{ visibleReviewAverage.toFixed(1) }} / 5 ·
+            {{ visibleReviewCount }}
             {{ t('verified reviews', 'آراء مشترين') }}
           </p>
           <p v-else class="product-reviews__empty">
@@ -800,8 +825,8 @@ useStoreSeo({
           {{ reviewBusy ? t('Sending…', 'جارٍ الإرسال…') : t('Send review', 'إرسال الرأي') }}
         </button>
       </form>
-      <div v-if="reviewData?.reviews.length" class="product-review-list">
-        <article v-for="review in reviewData.reviews" :key="review.id" class="product-review-card">
+      <div v-if="visibleReviews.length" class="product-review-list">
+        <article v-for="review in visibleReviews" :key="review.id" class="product-review-card">
           <p
             class="review-stars"
             :aria-label="`${review.rating} ${t('out of 5 stars', 'من ٥ نجوم')}`"

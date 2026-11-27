@@ -2,8 +2,10 @@
 import type { StorePageKey } from '#shared/storeContent'
 import { useStoreContact } from '#shared/storeConfig'
 import { breadcrumbList } from '#shared/storefrontSeo'
+import { governorateLabel } from '#shared/governorate'
+import type { StorefrontShippingZone } from '#shared/shipping'
 
-const { t, localized } = useLanguage()
+const { t, localized, locale, money } = useLanguage()
 const route = useRoute()
 const storeContent = useStoreContent()
 const slug = computed(() =>
@@ -24,6 +26,10 @@ const contact = computed(() =>
   }),
 )
 const canonicalPath = computed(() => `/${slug.value}`)
+const { data: shippingData } = await useFetch<{
+  items: StorefrontShippingZone[]
+  freeShipping: boolean
+}>('/api/shipping/options', { key: 'public-shipping-rates' })
 
 useStoreSeo({
   title: computed(() => localized(page.value.seo.title)),
@@ -54,6 +60,46 @@ useStoreSeo({
       <h1>{{ t(page.hero.title.en, page.hero.title.ar) }}</h1>
     </template>
     <div class="info-body">
+      <section
+        v-if="slug === 'shipping' && shippingData?.items.length"
+        class="shipping-rates"
+        aria-labelledby="shipping-rates-title"
+      >
+        <p class="eyebrow">KHT / {{ t('DELIVERY RATES', 'أسعار التوصيل') }}</p>
+        <h2 id="shipping-rates-title">
+          {{ t('Know your delivery cost.', 'اعرف تكلفة الشحن قبل الطلب.') }}
+        </h2>
+        <p v-if="shippingData.freeShipping" class="shipping-rates__offer">
+          {{
+            t(
+              'Free delivery is active now. Standard rates are shown for reference.',
+              'الشحن مجاني حاليًا. الأسعار المعتادة موضحة للمقارنة.',
+            )
+          }}
+        </p>
+        <p v-else>
+          {{
+            t(
+              'Current rates by governorate. Your final total appears in your bag and at checkout.',
+              'الأسعار الحالية حسب المحافظة. الإجمالي النهائي يظهر في السلة وقبل تأكيد الطلب.',
+            )
+          }}
+        </p>
+        <div class="shipping-rates__grid">
+          <div
+            v-for="zone in shippingData.items"
+            :key="zone.governorate"
+            class="shipping-rates__row"
+          >
+            <span>{{ governorateLabel(zone.governorate, locale) }}</span>
+            <strong v-if="shippingData.freeShipping">
+              <s v-if="zone.standardRate">{{ money(zone.standardRate) }}</s>
+              {{ t('FREE', 'مجاني') }}
+            </strong>
+            <strong v-else>{{ money(zone.rate) }}</strong>
+          </div>
+        </div>
+      </section>
       <details
         v-for="section in slug === 'faq' ? page.sections : []"
         :key="section.id"

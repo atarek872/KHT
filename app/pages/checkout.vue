@@ -48,6 +48,7 @@ const newCheckoutDraft = () => ({
   notes: '',
 })
 const form = useState('checkout-draft', newCheckoutDraft)
+const bagGovernorate = useState('kht-shipping-governorate', () => '')
 const recoveryConsent = ref(false)
 const recoveryConsentTouched = ref(false)
 const recoveryConsentError = ref('')
@@ -91,6 +92,7 @@ watch(addressId, (id, previousId) => {
   form.value.phone ||= address.phone
 })
 onMounted(async () => {
+  form.value.governorate ||= bagGovernorate.value
   if (count.value) trackBeginCheckout(lines.value, total.value)
   if (appliedCouponCode.value) await applyCoupon(appliedCouponCode.value)
   else await refreshAutomaticOffer()

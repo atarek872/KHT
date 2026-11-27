@@ -4,7 +4,9 @@ import type { OrderQuote } from '#shared/discount'
 import type { PublicWelcomeCampaign } from '#shared/welcomeCampaign'
 import { discountErrorArabic } from '#shared/discountErrors'
 import { firstOrderWelcomePrice } from '#shared/welcomePrice'
-const { t, money } = useLanguage()
+import { governorateLabel } from '#shared/governorate'
+import type { StorefrontShippingZone } from '#shared/shipping'
+const { t, money, locale } = useLanguage()
 const { count, total, lines, recover, flush } = useBag()
 const { user } = useCustomer()
 const catalog = useCatalog()
@@ -24,12 +26,29 @@ const welcomeCampaign = computed(() => welcomeCampaignData.value?.campaign || nu
 const guestWelcomePrice = computed(() => firstOrderWelcomePrice(total.value, welcomeCampaign.value))
 const quotedSubtotal = computed(() => quote.value?.subtotal ?? total.value)
 const discountedSubtotal = computed(() => quotedSubtotal.value - (quote.value?.discount || 0))
+const governorate = useState('kht-shipping-governorate', () => '')
+const { data: shippingData } = await useFetch<{
+  items: StorefrontShippingZone[]
+  freeShipping: boolean
+}>('/api/shipping/options')
+const shippingOptions = computed(() => shippingData.value?.items || [])
+const selectedShipping = computed(() =>
+  shippingOptions.value.find((option) => option.governorate === governorate.value),
+)
+watch(
+  shippingOptions,
+  (options) => {
+    if (governorate.value && !options.some((option) => option.governorate === governorate.value))
+      governorate.value = ''
+  },
+  { immediate: true },
+)
 
 async function checkOffer(code = appliedCode.value) {
   const request = ++quoteRequest
   quote.value = null
   offerError.value = ''
-  if (!count.value || (!user.value && !code)) {
+  if (!count.value) {
     offerBusy.value = false
     return
   }
@@ -39,6 +58,7 @@ async function checkOffer(code = appliedCode.value) {
       method: 'POST',
       body: {
         code: code || undefined,
+        shippingGovernorate: governorate.value || undefined,
         items: lines.value.map(({ id, size, quantity }) => ({ id, size, quantity })),
       },
     })
@@ -78,6 +98,7 @@ function removeCode() {
 watch(
   () => [
     user.value?.id,
+    governorate.value,
     lines.value.map((line) => `${line.id}:${line.size}:${line.quantity}`).join('|'),
   ],
   () => {
@@ -190,17 +211,50 @@ useSeoMeta({ title: () => t('Your bag — KHT', 'سلتك — KHT') })
             t('Create account', 'اعمل حساب')
           }}</NuxtLink>
         </p>
+        <div class="bag-shipping-estimate">
+          <label for="bag-governorate">{{ t('Delivery to', 'التوصيل إلى') }}</label>
+          <select id="bag-governorate" v-model="governorate">
+            <option value="">{{ t('Choose your governorate', 'اختار المحافظة') }}</option>
+            <option
+              v-for="zone in shippingOptions"
+              :key="zone.governorate"
+              :value="zone.governorate"
+            >
+              {{ governorateLabel(zone.governorate, locale) }}
+            </option>
+          </select>
+          <NuxtLink to="/shipping">{{
+            t('See all delivery rates', 'شوف أسعار الشحن لكل المحافظات')
+          }}</NuxtLink>
+        </div>
         <div class="summary-row muted">
-          <span>{{ t('Delivery', 'التوصيل') }}</span
-          ><span>{{ t('At checkout', 'عند إتمام الطلب') }}</span>
+          <span>{{ t('Delivery', 'التوصيل') }}</span>
+          <span v-if="selectedShipping && (quote?.freeShipping ?? shippingData?.freeShipping)">
+            <s v-if="selectedShipping.standardRate">{{ money(selectedShipping.standardRate) }}</s>
+            <strong>{{ t('FREE', 'مجاني') }}</strong>
+          </span>
+          <span v-else-if="selectedShipping">{{ money(quote?.shipping ?? selectedShipping.rate) }}</span>
+          <span v-else>{{ t('Choose governorate', 'اختار المحافظة') }}</span>
         </div>
         <div v-if="quote?.discount" class="summary-row bag-discount-row">
           <span>{{ t('Discount', 'الخصم') }} · {{ quote.couponCode }}</span>
           <strong>− {{ money(quote.discount) }}</strong>
         </div>
         <div class="summary-row summary-total" aria-live="polite">
-          <span>{{ t('Before delivery', 'قبل التوصيل') }}</span
-          ><strong>{{ money(discountedSubtotal) }}</strong>
+          <span>{{
+            selectedShipping
+              ? t('Estimated total', 'الإجمالي المتوقع')
+              : t('Before delivery', 'قبل التوصيل')
+          }}</span>
+          <strong>{{
+            offerBusy
+              ? t('Checking…', 'جارٍ الحساب…')
+              : money(
+                  selectedShipping
+                    ? (quote?.total ?? discountedSubtotal + selectedShipping.rate)
+                    : discountedSubtotal,
+                )
+          }}</strong>
         </div>
         <NuxtLink to="/checkout" class="button button-dark"
           >{{ t('Continue to checkout', 'متابعة لإتمام الطلب') }}<KhtIcon name="arrow" /></NuxtLink

@@ -107,6 +107,14 @@ function submitSearch() {
         :to="`/categories/${category.slug}`"
         >{{ localized(category.name) }}</NuxtLink
       ><NuxtLink to="/account">{{ t('Your account', 'حسابك') }}</NuxtLink>
+      <a
+        href="https://wa.me/201553815746"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="mobile-nav-whatsapp"
+      >
+        <KhtIcon name="whatsapp" /> {{ t('Ask us on WhatsApp', 'اسألنا على واتساب') }}
+      </a>
     </nav>
     <div class="panel-bottom">
       <NuxtLink v-for="item in mobileBottomNavigation" :key="item.id" :to="item.href">{{
